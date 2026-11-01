@@ -15,19 +15,32 @@ function costLabel(m: ModelInfo): string {
   return `${f(inp)}/${f(out)} por 1M tokens`;
 }
 
+import { getVariants, variantHint } from '../lib/model-variants';
+
 function ModelBar() {
   const { activeId, models, defaultModel, activeModel, switchModel, busy } = useSessions();
   const [open, setOpen] = useState(false);
+  const [changingVariant, setChangingVariant] = useState(false);
   if (!activeId) return null;
   const current = activeModel
     ? models.find((m) => m.id === activeModel.id && m.providerID === activeModel.providerID)
     : null;
+  const variants = getVariants(current);
   const byProvider = new Map<string, ModelInfo[]>();
   for (const m of models) {
     const arr = byProvider.get(m.providerID) ?? [];
     arr.push(m);
     byProvider.set(m.providerID, arr);
   }
+  const changeVariant = async (v: string) => {
+    if (!activeModel) return;
+    setChangingVariant(true);
+    try {
+      await switchModel({ providerID: activeModel.providerID, id: activeModel.id, variant: v || undefined });
+    } finally {
+      setChangingVariant(false);
+    }
+  };
   return (
     <div className="anim-fade mb-2.5 rounded-xl border border-forge-border bg-forge-panel px-3 py-2">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -35,6 +48,7 @@ function ModelBar() {
         <span className="mono text-[12px] font-bold text-forge-accent">
           {activeModel ? `${activeModel.providerID}/${activeModel.id}` : '(cargando…)'}
         </span>
+        {activeModel?.variant && <span className="pill pill-ok">{activeModel.variant}</span>}
         {current && <span className="pill pill-neutral">{current.name}</span>}
         {current && <span className="mono text-[11px] text-forge-muted">{costLabel(current)}</span>}
       {!current && defaultModel && (
@@ -57,14 +71,34 @@ function ModelBar() {
           <option value="">Elegir modelo… ({models.length} disponibles)</option>
           {[...byProvider.entries()].map(([prov, list]) => (
             <optgroup key={prov} label={prov}>
-              {list.map((m) => (
-                <option key={`${prov}\n${m.id}`} value={`${prov}\n${m.id}`}>
-                  {m.name || m.id} · {costLabel(m)}
-                </option>
-              ))}
+              {list.map((m) => {
+                const n = getVariants(m).length;
+                return (
+                  <option key={`${prov}\n${m.id}`} value={`${prov}\n${m.id}`}>
+                    {m.name || m.id} · {costLabel(m)}{n ? ` · ${n} variantes` : ''}
+                  </option>
+                );
+              })}
             </optgroup>
           ))}
         </select>
+      )}
+      {variants.length > 0 && activeModel && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="section-label">Variante</span>
+          <select
+            className="input min-w-40 flex-1"
+            value={activeModel.variant ?? ''}
+            disabled={busy || changingVariant}
+            onChange={(e) => changeVariant(e.target.value)}
+            title={variantHint(variants.length)}
+          >
+            <option value="">Por defecto del servidor</option>
+            {variants.map((v) => (
+              <option key={v} value={v}>{v}</option>
+            ))}
+          </select>
+        </div>
       )}
       <div className="mt-1 w-full text-[10px] leading-4 text-forge-faint">
         El plan y la facturación los gestiona OpenCode; aquí eliges qué modelo usa cada sesión. Revisa el coste antes de tareas largas.

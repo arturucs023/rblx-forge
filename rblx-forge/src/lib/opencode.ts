@@ -10,11 +10,18 @@ export interface ModelCost {
   output?: number;
 }
 
+export interface ModelVariant {
+  id: string;
+  [k: string]: unknown;
+}
+
 export interface ModelInfo {
   id: string;
   modelID: string;
   providerID: string;
   name?: string;
+  /** Variantes declaradas por el servidor (Model.Info.variants). Puede faltar. */
+  variants?: ModelVariant[];
   cost?: ModelCost[];
 }
 
@@ -161,8 +168,10 @@ export function createClient(opts: ClientOptions) {
         method: 'POST',
         body: JSON.stringify({ model }),
       }),
-    listMcpServers: (location?: string) => {
-      const q = location ? '?location=' + encodeURIComponent(location) : '';
+    listMcpServers: (directory?: string) => {
+      // OpenAPI 2.2.4: `location` es deepObject {directory}, no un string.
+      // `?location=x` responde 400 (verificado). Sin directorio: sin query.
+      const q = directory ? '?location%5Bdirectory%5D=' + encodeURIComponent(directory) : '';
       return req<Array<{ name: string; status?: { status?: string } }>>(clean, pw, '/api/mcp' + q);
     },
 

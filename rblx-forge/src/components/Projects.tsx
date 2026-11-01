@@ -80,6 +80,22 @@ export function Projects({ onOpenProject }: { onOpenProject: (dir: string) => vo
 function ProjectDetail({ onOpenProject }: { onOpenProject: (dir: string) => void }) {
   const { active, rojo, checkRojo } = useProjects();
   if (!active) return <p className="text-forge-muted">Selecciona o crea un proyecto para ver su detalle.</p>;
+  const isRojo = !!rojo?.has_file;
+  const [repairMsg, setRepairMsg] = useState<string | null>(null);
+  const [repairing, setRepairing] = useState(false);
+  const repair = async () => {
+    setRepairMsg(null);
+    setRepairing(true);
+    try {
+      const created = await invoke<string[]>('rojo_repair', { projectDir: active.path });
+      setRepairMsg(created.length ? `Creadas: ${created.join(', ')}` : 'Nada que crear: estructura completa.');
+      await checkRojo();
+    } catch (e) {
+      setRepairMsg(String(e));
+    } finally {
+      setRepairing(false);
+    }
+  };
   return (
     <div className="max-w-2xl">
       <h2 className="text-base font-bold">{active.name}</h2>
@@ -91,19 +107,32 @@ function ProjectDetail({ onOpenProject }: { onOpenProject: (dir: string) => void
       <div className="mb-2 rounded border border-forge-border bg-forge-panel p-2 text-[12px]">
         <p className="mb-1 font-bold text-forge-muted">ROJO</p>
         {!rojo && <p className="text-forge-muted">Sin comprobar.</p>}
-        {rojo && !rojo.has_file && <p className="text-forge-warn">Sin default.project.json: {rojo.error}</p>}
+        {rojo && !rojo.has_file && (
+          <p className="text-forge-muted">
+            Este proyecto no usa Rojo (sin <span className="mono">default.project.json</span>): edita los .luau aquí
+            y cópialos a mano en Studio. Las secciones de serve/build/jerarquía no aplican.
+          </p>
+        )}
         {rojo && rojo.has_file && (
           <>
             <p>Proyecto: <span className="mono">{rojo.name}</span> · {rojo.valid ? <span className="text-forge-ok">válido</span> : <span className="text-forge-err">con errores</span>}</p>
             {rojo.error && <p className="text-forge-err">{rojo.error}</p>}
-            {rojo.missing_paths.length > 0 && <ul className="mono mt-1 list-disc pl-4 text-forge-err">{rojo.missing_paths.map((m) => <li key={m}>{m}</li>)}</ul>}
-            <p className="mt-1 text-forge-muted">Binario: {rojo.binary ? `${rojo.binary.version} (${rojo.binary.path})` : 'no detectado (PATH o ajuste toolchain.rojo)'}</p>
+            {rojo.missing_paths.length > 0 && (
+              <>
+                <ul className="mono mt-1 list-disc pl-4 text-forge-err">{rojo.missing_paths.map((m) => <li key={m}>{m}</li>)}</ul>
+                <button onClick={repair} disabled={repairing} className="btn btn-ghost mt-1">
+                  {repairing ? 'Reparando…' : 'Reparar estructura (crear carpetas ausentes)'}
+                </button>
+              </>
+            )}
+            {repairMsg && <p className="mt-1 text-forge-muted">{repairMsg}</p>}
+            <p className="mt-1 text-forge-muted">Binario: {rojo.binary ? `${rojo.binary.version} (${rojo.binary.path})` : 'no detectado (se busca en PATH, ajuste toolchain.rojo y tools/ del entorno)'}</p>
           </>
         )}
       </div>
-      <RojoServe projectDir={active.path} />
+      {isRojo && <RojoServe projectDir={active.path} />}
       <div className="mb-2"><StudioPanel projectDir={active.path} /></div>
-      <RojoTree projectDir={active.path} />
+      {isRojo && <RojoTree projectDir={active.path} />}
     </div>
   );
 }
@@ -250,8 +279,9 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
       </div>
       <label className="mb-2 block text-[12px]">Plantilla
         <select value={template} onChange={(e) => setTemplate(e.target.value)} className="mt-0.5 w-full rounded border border-forge-border bg-forge-bg px-2 py-1">
-          <option value="base-rojo">base-rojo — bootstrap servidor/cliente, config, spec de humo, stylua/selene</option>
-          <option value="vacio">vacio — solo forge.project.json + default.project.json mínimo</option>
+          <option value="base-rojo">base-rojo — Rojo + Studio: bootstrap servidor/cliente, config, spec de humo, stylua/selene</option>
+          <option value="vacio">vacio — Rojo mínimo: proyecto sincronizado sin código inicial</option>
+          <option value="simple">simple — SIN Rojo: scripts para copiar a mano en Studio</option>
         </select>
       </label>
       <label className="mb-3 flex items-center gap-2 text-[12px]">

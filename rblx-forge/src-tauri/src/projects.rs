@@ -199,9 +199,35 @@ pub fn scaffold_files(template: &str, name: &str) -> Result<Vec<(String, String)
         "vacio" => Ok(vec![
             ("forge.project.json".into(), forge),
             ("default.project.json".into(), minimal_rojo),
+            // Las $path del proyecto mínimo deben existir o la validación
+            // falla siempre: se crean vacías (era el bug de la plantilla).
+            ("src/shared/.gitkeep".into(), "".into()),
+            ("src/server/.gitkeep".into(), "".into()),
+            ("src/client/.gitkeep".into(), "".into()),
             (
                 "README.md".into(),
                 format!("# {}\n\nProyecto Rojo mínimo (plantilla `vacio`).\n", name),
+            ),
+        ]),
+        "simple" => Ok(vec![
+            ("forge.project.json".into(), forge),
+            ("stylua.toml".into(), stylua.to_string()),
+            ("selene.toml".into(), selene.to_string()),
+            (
+                "src/shared/Config.luau".into(),
+                "--!strict\n-- Configuración compartida (solo datos; la autoridad vive en el servidor).\nlocal Config = {\n\tGAME_NAME = \"\",\n}\n\nreturn Config\n".into(),
+            ),
+            (
+                "src/server/Main.server.luau".into(),
+                "-- Arranque del servidor. Copia este archivo a ServerScriptService en Studio.\nlocal function main(): ()\n\tprint(\"Servidor iniciado\")\nend\n\nmain()\n".into(),
+            ),
+            (
+                "src/client/Main.client.luau".into(),
+                "-- Arranque del cliente. Copia este archivo a StarterPlayerScripts en Studio.\nprint(\"Cliente listo\")\n".into(),
+            ),
+            (
+                "README.md".into(),
+                format!("# {}\n\nPlantilla `simple`: SIN Rojo. Edita los .luau aquí (con lint StyLua/Selene) y cópialos a mano en Roblox Studio (sin sincronización automática).\n", name),
             ),
         ]),
         "base-rojo" => Ok(vec![
@@ -458,6 +484,26 @@ pub fn search_tree(root: &Path, query: &str) -> Result<Vec<SearchHit>, String> {
 // Núcleo puro de proyectos (sin AppHandle: testeable de forma aislada)
 // ---------------------------------------------------------------------------
 
+/// Crea los `$path` de tipo directorio ausentes. Solo carpetas vacías;
+/// nunca borra ni modifica archivos. Testeable sin Tauri.
+pub fn repair_rojo_paths(root: &Path, paths: &[String]) -> Result<(Vec<String>, Vec<String>), String> {
+    let mut created = Vec::new();
+    let mut skipped = Vec::new();
+    for p in paths {
+        let last = p.rsplit('/').next().unwrap_or("");
+        if last.contains('.') {
+            skipped.push(p.clone());
+            continue;
+        }
+        let dest = resolve_in_root(root, p)?;
+        if !dest.exists() {
+            std::fs::create_dir_all(&dest).map_err(|e| e.to_string())?;
+            created.push(p.clone());
+        }
+    }
+    Ok((created, skipped))
+}
+
 /// Crea la estructura del proyecto en `parent/name`. Devuelve la ruta final.
 pub fn create_project_files(
     parent: &Path,
@@ -695,9 +741,16 @@ mod tests {
             assert!(files.iter().any(|(p, _)| p == "forge.project.json"));
             assert!(files.iter().any(|(p, _)| p == "default.project.json"));
             for (p, c) in &files {
+                if p.ends_with(".gitkeep") {
+                    continue;
+                }
                 assert!(!c.is_empty(), "vacío: {}", p);
             }
         }
+        // `simple` no usa Rojo: sin default.project.json, pero con src/.
+        let s = scaffold_files("simple", "Demo").unwrap();
+        assert!(!s.iter().any(|(p, _)| p == "default.project.json"));
+        assert!(s.iter().any(|(p, _)| p == "src/server/Main.server.luau"));
         assert!(scaffold_files("inexistente", "Demo").is_err());
     }
 
@@ -706,6 +759,22 @@ mod tests {
         let _ = fs::remove_dir_all(&b);
         fs::create_dir_all(&b).unwrap();
         b
+    }
+
+    #[test]
+    fn repair_crea_dirs_y_omite_archivos() {
+        let b = tmp_base("repair");
+        let paths = vec!["src/shared".to_string(), "src/server".to_string(), "main.lua".to_string()];
+        let (created, skipped) = repair_rojo_paths(&b, &paths).unwrap();
+        assert_eq!(created.len(), 2);
+        assert_eq!(skipped, vec!["main.lua".to_string()]);
+        assert!(b.join("src/shared").is_dir());
+        // Idempotente: segunda pasada no crea nada.
+        let (created2, _) = repair_rojo_paths(&b, &paths).unwrap();
+        assert!(created2.is_empty());
+        // Traversal bloqueado también aquí.
+        assert!(repair_rojo_paths(&b, &["../fuera".to_string()]).is_err());
+        let _ = fs::remove_dir_all(&b);
     }
 
     #[test]

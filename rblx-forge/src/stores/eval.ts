@@ -543,13 +543,14 @@ export const useEval = create<EvalState>((set, get) => {
       if (!client) throw new Error('Conecta el servidor OpenCode en Inicio');
       if (!ws) throw new Error('Configura el workspace en Configuración');
       const version = await client.info().then((i) => i.version).catch(() => null);
-      const model = useSessions.getState().activeModel;
+      const am = useSessions.getState().activeModel;
+      const model = am ? `${am.providerID}/${am.id}${am.variant ? `/${am.variant}` : ''}` : null;
       const id = shortId('run');
       await invoke('eval_save_run', {
         run: {
           id, benchmarkId, skillIds,
           opencodeVersion: version,
-          model: model ? `${model.providerID}/${model.id}` : null,
+          model,
           config: JSON.stringify({ timeoutMs: get().timeoutMs, semanticJudge: get().semanticJudge, cleanupTmp: get().cleanupTmp }),
           promptExcerpt: null, tmpDir: null, sessionId: null,
         },

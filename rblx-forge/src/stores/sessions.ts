@@ -174,7 +174,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
     try {
       await c.switchModel(id, model);
       await get().refreshActiveModel();
-      useApp.getState().pushActivity('info', 'modelo', `Sesión ahora usa ${model.providerID}/${model.id}`);
+      useApp.getState().pushActivity('info', 'modelo', `Sesión ahora usa ${model.providerID}/${model.id}${model.variant ? ` (${model.variant})` : ''}`);
     } catch (e) {
       set({ error: String(e) });
     } finally {

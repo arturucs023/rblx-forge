@@ -784,6 +784,18 @@ fn resolve_tool_binary(tool: &str, project_dir: Option<&str>, app: &AppHandle) -
             }
         }
     }
+    // 2b. Carpeta del entorno (ajuste workspace.dir): los juegos suelen vivir
+    // fuera del workspace, donde la subida de niveles nunca llega a tools/.
+    if let Ok(v) = settings_get(app.clone(), "workspace.dir".to_string()) {
+        if let Some(ws) = v.as_str() {
+            if !ws.is_empty() {
+                let cand = std::path::Path::new(ws).join("tools").join("bin").join(tool).join(format!("{}.exe", tool));
+                if cand.is_file() {
+                    return Some(cand.to_string_lossy().to_string());
+                }
+            }
+        }
+    }
     // 3. PATH.
     let probe = if cfg!(windows) { "where" } else { "which" };
     hidden_cmd(probe)
@@ -1159,6 +1171,19 @@ fn tool_run(app: AppHandle, project_dir: String, tool: String, rel: String, writ
     })
 }
 
+/// Crea en disco los `$path` de tipo directorio ausentes del proyecto Rojo.
+/// Solo crea carpetas vacías; nunca borra ni modifica archivos. Repara
+/// proyectos a medias (p. ej. plantilla mínima sin carpetas src/).
+#[tauri::command]
+fn rojo_repair(app: AppHandle, project_dir: String) -> Result<Vec<String>, String> {
+    let root = canonical_root(&project_dir)?;
+    let raw = std::fs::read_to_string(root.join("default.project.json")).map_err(|_| "Sin default.project.json: este proyecto no usa Rojo".to_string())?;
+    let (_, paths) = parse_rojo_project(&raw)?;
+    let (created, skipped) = repair_rojo_paths(&root, &paths)?;
+    emit_log(&app, "info", "rojo", &format!("reparación: {} carpetas creadas, {} omitidas", created.len(), skipped.len()));
+    Ok(created)
+}
+
 #[derive(serde::Serialize, Clone, Debug)]
 struct RojoBuildResult {
     success: bool,
@@ -1493,6 +1518,7 @@ pub fn run() {
             rojo_serve_start,
             rojo_serve_stop,
             rojo_serve_status,
+            rojo_repair,
             rojo_build,
             rojo_tree,
             tool_run,
