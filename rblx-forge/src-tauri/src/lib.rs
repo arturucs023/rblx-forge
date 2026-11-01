@@ -5,7 +5,7 @@
 
 use std::io::{BufRead, BufReader};
 use std::net::TcpStream;
-use std::process::{Child, Command, Stdio};
+use std::process::{Child, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -97,15 +97,29 @@ struct DetectResult {
     tried: Vec<String>,
 }
 
+/// Constructor de procesos hijos sin ventana de consola en Windows
+/// (CREATE_NO_WINDOW). Sin esto, cada `where`, `--version`, `tasklist` o
+/// servidor gestionado hace parpadear una CMD ante el usuario. En el resto
+/// de plataformas es un `Command::new` normal.
+pub(crate) fn hidden_cmd<S: AsRef<std::ffi::OsStr>>(program: S) -> std::process::Command {
+    let mut c = std::process::Command::new(program);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x08000000);
+    }
+    c
+}
 /// Ejecuta `programa args` y devuelve (éxito, stdout recortado).
 /// Los `.cmd`/`.bat` no los ejecuta CreateProcess: se lanzan con
 /// `cmd /d /s /c` (receta verificada). Sin shell para el resto.
+/// Siempre sin ventana (hidden_cmd): nada debe parpadear ante el usuario.
 fn run_logged(program: &str, args: &[&str]) -> Option<(bool, String)> {
     let out = if program.ends_with(".cmd") || program.ends_with(".bat") {
         let inner = format!("\"{}\" {}", program, args.join(" "));
-        Command::new("cmd").args(["/d", "/s", "/c", &inner]).output().ok()?
+        hidden_cmd("cmd").args(["/d", "/s", "/c", &inner]).output().ok()?
     } else {
-        Command::new(program).args(args).output().ok()?
+        hidden_cmd(program).args(args).output().ok()?
     };
     let txt = String::from_utf8_lossy(&out.stdout).trim().chars().take(120).collect::<String>();
     Some((out.status.success(), txt))
@@ -170,7 +184,7 @@ fn candidate_opencode_bins() -> Vec<String> {
     // 1. `where` (varias grafías; best-effort: en algunas consolas falla).
     let probe = if cfg!(windows) { "where" } else { "which" };
     for name in ["opencode", "opencode.cmd", "opencode2", "opencode2.cmd"] {
-        if let Ok(o) = Command::new(probe).arg(name).output() {
+        if let Ok(o) = hidden_cmd(probe).arg(name).output() {
             if o.status.success() {
                 for line in String::from_utf8_lossy(&o.stdout).lines() {
                     let p = line.trim();
@@ -328,11 +342,11 @@ fn start_inner(
     let mut cmd = if bin.ends_with(".cmd") || bin.ends_with(".bat") {
         // Último recurso (sin exe resoluble): shell. Nota: kill() matará al
         // cmd, no al nieto; preferir siempre el exe (probe_binary lo prioriza).
-        let mut c = Command::new("cmd");
+        let mut c = hidden_cmd("cmd");
         c.args(["/d", "/s", "/c", &format!("\"{}\" serve --hostname 127.0.0.1 --port {}", bin, port)]);
         c
     } else {
-        let mut c = Command::new(&bin);
+        let mut c = hidden_cmd(&bin);
         c.args(["serve", "--hostname", "127.0.0.1", "--port", &port.to_string()]);
         c
     };
@@ -703,7 +717,7 @@ fn toolchain_binary(app: &AppHandle, tool: &str) -> Option<BinaryInfo> {
     if let Ok(v) = settings_get(app.clone(), format!("toolchain.{}", tool)) {
         if let Some(p) = v.as_str() {
             if !p.is_empty() {
-                if let Ok(out) = Command::new(p).arg("--version").output() {
+                if let Ok(out) = hidden_cmd(p).arg("--version").output() {
                     if out.status.success() {
                         return Some(BinaryInfo {
                             path: p.to_string(),
@@ -762,7 +776,7 @@ fn resolve_tool_binary(tool: &str, project_dir: Option<&str>, app: &AppHandle) -
     }
     // 3. PATH.
     let probe = if cfg!(windows) { "where" } else { "which" };
-    Command::new(probe)
+    hidden_cmd(probe)
         .arg(if cfg!(windows) && tool == "rojo" { "rojo" } else { tool })
         .output()
         .ok()
@@ -774,14 +788,14 @@ fn resolve_tool_binary(tool: &str, project_dir: Option<&str>, app: &AppHandle) -
 fn run_version(program: &str, args: &[&str]) -> Option<(String, String)> {
     // Devuelve (versión primera línea, ruta resuelta).
     let probe = if cfg!(windows) { "where" } else { "which" };
-    let path = Command::new(probe)
+    let path = hidden_cmd(probe)
         .arg(program)
         .output()
         .ok()
         .filter(|o| o.status.success())
         .and_then(|o| String::from_utf8_lossy(&o.stdout).lines().next().map(|s| s.trim().to_string()))
         .filter(|s| !s.is_empty())?;
-    let out = Command::new(&path).args(args).output().ok()?;
+    let out = hidden_cmd(&path).args(args).output().ok()?;
     if !out.status.success() {
         return None;
     }
@@ -822,7 +836,7 @@ fn studio_status() -> ToolStatus {
         }
     }
     // En marcha: buscar el proceso por nombre (solo lectura).
-    let running = Command::new("tasklist")
+    let running = hidden_cmd("tasklist")
         .args(["/FI", "IMAGENAME eq RobloxStudioBeta.exe", "/FO", "CSV", "/NH"])
         .output()
         .ok()
@@ -861,7 +875,7 @@ fn toolchain_status(app: AppHandle, project_dir: Option<String>) -> Vec<ToolStat
                 for _ in 0..4 {
                     let cand = cur.join("tools").join("bin").join(tool).join(format!("{}.exe", tool));
                     if cand.is_file() {
-                        if let Ok(o) = Command::new(&cand).arg("--version").output() {
+                        if let Ok(o) = hidden_cmd(&cand).arg("--version").output() {
                             if o.status.success() {
                                 let v = String::from_utf8_lossy(&o.stdout).lines().next().unwrap_or("").trim().chars().take(60).collect::<String>();
                                 found = Some((v, cand.to_string_lossy().to_string()));
@@ -877,7 +891,7 @@ fn toolchain_status(app: AppHandle, project_dir: Option<String>) -> Vec<ToolStat
                 if let Ok(v) = settings_get(app.clone(), format!("toolchain.{}", tool)) {
                     if let Some(p) = v.as_str() {
                         if !p.is_empty() {
-                            if let Ok(o) = Command::new(p).arg("--version").output() {
+                            if let Ok(o) = hidden_cmd(p).arg("--version").output() {
                                 if o.status.success() {
                                     let vv = String::from_utf8_lossy(&o.stdout).lines().next().unwrap_or("").trim().chars().take(60).collect::<String>();
                                     found = Some((vv, p.to_string()));
@@ -963,7 +977,7 @@ fn rojo_serve_start(app: AppHandle, state: State<Mutex<RojoServeState>>, project
     let port = chosen.ok_or("Sin puertos libres 34872-34891")?;
     emit_log(&app, "info", "rojo", &format!("Iniciando rojo serve en {} (puerto {})…", root.display(), port));
     let mut child = KillOnDrop(Some(
-        Command::new(&bin)
+        hidden_cmd(&bin)
             .args(["serve", "--port", &port.to_string()])
             .current_dir(&root)
             .stdout(Stdio::piped())
@@ -1085,7 +1099,7 @@ fn project_lint(app: AppHandle, project_dir: String, tool: String) -> Result<Pro
     };
     let mut full_args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
     full_args.push(target.to_string_lossy().to_string());
-    let out = Command::new(&bin)
+    let out = hidden_cmd(&bin)
         .args(&full_args)
         .current_dir(&root)
         .output()
@@ -1125,7 +1139,7 @@ fn tool_run(app: AppHandle, project_dir: String, tool: String, rel: String, writ
     let mut cmd_args = args;
     cmd_args.push(&fp);
     emit_log(&app, "info", &tool, &format!("{} {}", tool, fp));
-    let out = Command::new(&bin).args(&cmd_args).current_dir(&root).output().map_err(|e| e.to_string())?;
+    let out = hidden_cmd(&bin).args(&cmd_args).current_dir(&root).output().map_err(|e| e.to_string())?;
     Ok(ToolRunResult {
         tool,
         success: out.status.success(),
@@ -1157,7 +1171,7 @@ fn rojo_build(app: AppHandle, project_dir: String, output: Option<String>) -> Re
         None => root.join("game.rbxlx").to_string_lossy().to_string(),
     };
     emit_log(&app, "info", "rojo", &format!("rojo build → {}", out_path));
-    let res = Command::new(&bin).args(["build", "-o", &out_path]).current_dir(&root).output().map_err(|e| e.to_string())?;
+    let res = hidden_cmd(&bin).args(["build", "-o", &out_path]).current_dir(&root).output().map_err(|e| e.to_string())?;
     Ok(RojoBuildResult {
         success: res.status.success(),
         exit_code: res.status.code(),

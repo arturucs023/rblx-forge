@@ -297,7 +297,7 @@ pub fn find_tool_binary(name: &str, extra: Option<&str>) -> Option<BinaryInfo> {
     }
     // PATH
     let probe = if cfg!(windows) { "where" } else { "which" };
-    if let Ok(out) = std::process::Command::new(probe).arg(name).output() {
+    if let Ok(out) = crate::hidden_cmd(probe).arg(name).output() {
         if out.status.success() {
             if let Some(first) = String::from_utf8_lossy(&out.stdout).lines().next() {
                 let p = first.trim();
@@ -315,7 +315,7 @@ pub fn find_tool_binary(name: &str, extra: Option<&str>) -> Option<BinaryInfo> {
     }
     // PATH
     let probe = if cfg!(windows) { "where" } else { "which" };
-    if let Ok(out) = std::process::Command::new(probe).arg(name).output() {
+    if let Ok(out) = crate::hidden_cmd(probe).arg(name).output() {
         if out.status.success() {
             if let Some(first) = String::from_utf8_lossy(&out.stdout).lines().next() {
                 let p = first.trim();
@@ -326,7 +326,7 @@ pub fn find_tool_binary(name: &str, extra: Option<&str>) -> Option<BinaryInfo> {
         }
     }
     for c in cands {
-        if let Ok(out) = std::process::Command::new(&c).arg("--version").output() {
+        if let Ok(out) = crate::hidden_cmd(&c).arg("--version").output() {
             if out.status.success() {
                 return Some(BinaryInfo {
                     path: c,
@@ -486,7 +486,7 @@ pub fn create_project_files(
         std::fs::write(&dest, content).map_err(|e| e.to_string())?;
     }
     if init_git {
-        let out = std::process::Command::new("git")
+        let out = crate::hidden_cmd("git")
             .args(["init", "--quiet"])
             .current_dir(&target)
             .output()

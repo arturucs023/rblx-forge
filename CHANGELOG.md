@@ -2,7 +2,14 @@
 
 Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)`.
 
-## 2026-11-01 — Skill Evaluation Engine FASE 9 (verificado)
+## 2026-11-01 — Parpadeo de consolas eliminado (VERIFICADO)
+
+- Causa: cada `Command::new` en Windows abría una CMD visible (detección,
+  `where`/`--version`, `tasklist`, servidores gestionados).
+- Fix: helper `hidden_cmd` con `CREATE_NO_WINDOW` aplicado a los 19 spawns de
+  `lib.rs` + 4 de `projects.rs` (detección, toolchain, lints, `rojo serve`,
+  servidor OpenCode). La terminal PTY ya usaba ConPTY (sin ventana).
+- `cargo test` 25/25, cero warnings; instalador reconstruido.
 
 - Registro centralizado: 148 skills descubiertas (61 instaladas + 87 propias),
   hash SHA-256, estados (activa/nueva/modificada/renombrada/duplicada/eliminada),
