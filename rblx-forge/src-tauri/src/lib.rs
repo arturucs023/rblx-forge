@@ -442,6 +442,171 @@ fn opencode_stop(app: AppHandle, state: State<ForgeState>) -> Result<bool, Strin
     }
 }
 
+/// Compara semver `a < b`. Solo números; sin dependencias.
+fn is_newer(a: &str, b: &str) -> Option<bool> {
+    fn parts(s: &str) -> Option<(u64, u64, u64)> {
+        let v: Vec<u64> = s.split('.').map(|x| x.parse().ok()).collect::<Option<Vec<_>>>()?;
+        if v.len() != 3 {
+            return None;
+        }
+        Some((v[0], v[1], v[2]))
+    }
+    Some(parts(a)? < parts(b)?)
+}
+
+fn semver_in(text: &str) -> Option<String> {
+    let mut cur = String::new();
+    let mut dots = 0;
+    for ch in text.chars() {
+        if ch.is_ascii_digit() {
+            cur.push(ch);
+        } else if ch == '.' && !cur.is_empty() && !cur.ends_with('.') {
+            cur.push(ch);
+            dots += 1;
+        } else if dots >= 2 && cur.chars().filter(|c| *c == '.').count() == 2 {
+            let v: Vec<&str> = cur.split('.').collect();
+            if v.len() == 3 && v.iter().all(|x| !x.is_empty() && x.parse::<u64>().is_ok()) {
+                return Some(cur);
+            }
+            cur.clear();
+            dots = 0;
+        } else {
+            if dots >= 2 {
+                let v: Vec<&str> = cur.split('.').collect();
+                if v.len() == 3 && v.iter().all(|x| !x.is_empty() && x.parse::<u64>().is_ok()) {
+                    return Some(cur);
+                }
+            }
+            cur.clear();
+            dots = 0;
+        }
+    }
+    let v: Vec<&str> = cur.split('.').collect();
+    if dots >= 2 && v.len() == 3 && v.iter().all(|x| !x.is_empty() && x.parse::<u64>().is_ok()) {
+        return Some(cur);
+    }
+    None
+}
+
+/// ¿Instalación vía npm global? Solo esas se pueden auto-actualizar.
+/// (El binario del instalador oficial o rutas raras se actualizan a mano.)
+fn npm_managed_opencode() -> bool {
+    if let (Some((p, _)), _) = find_opencode_binary() {
+        let low = p.to_lowercase().replace('/', "\\");
+        if low.contains("node_modules") {
+            return true;
+        }
+    }
+    // Fallback: la entrada existe en el árbol global de npm.
+    if let Some((_, out)) = run_logged("npm", &["ls", "-g", "@opencode/cli"]) {
+        return out.contains("@opencode/cli@");
+    }
+    false
+}
+
+#[derive(serde::Serialize, Clone, Debug)]
+struct UpdateCheck {
+    current: Option<String>,
+    latest: Option<String>,
+    update_available: bool,
+    npm_managed: bool,
+    note: Option<String>,
+}
+
+/// Consulta la versión instalada y la última publicada (npm view).
+/// Sin red o sin npm: `latest` es null y se dice por qué (sin inventar).
+#[tauri::command]
+fn opencode_update_check() -> UpdateCheck {
+    let npm_managed = npm_managed_opencode();
+    let current_full = find_opencode_binary().0.map(|(_, v)| v);
+    let current = current_full.as_deref().and_then(semver_in);
+    if !npm_managed {
+        return UpdateCheck {
+            current,
+            latest: None,
+            update_available: false,
+            npm_managed: false,
+            note: Some("Instalación no-npm: actualiza OpenCode manualmente (npm i -g @opencode/cli o instalador oficial).".into()),
+        };
+    }
+    let latest = run_logged("npm", &["view", "@opencode/cli", "version"])
+        .and_then(|(ok, out)| if ok { semver_in(&out) } else { None });
+    let update_available = match (&current, &latest) {
+        (Some(c), Some(l)) => is_newer(c, l).unwrap_or(false),
+        _ => false,
+    };
+    let note = if latest.is_none() {
+        Some("No se pudo consultar el registro npm (¿sin red?). Reintenta.".into())
+    } else if !update_available && current.is_some() {
+        Some("Ya estás al día.".into())
+    } else {
+        None
+    };
+    UpdateCheck { current, latest, update_available, npm_managed, note }
+}
+
+#[derive(serde::Serialize, Clone, Debug)]
+struct UpdateResult {
+    version: String,
+    log_tail: String,
+}
+
+/// Actualiza `@opencode/cli` global vía npm. Solo instalaciones npm.
+/// Si el servidor GESTIONADO (el nuestro, nunca el global) está vivo, se
+/// detiene primero para no dejar un hijo de la versión vieja colgado.
+#[tauri::command]
+fn opencode_update(app: AppHandle, state: State<ForgeState>) -> Result<UpdateResult, String> {
+    if !npm_managed_opencode() {
+        return Err("Instalación no-npm: actualiza OpenCode manualmente".to_string());
+    }
+    // Detener solo nuestro servidor gestionado (el global ni se toca).
+    {
+        let mut guard = lock_recover(&state.server);
+        if let Some(mut srv) = guard.take() {
+            emit_log(&app, "info", "opencode", "Deteniendo servidor gestionado antes de actualizar…");
+            let _ = srv.child.kill();
+            let _ = srv.child.wait();
+        }
+    }
+    emit_log(&app, "info", "opencode", "Actualizando @opencode/cli (npm install -g)…");
+    let mut child = hidden_cmd("cmd")
+        .args(["/d", "/s", "/c", "npm install -g @opencode/cli@latest --no-fund --no-audit"])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .stdin(Stdio::null())
+        .spawn()
+        .map_err(|e| format!("No se pudo lanzar npm: {}", e))?;
+    // Timeout generoso (15 min): npm puede tardar; si cuelga, se mata.
+    let deadline = Instant::now() + Duration::from_secs(15 * 60);
+    loop {
+        if let Ok(Some(_)) = child.try_wait() {
+            break;
+        }
+        if Instant::now() > deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err("Timeout (15 min) actualizando: npm colgado o red caída".to_string());
+        }
+        std::thread::sleep(Duration::from_secs(2));
+    }
+    let out = child.wait_with_output().map_err(|e| e.to_string())?;
+    let tail = format!("{}\n{}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr))
+        .lines()
+        .rev()
+        .take(25)
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect::<Vec<_>>()
+        .join("\n");
+    if !out.status.success() {
+        return Err(format!("npm falló (exit {:?}):\n{}", out.status.code(), tail.chars().take(800).collect::<String>()));
+    }
+    let (path, version) = find_opencode_binary().0.ok_or("Actualizado, pero el binario ya no se detecta")?;
+    emit_log(&app, "info", "opencode", &format!("OpenCode actualizado: {} ({})", version, path));
+    Ok(UpdateResult { version, log_tail: tail.chars().take(2000).collect() })
+}
+
 #[tauri::command]
 fn opencode_status(state: State<ForgeState>) -> ServerStatus {
     match lock_recover(&state.server).as_ref() {
@@ -1337,6 +1502,17 @@ mod toolchain_tests {
     }
 
     #[test]
+    fn update_semver_helpers() {
+        assert_eq!(super::semver_in("opencode v2.2.4"), Some("2.2.4".into()));
+        assert_eq!(super::semver_in("2.10.0"), Some("2.10.0".into()));
+        assert_eq!(super::semver_in("sin versión"), None);
+        assert_eq!(super::is_newer("2.2.4", "2.3.0"), Some(true));
+        assert_eq!(super::is_newer("2.10.0", "2.9.9"), Some(false));
+        assert_eq!(super::is_newer("2.2.4", "2.2.4"), Some(false));
+        assert_eq!(super::is_newer("x", "2.0.0"), None);
+    }
+
+    #[test]
     fn settings_keys_con_punto_y_sin_escape() {
         // Las claves con punto que usa la app deben aceptarse (bug real:
         // antes se rechazaban y nada con `.` se guardaba).
@@ -1489,6 +1665,8 @@ pub fn run() {
             opencode_start,
             opencode_stop,
             opencode_status,
+            opencode_update_check,
+            opencode_update,
             settings_get,
             settings_set,
             project_create,

@@ -2,7 +2,15 @@
 
 Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)`.
 
-## 2026-11-01 — Rutas configurables con selector + fix de guardado (VERIFICADO)
+## 2026-11-01 — Variantes de modelo + actualización de OpenCode (VERIFICADO)
+
+- Variantes por sesión: el selector muestra las variantes reales del modelo
+  (`low/medium/high/max/…`, 41 de 58 modelos las tienen, verificado contra
+  servidor) con insignia de la variante activa; sin variantes ⇒ sin selector.
+- Actualizar OpenCode desde Configuración: comprueba instalada vs publicada
+  (`npm view`), actualiza `@opencode/cli` global solo en instalaciones npm
+  (con confirmación, deteniendo antes solo el servidor gestionado, timeout de
+  15 min y cola de logs). Instalaciones no-npm ⇒ mensaje manual honesto.
 
 - Bug real: el validador de claves rechazaba el punto → `workspace.dir`,
   `projects.parent`, `toolchain.*` y `testing.history` NUNCA se guardaban.

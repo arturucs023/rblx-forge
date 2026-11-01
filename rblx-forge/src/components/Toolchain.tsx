@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { confirm } from '@tauri-apps/plugin-dialog';
 import { useProjects } from '../stores/projects';
+import { useApp } from '../stores/app';
 
 interface ToolStatus {
   tool: string;
@@ -76,8 +78,91 @@ export function Toolchain() {
       </table>
       <p className="mt-2 text-[11px] text-forge-muted">
         Detección real (ejecuta `--version`, inspecciona el disco y el registro de procesos). Forge no instala ni
-        modifica herramientas globales; el binario de Rojo vendoreado se usa si el proyecto vive bajo el workspace.
+        modifica herramientas globales, salvo la actualización explícita de OpenCode de abajo. El binario vendoreado
+        se usa si el proyecto vive bajo el workspace o si `workspace.dir` apunta al entorno con `tools/`.
       </p>
+      <OpencodeUpdate current={tools.find((t) => t.tool === 'opencode')?.version} onChanged={check} />
+    </div>
+  );
+}
+
+interface UpdateCheck {
+  current?: string | null;
+  latest?: string | null;
+  update_available: boolean;
+  npm_managed: boolean;
+  note?: string | null;
+}
+
+function OpencodeUpdate({ current, onChanged }: { current?: string; onChanged: () => void }) {
+  const [chk, setChk] = useState<UpdateCheck | null>(null);
+  const [busy, setBusy] = useState<'check' | 'update' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+
+  const check = async () => {
+    setBusy('check');
+    setError(null);
+    setDone(null);
+    try {
+      setChk(await invoke<UpdateCheck>('opencode_update_check'));
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const update = async () => {
+    setError(null);
+    setDone(null);
+    let ok = false;
+    try {
+      ok = await confirm('Actualizar OpenCode global (@opencode/cli@latest)? Se detendrá el servidor gestionado de Forge (el servicio global no se toca).', {
+        title: 'Actualizar OpenCode',
+        kind: 'warning',
+      });
+    } catch {
+      ok = window.confirm('Actualizar OpenCode global? Se detendrá el servidor gestionado de Forge.');
+    }
+    if (!ok) return;
+    setBusy('update');
+    try {
+      const r = await invoke<{ version: string; log_tail: string }>('opencode_update');
+      setDone(`Actualizado a ${r.version}. Vuelve a «Conectar» para usar el nuevo servidor.`);
+      setChk(null);
+      onChanged();
+      useApp.getState().detectOpencode().catch(() => {});
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="card mt-2 p-2.5">
+      <p className="mb-1 text-[12px] font-bold">Actualización de OpenCode <span className="mono font-normal text-forge-faint">instalado: {current ?? '—'}</span></p>
+      {error && <p className="mb-1 text-[12px] text-forge-err">{String(error).slice(0, 600)}</p>}
+      {done && <p className="mb-1 text-[12px] text-forge-ok">{done}</p>}
+      {chk && (
+        <p className="mb-1 text-[12px] text-forge-muted">
+          Instalada: <span className="mono">{chk.current ?? '—'}</span> · Última: <span className="mono">{chk.latest ?? 'desconocida'}</span>
+          {chk.note ? ` · ${chk.note}` : ''}
+          {!chk.npm_managed && ' (No gestionable por Forge: instalación no-npm.)'}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <button onClick={check} disabled={busy !== null} className="btn btn-ghost">
+          {busy === 'check' ? 'Consultando…' : 'Comprobar actualización'}
+        </button>
+        {chk?.update_available && (
+          <button onClick={update} disabled={busy !== null} className="btn btn-primary">
+            {busy === 'update' ? 'Actualizando… (puede tardar minutos)' : `Actualizar a ${chk.latest}`}
+          </button>
+        )}
+      </div>
+      <p className="mt-1 text-[10px] text-forge-faint">Solo para instalaciones npm globales. Nunca toca tu servicio global en ejecución; si el servidor gestionado está activo, se detiene antes.</p>
     </div>
   );
 }
