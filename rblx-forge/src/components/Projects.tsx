@@ -79,10 +79,10 @@ export function Projects({ onOpenProject }: { onOpenProject: (dir: string) => vo
 
 function ProjectDetail({ onOpenProject }: { onOpenProject: (dir: string) => void }) {
   const { active, rojo, checkRojo } = useProjects();
-  if (!active) return <p className="text-forge-muted">Selecciona o crea un proyecto para ver su detalle.</p>;
-  const isRojo = !!rojo?.has_file;
   const [repairMsg, setRepairMsg] = useState<string | null>(null);
   const [repairing, setRepairing] = useState(false);
+  if (!active) return <p className="text-forge-muted">Selecciona o crea un proyecto para ver su detalle.</p>;
+  const isRojo = !!rojo?.has_file;
   const repair = async () => {
     setRepairMsg(null);
     setRepairing(true);
