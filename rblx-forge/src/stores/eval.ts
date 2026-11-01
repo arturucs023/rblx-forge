@@ -8,6 +8,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getWorkspaceDir } from '../components/panels';
 import { useSessions } from './sessions';
+import { isAssistantMessage } from '../lib/opencode';
 import type {
   Benchmark, Dashboard, EvalSkill, Finding, RunDetail, RunSummary, SkillDetail, GroupPair,
 } from '../lib/eval/types';
@@ -262,8 +263,8 @@ export const useEval = create<EvalState>((set, get) => {
         // Mensajes: ¿hay respuesta del asistente con contenido?
         try {
           const msgs = await client.listMessages(sessionId, 50);
-          const assistants = (msgs as Array<{ role?: string } & Record<string, unknown>>)
-            .filter((m) => m.role === 'assistant' || m.role === 'assistant-message');
+          const assistants = (msgs as Array<Record<string, unknown>>)
+            .filter((m) => isAssistantMessage(m));
           const texts = assistants.map((m) => extractText(m as never)).filter((t) => t.trim());
           if (texts.length > 0) {
             transcript = texts.join('\n\n').slice(0, 60000);
@@ -287,7 +288,7 @@ export const useEval = create<EvalState>((set, get) => {
       try {
         const msgs = await client.listMessages(sessionId, 100);
         const texts = (msgs as Array<Record<string, unknown>>)
-          .filter((m) => m['role'] === 'assistant' || m['role'] === 'assistant-message')
+          .filter((m) => isAssistantMessage(m))
           .map((m) => extractText(m as never)).filter((t) => t.trim());
         if (texts.length) transcript = texts.join('\n\n').slice(0, 120000);
       } catch { /* transcript parcial */ }
@@ -360,7 +361,7 @@ export const useEval = create<EvalState>((set, get) => {
             if (get().cancelReq[runId]) break;
             const jm = await client.listMessages(judge.id, 20).catch(() => []);
             const jt = (jm as Array<Record<string, unknown>>)
-              .filter((m) => m['role'] === 'assistant' || m['role'] === 'assistant-message')
+              .filter((m) => isAssistantMessage(m))
               .map((m) => extractText(m as never)).join('\n');
             if (jt.trim()) { jtext = jt; break; }
             await new Promise((r) => setTimeout(r, 5000));

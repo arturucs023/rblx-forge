@@ -7,6 +7,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getWorkspaceDir } from '../components/panels';
 import { useSessions } from './sessions';
+import { isAssistantMessage } from '../lib/opencode';
 import { luaBalanceHeuristic } from './eval';
 import type {
   AgentProfile, Approval, Artifact, AgentMessage, AuditEntry, OrchDashboard,
@@ -367,7 +368,7 @@ export const useOrch = create<OrchState>((set, get) => {
         try {
           const msgs = await client.listMessages(sessionId, 60);
           const texts = (msgs as Array<Record<string, unknown>>)
-            .filter((m) => m['role'] === 'assistant' || m['role'] === 'assistant-message')
+            .filter((m) => isAssistantMessage(m))
             .map((m) => extractText(m as never)).filter((t) => t.trim());
           if (texts.length > 0) {
             transcript = texts.join('\n\n').slice(0, 60000);
@@ -561,7 +562,7 @@ export const useOrch = create<OrchState>((set, get) => {
         try {
           const msgs = await client.listMessages(sess.id, 20);
           const t = (msgs as Array<Record<string, unknown>>)
-            .filter((m) => m['role'] === 'assistant')
+            .filter((m) => isAssistantMessage(m))
             .map((m) => extractText(m as never)).join('\n');
           if (t.trim()) { answer = t; break; }
         } catch { /* reintentar */ }
@@ -801,7 +802,7 @@ export const useOrch = create<OrchState>((set, get) => {
         let polls = 0;
         while (Date.now() < deadline) {
           const msgs = await client.listMessages(sess.id, 20).catch(() => []);
-          const t = (msgs as Array<Record<string, unknown>>).filter((m) => m['role'] === 'assistant').map((m) => extractText(m as never)).join('\n');
+          const t = (msgs as Array<Record<string, unknown>>).filter((m) => isAssistantMessage(m)).map((m) => extractText(m as never)).join('\n');
           if (t.trim()) { answer = t; break; }
           polls++;
           // Extracto en vivo: lo último que va escribiendo (sin re-render si no cambia).

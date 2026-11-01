@@ -117,6 +117,19 @@ export interface OpenCodeEvent {
   [k: string]: unknown;
 }
 
+/** Los mensajes del servidor usan `type` ('user' | 'assistant' | 'system' |
+ * 'idle', verificado en volcados reales); `role` existe en algunos clientes.
+ * Se aceptan ambas formas: filtrar solo por `role` pierde respuestas. */
+export function isAssistantMessage(m: unknown): boolean {
+  const r = m as { role?: unknown; type?: unknown } | null | undefined;
+  return r?.role === 'assistant' || r?.role === 'assistant-message' || r?.type === 'assistant' || r?.type === 'assistant-message';
+}
+
+export function isUserMessage(m: unknown): boolean {
+  const r = m as { role?: unknown; type?: unknown } | null | undefined;
+  return r?.role === 'user' || r?.type === 'user';
+}
+
 export interface ClientOptions {
   base: string;
   password?: string;

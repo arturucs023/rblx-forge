@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSessions } from '../stores/sessions';
 import type { FormDetail, MessagePart, SessionMessage } from '../lib/opencode';
+import { isUserMessage } from '../lib/opencode';
 import { sessionTotals, formatTokens, formatCost, EMPTY_MSGS } from '../lib/session-stats';
 import { defaultValues, isSingleChoice, validateAnswer, type FieldValues } from '../lib/forms';
 import { openUrl } from '@tauri-apps/plugin-opener';
@@ -469,7 +470,7 @@ function FormCard({ form }: { form: FormDetail }) {
 function ChatMessage({ m }: { m: SessionMessage }) {
   const modelLabel = useSessions((s) => (s.activeModel ? `${s.activeModel.providerID}/${s.activeModel.id}${s.activeModel.variant ? ` · ${s.activeModel.variant}` : ''}` : null));
   if (!m || typeof m !== 'object') return null;
-  if (m.type === 'user' || m.role === 'user') {
+  if (isUserMessage(m)) {
     if (typeof m.text !== 'string' || !m.text.trim()) return null;
     return (
       <div className="anim-enter mb-2.5 ml-auto max-w-3xl">
