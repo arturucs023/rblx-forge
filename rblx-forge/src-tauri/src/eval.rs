@@ -2103,6 +2103,20 @@ mod eval_tests {
     #[test]
     fn groups_cover_expected() {
         assert_eq!(GROUPS.len(), 15);
+        let ids: Vec<&str> = GROUPS.iter().map(|(id, _)| *id).collect();
+        // Todo grupo devuelto por el clasificador existe en la tabla oficial.
+        for (probe, _) in [
+            ("roblox-main-menu", "menú principal"),
+            ("roblox-networking", "RemoteEvents validación anti-spoof"),
+            ("roblox-datastores", "session locking DataStore"),
+            ("roblox-dynamic-music", "capas música"),
+            ("roblox-rigging", "Motor6D R15"),
+            ("x", "crafteo con recetas y estaciones"),
+            ("y", "selene y stylua en CI"),
+        ] {
+            let g = classify_group(probe.0, probe.1);
+            assert!(ids.contains(&g.as_str()), "grupo fuera de tabla: {}", g);
+        }
         assert_eq!(classify_group("roblox-main-menu", "menú principal"), "ui-ux");
         assert_eq!(classify_group("roblox-networking", "RemoteEvents validación anti-spoof"), "security");
         assert_eq!(classify_group("roblox-datastores", "session locking DataStore"), "programming-architecture");
