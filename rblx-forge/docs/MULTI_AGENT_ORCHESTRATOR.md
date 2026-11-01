@@ -118,3 +118,8 @@ como «no disponible». Sin presupuestos inventados.
 - `background` nativo no utilizado (decisión documentada arriba).
 - Sin ejecutor TestEZ en Studio: la QA genera specs y valida estático.
 - Studio game-modify siempre exige aprobación humana explícita.
+- **Aplicar a Roblox** (`orch_apply_to_project`): solo runs completadas con
+  tmpdir conservado (uno compartido por run desde esta versión; ya no se borra
+  al completar). Copia con garantías: sin path traversal, `default.project.json`
+  nunca se pisa (solo se crea si el juego no tiene), conflictos sin `force` no
+  tocan nada, topes anti-abuso. Todo auditado.

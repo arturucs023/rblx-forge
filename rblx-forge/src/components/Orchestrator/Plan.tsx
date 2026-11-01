@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useOrch } from '../../stores/orch';
 import { AgentGlyph, Empty, StateBadge } from './common';
 import { ModelPicker, type ModelValue } from '../ModelPicker';
-import type { OrchTask } from '../../lib/orch/types';
+import type { ApplyResult, OrchTask } from '../../lib/orch/types';
 
 function levels(tasks: OrchTask[]): OrchTask[][] {
   // Niveles por profundidad de dependencias (visual, no ejecuta nada).
@@ -94,6 +94,7 @@ export function Plan() {
         {issues.length === 0 && <p className="text-[12px] text-forge-muted">Pulsa «Validar». Sin errores no hay aprobación.</p>}
         {errors.map((x, i) => <p key={i} className="text-[12px] text-forge-err">[{x.code}] {x.message}</p>)}
         {warnings.map((x, i) => <p key={i} className="text-[12px] text-forge-warn">[{x.code}] {x.message}</p>)}
+        <ApplySection runId={runDetail.id} />
       </div>
       <div className="card anim-enter p-3">
         <p className="section-label mb-2">Grafo de dependencias ({tasks.length} tareas)</p>
@@ -115,6 +116,83 @@ export function Plan() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Aplicar TODO lo generado al juego de una vez (solo runs completadas con temporales). */
+function ApplySection({ runId }: { runId: string }) {
+  const runDetail = useOrch((s) => s.runDetail);
+  const artifacts = useOrch((s) => s.artifacts);
+  const applyToProject = useOrch((s) => s.applyToProject);
+  const busy = useOrch((s) => s.busy);
+  const [target, setTarget] = useState('');
+  const [force, setForce] = useState(false);
+  const [result, setResult] = useState<ApplyResult | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    if (runDetail && runId === runDetail.id && !started) {
+      setTarget(runDetail.project_dir || '');
+    }
+  }, [runDetail, runId, started]);
+
+  if (!runDetail || runDetail.id !== runId) return null;
+  if (runDetail.status !== 'completada') return null;
+
+  const hasTmp = !!runDetail.tmp_dir;
+  if (!hasTmp) {
+    return (
+      <div className="mt-2 rounded border border-forge-border-soft p-2">
+        <p className="section-label mb-1">Aplicar a Roblox</p>
+        <p className="text-[12px] text-forge-muted">Esta ejecución trabajó directamente sobre el proyecto: no hay nada que copiar (sincroniza con Rojo).</p>
+      </div>
+    );
+  }
+
+  const apply = async () => {
+    setErr(null);
+    setResult(null);
+    setStarted(true);
+    try {
+      const r = await applyToProject(runId, target.trim() || null, force);
+      setResult(r);
+    } catch (e) {
+      setErr(String(e));
+    }
+  };
+
+  return (
+    <div className="mt-2 rounded border border-forge-accent-dim bg-forge-accent-soft/40 p-2.5">
+      <p className="mb-1 text-[13px] font-bold">Aplicar todo a Roblox</p>
+      <p className="mb-2 text-[12px] text-forge-muted">
+        Copia de una vez los {artifacts.length} archivos generados ({runDetail.tmp_dir}) al juego.
+        El mapa <span className="mono">default.project.json</span> nunca se pisa.
+      </p>
+      <label className="mb-1 block text-[12px]">Carpeta del juego
+        <input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="C:\ruta\al\juego" className="input mono mt-0.5 w-full !text-[11px]" />
+      </label>
+      <label className="mb-2 flex items-center gap-2 text-[12px] text-forge-muted">
+        <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />
+        Sobrescribir archivos existentes con contenido distinto (sin esto se listan como conflictos)
+      </label>
+      <button onClick={apply} disabled={busy || !target.trim()} className="btn btn-primary disabled:opacity-50">
+        {busy ? 'Aplicando…' : 'Aplicar todo a Roblox'}
+      </button>
+      {err && <p className="mt-1 text-[12px] text-forge-err">{String(err).slice(0, 400)}</p>}
+      {result && (
+        <div className="mono mt-2 max-h-48 overflow-auto rounded bg-forge-bg p-2 text-[11px]">
+          <p className="text-forge-ok">✓ {result.copied.length} copiados → {result.target}</p>
+          {result.conflicts.length > 0 && (
+            <><p className="mt-1 text-forge-warn">Conflictos ({result.conflicts.length}) — no tocados:</p>
+            {result.conflicts.map((f) => <div key={f}>· {f}</div>)}</>
+          )}
+          {result.skipped_identical.length > 0 && <p className="mt-1 text-forge-muted">Idénticos ({result.skipped_identical.length}) omitidos.</p>}
+          {result.skipped_seed.length > 0 && <p className="text-forge-muted">Mapa protegido ({result.skipped_seed.length}).</p>}
+          {result.copied.slice(0, 30).map((f) => <div key={f} className="text-forge-muted">+ {f}</div>)}
+        </div>
+      )}
     </div>
   );
 }

@@ -1738,6 +1738,8 @@ pub fn run() {
             orch::orch_run_pause,
             orch::orch_run_resume,
             orch::orch_run_set_config,
+            orch::orch_run_set_tmpdir,
+            orch::orch_apply_to_project,
             orch::orch_run_cancel,
             orch::orch_run_delete,
             orch::orch_run_complete,

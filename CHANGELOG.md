@@ -2,7 +2,13 @@
 
 Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)`.
 
-## 2026-11-01 — Multi-Agent Orchestrator FASE 10 (implementado + testeado, E2E parcial)
+## 2026-11-01 — Aplicar a Roblox + feedback de revisión (VERIFICADO)
+
+- Botón «Aplicar todo a Roblox»: copia de una vez lo generado (tmpdir por run,
+  conservado) al juego, con `default.project.json` protegido, conflictos sin
+  `force` y todo auditado. `cargo test` 39/39, vitest 35/35.
+
+## 2026-11-01 — Multi-Agent Orchestrator FASE 10 (implementado + testeado, E2E completo)
 
 - Backend `orch.rs` (45 comandos, 10 tablas en eval.db): 10 perfiles integrados
   (2–5 skills reales cada uno), DAG validado, estados estrictos 8+7, mensajes
@@ -14,10 +20,11 @@ Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)
   `npm run build` OK, vitest 27/27.
 - Integración OpenCode verificada: 7 agentes nativos listados, fork/switch
   probados a nivel de contrato, `skills[]` con fallback conocido.
-- E2E `scripts/orch-acceptance.cjs` PARCIAL: 10 perfiles + 36 skill IDs
-  verificados en disco, servidor propio, arquitecto respondió 12k chars;
-  después ningún modelo gratuito respondió (cuota agotada ese día; rerun
-  pendiente cuando haya cuota).
+- E2E `scripts/orch-acceptance.cjs`: **TODO OK** (actualizado tras recuperar
+  cuota): 10 perfiles + 36 skill IDs en disco, servidor propio, arquitecto 12k
+  chars, dev generó 6 .luau en tmpdir, selene vendoreado detectó un parse_error
+  real y QA devolvió REJECT con fundamento. Lección: el prompt debe llevar la
+  ruta absoluta del ámbito (el runner de la app ya la incluía).
 
 - Variantes por sesión: el selector muestra las variantes reales del modelo
   (`low/medium/high/max/…`, 41 de 58 modelos las tienen, verificado contra

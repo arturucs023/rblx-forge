@@ -11,7 +11,7 @@ import { isAssistantMessage } from '../lib/opencode';
 import { luaBalanceHeuristic } from './eval';
 import type {
   AgentProfile, Approval, Artifact, AgentMessage, AuditEntry, OrchDashboard,
-  OrchExecution, OrchRun, OrchTask, PlanIssue, RunDetail, SkillSuggestion, TaskInput,
+  OrchExecution, OrchRun, OrchTask, PlanIssue, RunDetail, SkillSuggestion, TaskInput, ApplyResult,
 } from '../lib/orch/types';
 
 interface OrchState {
@@ -58,6 +58,7 @@ interface OrchState {
   postMessage: (runId: string, kind: string, from: string, to: string, content: string, taskId?: string) => Promise<void>;
   decideApproval: (id: string, approve: boolean) => Promise<void>;
   exportReport: (runId: string, format: string) => Promise<{ filename: string; content: string }>;
+  applyToProject: (runId: string, targetDir: string | null, force: boolean) => Promise<ApplyResult>;
   saveProfile: (p: Record<string, unknown>) => Promise<void>;
   deleteProfile: (id: string) => Promise<void>;
   setRunConfig: (id: string, config: Record<string, unknown>) => Promise<void>;
@@ -175,9 +176,13 @@ export const useOrch = create<OrchState>((set, get) => {
     return any ? JSON.stringify({ input: inp, output: out }) : null;
   }
 
-  async function scopeDirFor(detail: RunDetail): Promise<string> {
+  async function scopeDirFor(detail: RunDetail, runId: string): Promise<string> {
     if (detail.config.scope === 'tmp' || !detail.project_dir) {
-      return invoke<string>('eval_create_tmpdir', { label: `orch-${detail.id.slice(-8)}` });
+      // Un tmpdir compartido por run (se conserva para poder aplicarlo al final).
+      if (detail.tmp_dir) return detail.tmp_dir;
+      const tmp = await invoke<string>('eval_create_tmpdir', { label: `orch-${runId.slice(-8)}` });
+      await invoke('orch_run_set_tmpdir', { id: runId, tmpDir: tmp }).catch(() => {});
+      return tmp;
     }
     return detail.project_dir;
   }
@@ -264,7 +269,7 @@ export const useOrch = create<OrchState>((set, get) => {
       }
 
       await invoke('orch_message_post', { runId, taskId, kind: 'TASK_ASSIGNED', fromAgent: 'coordinator', toAgent: profile.id, content: `${task.name}: ${task.objective}`, files: task.files }).catch(() => {});
-      const scopeDir = await scopeDirFor(detail);
+      const scopeDir = await scopeDirFor(detail, runId);
       if (detail.config.scope === 'tmp' || !detail.project_dir) tmpScope = scopeDir;
 
       await invoke('orch_task_set_state', { id: taskId, state: 'RUNNING' }).catch(() => {});
@@ -488,13 +493,8 @@ export const useOrch = create<OrchState>((set, get) => {
         delete cq[taskId];
         return { activeExecs: next, cancelReq: cq };
       });
-      if (tmpScope && detail?.config.scope === 'tmp') {
-        // Se conserva el tmpdir si la tarea falló (inspección); si no, se limpia.
-        const t = get().tasks.find((x) => x.id === taskId);
-        if (t?.state === 'COMPLETED') {
-          await invoke('eval_cleanup_tmpdir', { tmp: tmpScope }).catch(() => {});
-        }
-      }
+      // Los tmpdirs del orquestador se conservan (son la fuente del "Aplicar a Roblox").
+      // Solo se limpian al aplicar o manualmente; nunca se borra trabajo del usuario.
       await refreshRun(runId).catch(() => {});
       await refreshDashboard().catch(() => {});
       void pump(runId);
@@ -905,6 +905,13 @@ export const useOrch = create<OrchState>((set, get) => {
 
     exportReport: async (runId, format) =>
       invoke<{ filename: string; content: string }>('orch_export', { runId, format }),
+
+    applyToProject: async (runId, targetDir, force) => {
+      const res = await invoke<ApplyResult>('orch_apply_to_project', { runId, targetDir, force });
+      await refreshRun(runId).catch(() => {});
+      await refreshDashboard().catch(() => {});
+      return res;
+    },
 
     saveProfile: async (p) => {
       await invoke('orch_save_profile', { profile: p });

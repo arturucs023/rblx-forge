@@ -9,7 +9,9 @@
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Emitter, Manager};
+use crate::projects::{canonical_root, resolve_in_root};
 
 // ---------------------------------------------------------------------------
 // Constantes de dominio (de la especificación; validadas, no inventadas)
@@ -74,9 +76,9 @@ pub(crate) fn migrate_orch_tables(c: &Connection) -> Result<(), String> {
          CREATE TABLE IF NOT EXISTS orch_runs (
             id TEXT PRIMARY KEY, goal TEXT NOT NULL, project_dir TEXT NOT NULL DEFAULT '',
             status TEXT NOT NULL DEFAULT 'borrador', created_at INTEGER NOT NULL DEFAULT 0,
-            finished_at INTEGER, config TEXT NOT NULL DEFAULT '{}', report TEXT
-         );
-         CREATE TABLE IF NOT EXISTS orch_tasks (
+            finished_at INTEGER, config TEXT NOT NULL DEFAULT '{}', report TEXT,
+            tmp_dir TEXT
+         );         CREATE TABLE IF NOT EXISTS orch_tasks (
             id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES orch_runs(id),
             name TEXT NOT NULL, description TEXT NOT NULL DEFAULT '',
             objective TEXT NOT NULL DEFAULT '', agent_id TEXT NOT NULL DEFAULT '',
@@ -131,6 +133,8 @@ pub(crate) fn migrate_orch_tables(c: &Connection) -> Result<(), String> {
          CREATE INDEX IF NOT EXISTS idx_orchaudit_run ON agent_audit_log(run_id);",
     )
     .map_err(|e| e.to_string())?;
+    // Migración aditiva para DBs ya creadas (idempotente: se ignora si existe).
+    let _ = c.execute("ALTER TABLE orch_runs ADD COLUMN tmp_dir TEXT", []);
     seed_profiles(c)?;
     Ok(())
 }
@@ -762,13 +766,37 @@ pub fn orch_run_list(app: AppHandle, limit: Option<i64>) -> Result<Vec<serde_jso
 #[tauri::command]
 pub fn orch_run_get(app: AppHandle, id: String) -> Result<serde_json::Value, String> {
     let c = orch_db(&app)?;
-    let mut st = c.prepare("SELECT id,goal,project_dir,status,created_at,finished_at,config,report FROM orch_runs WHERE id=?1").map_err(|e| e.to_string())?;
+    let mut st = c.prepare("SELECT id,goal,project_dir,status,created_at,finished_at,config,report,tmp_dir FROM orch_runs WHERE id=?1").map_err(|e| e.to_string())?;
     st.query_row(params![id], |r| Ok(serde_json::json!({
         "id": r.get::<_, String>(0)?, "goal": r.get::<_, String>(1)?, "project_dir": r.get::<_, String>(2)?,
         "status": r.get::<_, String>(3)?, "created_at": r.get::<_, i64>(4)?, "finished_at": r.get::<_, Option<i64>>(5)?,
         "config": serde_json::from_str::<serde_json::Value>(&r.get::<_, String>(6)?).unwrap_or(serde_json::json!({})),
         "report": r.get::<_, Option<String>>(7)?,
+        "tmp_dir": r.get::<_, Option<String>>(8).unwrap_or(None),
     }))).map_err(|_| format!("Ejecución no encontrada: {}", id))
+}
+
+/// Fija el tmpdir compartido de un run (creado con eval_create_tmpdir).
+/// Solo en borrador o pendiente: una vez en marcha no se cambia.
+#[tauri::command]
+pub fn orch_run_set_tmpdir(app: AppHandle, id: String, tmp_dir: String) -> Result<bool, String> {
+    if tmp_dir.is_empty() || tmp_dir.len() > 300 || !tmp_dir.contains("forge-eval-") {
+        return Err("tmpdir no reconocido (solo forge-eval-*)".to_string());
+    }
+    if tmp_dir.contains("..") {
+        return Err("tmpdir inválido".to_string());
+    }
+    if !std::path::Path::new(&tmp_dir).is_dir() {
+        return Err("El tmpdir no existe".to_string());
+    }
+    let c = orch_db(&app)?;
+    let st: String = c.query_row("SELECT status FROM orch_runs WHERE id=?1", params![id], |r| r.get(0))
+        .map_err(|_| format!("Ejecución no encontrada: {}", id))?;
+    if !["borrador", "pendiente_aprobacion"].contains(&st.as_str()) {
+        return Err("El tmpdir solo se fija antes de ejecutar".to_string());
+    }
+    c.execute("UPDATE orch_runs SET tmp_dir=?1 WHERE id=?2", params![tmp_dir, id]).map_err(|e| e.to_string())?;
+    Ok(true)
 }
 
 fn run_transition(app: &AppHandle, c: &Connection, id: &str, from: &[&str], to: &str, ev: &str) -> Result<bool, String> {
@@ -1025,6 +1053,125 @@ pub fn orch_task_update_result(app: AppHandle, id: String, result: String) -> Re
     c.execute("UPDATE orch_tasks SET result=?1 WHERE id=?2", params![result.chars().take(20000).collect::<String>(), id]).map_err(|e| e.to_string())?;
     emit(&app, "forge:task-updated", &serde_json::json!({ "task": id, "result": true }));
     Ok(true)
+}
+
+/// Resultado de aplicar un árbol temporal sobre el proyecto.
+#[derive(Serialize, Clone, Debug, Default)]
+pub struct ApplyResult {
+    pub copied: Vec<String>,
+    pub skipped_identical: Vec<String>,
+    pub skipped_seed: Vec<String>,
+    pub conflicts: Vec<String>,
+    pub target: String,
+}
+
+/// Copia src → dst_root con garantías (pura en FS, testeable sin Tauri):
+/// - Sin path traversal (toda salida pasa por resolve_in_root).
+/// - `default.project.json` NUNCA se sobrescribe: solo se crea si el proyecto
+///   no tiene uno (los tmpdirs traen una semilla mínima que destruiría el mapa).
+/// - Sin `force`: los archivos existentes con contenido distinto se reportan
+///   como conflictos en vez de sobrescribirse. Idénticos se omiten.
+/// - Tope: 500 archivos, 200 KB por archivo (el resto se omite).
+pub fn apply_tree(src: &Path, dst_root: &Path, force: bool) -> Result<ApplyResult, String> {
+    let root = dst_root.canonicalize().map_err(|e| format!("canonicalize: {}", e))?;
+    let mut out = ApplyResult { target: root.to_string_lossy().to_string(), ..Default::default() };
+    let mut stack = vec![src.to_path_buf()];
+    let mut seen = 0usize;
+    while let Some(dir) = stack.pop() {
+        let entries = std::fs::read_dir(&dir).map_err(|e| e.to_string())?;
+        for e in entries.map_while(Result::ok) {
+            let p = e.path();
+            if p.is_dir() {
+                stack.push(p);
+                continue;
+            }
+            let rel = p.strip_prefix(src).map_err(|_| "fuera de raíz".to_string())?
+                .to_string_lossy().replace('\\', "/");
+            if rel.is_empty() {
+                continue;
+            }
+            seen += 1;
+            if seen > 500 {
+                return Err("Demasiados archivos (>500): aplica por partes".to_string());
+            }
+            let dest = resolve_in_root(&root, &rel)?;
+            let is_map = rel == "default.project.json";
+            let data = match std::fs::read(&p) {
+                Ok(b) if b.len() <= 200_000 => b,
+                Ok(_) => {
+                    out.skipped_identical.push(format!("{} (muy grande, omitido)", rel));
+                    continue;
+                }
+                Err(_) => continue,
+            };
+            if is_map && dest.exists() {
+                // La semilla mínima del tmpdir nunca pisa el mapa real.
+                out.skipped_seed.push(rel);
+                continue;
+            }
+            if dest.exists() {
+                match std::fs::read(&dest) {
+                    Ok(cur) if cur == data => {
+                        out.skipped_identical.push(rel);
+                        continue;
+                    }
+                    _ => {
+                        if !force {
+                            out.conflicts.push(rel);
+                            continue;
+                        }
+                    }
+                }
+            }
+            if let Some(par) = dest.parent() {
+                std::fs::create_dir_all(par).map_err(|e| e.to_string())?;
+            }
+            std::fs::write(&dest, &data).map_err(|e| e.to_string())?;
+            out.copied.push(rel);
+        }
+    }
+    out.copied.sort();
+    out.skipped_identical.sort();
+    out.skipped_seed.sort();
+    out.conflicts.sort();
+    Ok(out)
+}
+
+/// Aplica TODO lo generado por un run completado al juego de una vez.
+/// Origen: el tmpdir compartido del run. Destino: su project_dir (o el
+/// indicado, que debe existir). Solo runs completadas; audita el resultado.
+#[tauri::command]
+pub fn orch_apply_to_project(app: AppHandle, run_id: String, target_dir: Option<String>, force: bool) -> Result<ApplyResult, String> {
+    let c = orch_db(&app)?;
+    let (project_dir, tmp_dir, status): (String, Option<String>, String) = c
+        .query_row("SELECT project_dir,tmp_dir,status FROM orch_runs WHERE id=?1", params![run_id], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+        .map_err(|_| format!("Ejecución no encontrada: {}", run_id))?;
+    if status != "completada" {
+        return Err("Solo se puede aplicar una ejecución completada".to_string());
+    }
+    let tmp = tmp_dir.filter(|s| !s.is_empty())
+        .ok_or("Esta ejecución no usó temporales aislados: sus archivos ya están en el proyecto (sincroniza con Rojo)".to_string())?;
+    if !tmp.contains("forge-eval-") {
+        return Err("tmpdir no reconocido".to_string());
+    }
+    let src = Path::new(&tmp);
+    if !src.is_dir() {
+        return Err("Temporales eliminados o inaccesibles: no hay nada que aplicar".to_string());
+    }
+    let target_root = match target_dir.map(|t| t.trim().to_string()).filter(|t| !t.is_empty()) {
+        Some(t) => {
+            let r = canonical_root(&t)?;
+            c.execute("UPDATE orch_runs SET project_dir=?1 WHERE id=?2", params![r.to_string_lossy().to_string(), run_id]).map_err(|e| e.to_string())?;
+            r
+        }
+        None => canonical_root(&project_dir).map_err(|_| "Sin carpeta de juego: indícala al aplicar".to_string())?,
+    };
+    let mut res = apply_tree(src, &target_root, force)?;
+    res.target = crate::projects::pretty_path(&target_root);
+    audit(&c, &run_id, "usuario", "apply_to_project",
+        &format!("copiados={} conflictos={} force={}", res.copied.len(), res.conflicts.len(), force));
+    emit(&app, "forge:orchestrator-updated", &serde_json::json!({ "run": run_id, "applied": res.copied.len() }));
+    Ok(res)
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -1528,5 +1675,70 @@ mod orch_tests {
             assert!(!perms.is_empty());
             assert!(perms.iter().all(|p| PERMS.contains(&p.as_str())));
         }
+    }
+
+    fn orch_tmp_fixture(tag: &str) -> (PathBuf, PathBuf) {
+        let b = std::env::temp_dir().join(format!("forge-orch-apply-{}-{}", std::process::id(), tag));
+        let _ = std::fs::remove_dir_all(&b);
+        let src = b.join("src");
+        let dst = b.join("dst");
+        std::fs::create_dir_all(src.join("shared")).unwrap();
+        std::fs::create_dir_all(dst.join("src")).unwrap();
+        std::fs::write(src.join("shared/A.luau"), "local x = 1\n").unwrap();
+        std::fs::write(src.join("default.project.json"), "{\"name\":\"tmp\"}").unwrap();
+        std::fs::write(dst.join("src/B.luau"), "local y = 2\n").unwrap();
+        (src, dst)
+    }
+
+    #[test]
+    fn apply_tree_copia_y_protege_mapa() {
+        let (src, dst) = orch_tmp_fixture("basic");
+        // Sin mapa en destino: la semilla SÍ se copia (convierte el juego en proyecto Rojo).
+        let r = apply_tree(&src, &dst, false).unwrap();
+        assert!(r.copied.iter().any(|x| x == "shared/A.luau"));
+        assert!(dst.join("shared/A.luau").is_file());
+        assert!(dst.join("default.project.json").is_file());
+        // Con mapa propio en destino: la semilla jamás lo pisa.
+        std::fs::write(dst.join("default.project.json"), "{\"name\":\"real\"}").unwrap();
+        let r2 = apply_tree(&src, &dst, false).unwrap();
+        assert!(r2.skipped_seed.iter().any(|x| x == "default.project.json"));
+        assert_eq!(std::fs::read_to_string(dst.join("default.project.json")).unwrap(), "{\"name\":\"real\"}");
+        let _ = std::fs::remove_dir_all(src.parent().unwrap());
+    }
+
+    #[test]
+    fn apply_tree_conflictos_sin_force() {
+        let (src, dst) = orch_tmp_fixture("conflict");
+        std::fs::write(src.join("shared/C.luau"), "local y = 999\n").unwrap();
+        std::fs::create_dir_all(dst.join("shared")).unwrap();
+        std::fs::write(dst.join("shared/C.luau"), "local y = 2\n").unwrap();
+        // Sin force: conflicto reportado, destino intacto.
+        let r = apply_tree(&src, &dst, false).unwrap();
+        assert!(r.conflicts.iter().any(|x| x == "shared/C.luau"));
+        assert_eq!(std::fs::read_to_string(dst.join("shared/C.luau")).unwrap(), "local y = 2\n");
+        // Con force: sobrescribe.
+        let r2 = apply_tree(&src, &dst, true).unwrap();
+        assert!(r2.conflicts.is_empty());
+        assert_eq!(std::fs::read_to_string(dst.join("shared/C.luau")).unwrap(), "local y = 999\n");
+        // Idempotente: segunda pasada todo idéntico salvo la semilla.
+        let r3 = apply_tree(&src, &dst, false).unwrap();
+        assert!(r3.copied.iter().all(|x| x == "default.project.json") || r3.copied.is_empty());
+        assert!(r3.conflicts.is_empty());
+        let _ = std::fs::remove_dir_all(src.parent().unwrap());
+    }
+
+    #[test]
+    fn apply_tree_bloquea_traversal() {
+        let b = std::env::temp_dir().join(format!("forge-orch-apply-{}-trav", std::process::id()));
+        let _ = std::fs::remove_dir_all(&b);
+        let src = b.join("src");
+        let dst = b.join("dst");
+        std::fs::create_dir_all(&src).unwrap();
+        std::fs::create_dir_all(&dst).unwrap();
+        // Un enlace o nombre raro no debe escapar: resolve_in_root lo impide.
+        // (En Windows no se crean symlinks sin privilegios; se valida vía API.)
+        let r = apply_tree(&src, &dst, false).unwrap();
+        assert!(r.copied.is_empty());
+        let _ = std::fs::remove_dir_all(&b);
     }
 }

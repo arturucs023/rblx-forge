@@ -62,6 +62,15 @@ export interface RunDetail extends OrchRun {
     scope?: 'project' | 'tmp';
   };
   report?: string | null;
+  tmp_dir?: string | null;
+}
+
+export interface ApplyResult {
+  copied: string[];
+  skipped_identical: string[];
+  skipped_seed: string[];
+  conflicts: string[];
+  target: string;
 }
 
 export interface TaskInput {

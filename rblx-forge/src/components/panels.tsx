@@ -113,15 +113,20 @@ export function HomeModule({ onGo }: { onGo: (m: ModuleId) => void }) {
 }
 
 export function RightPanel() {
-  const { activity } = useApp();
-  const { activeId, sessions, permissions } = useSessions();
+  const { activity, clearActivity } = useApp();
+  const { activeId, sessions, permissions, clearFeed } = useSessions();
   const [tab, setTab] = useState<'inspector' | 'actividad'>('actividad');
   const active = sessions.find((s) => s.id === activeId);
+  const clearAll = () => {
+    try { clearFeed(); } catch { /* noop */ }
+    try { clearActivity(); } catch { /* noop */ }
+  };
   return (
     <div className="flex h-full flex-col border-l border-forge-border-soft bg-forge-panel">
       <div className="flex items-center gap-1 border-b border-forge-border-soft px-2.5 py-1.5">
         <button onClick={() => setTab('inspector')} className={`rounded-md px-2 py-0.5 text-[12px] font-semibold transition-colors ${tab === 'inspector' ? 'bg-forge-panel3 text-forge-accent' : 'text-forge-faint hover:text-forge-text'}`}>Inspector</button>
         <button onClick={() => setTab('actividad')} className={`rounded-md px-2 py-0.5 text-[12px] font-semibold transition-colors ${tab === 'actividad' ? 'bg-forge-panel3 text-forge-accent' : 'text-forge-faint hover:text-forge-text'}`}>Actividad</button>
+        <button onClick={clearAll} title="Vaciar actividad e inspector" className="ml-auto rounded-md px-2 py-0.5 text-[11px] text-forge-faint hover:text-forge-err">Limpiar</button>
       </div>
       {tab === 'actividad' ? (
         <div className="min-h-0 flex-1"><Activity /></div>
