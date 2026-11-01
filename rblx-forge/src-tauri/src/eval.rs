@@ -2105,7 +2105,7 @@ mod eval_tests {
         assert_eq!(GROUPS.len(), 15);
         let ids: Vec<&str> = GROUPS.iter().map(|(id, _)| *id).collect();
         // Todo grupo devuelto por el clasificador existe en la tabla oficial.
-        for (probe, _) in [
+        for (id, text) in [
             ("roblox-main-menu", "menú principal"),
             ("roblox-networking", "RemoteEvents validación anti-spoof"),
             ("roblox-datastores", "session locking DataStore"),
@@ -2114,7 +2114,7 @@ mod eval_tests {
             ("x", "crafteo con recetas y estaciones"),
             ("y", "selene y stylua en CI"),
         ] {
-            let g = classify_group(probe.0, probe.1);
+            let g = classify_group(id, text);
             assert!(ids.contains(&g.as_str()), "grupo fuera de tabla: {}", g);
         }
         assert_eq!(classify_group("roblox-main-menu", "menú principal"), "ui-ux");
