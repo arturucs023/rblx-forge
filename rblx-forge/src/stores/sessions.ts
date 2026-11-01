@@ -57,6 +57,7 @@ interface SessionsState {
   selectSession: (id: string) => Promise<void>;
   closeSession: (id: string) => Promise<void>;
   sendPrompt: (text: string) => Promise<void>;
+  interruptActive: () => Promise<void>;
   loadArchived: (dir: string) => Promise<void>;
   viewArchived: (id: string) => void;
   continueArchived: () => Promise<void>;
@@ -82,6 +83,28 @@ function partsText(m: SessionMessage): string {
  * duplicados por id, tope de chats. */
 export function mergeArchived(prev: ArchivedChat[], entry: ArchivedChat, cap = 20): ArchivedChat[] {
   return [entry, ...prev.filter((c) => c.id !== entry.id)].slice(0, Math.max(1, cap));
+}
+
+/** Contexto compacto para continuar un chat guardado en una sesión nueva.
+ * Explícito y con topes: primero + último, nunca el historial entero. */
+export function buildResumeContext(a: ArchivedChat): string {
+  const turns: string[] = [];
+  for (const m of a.messages) {
+    const r = m as unknown as { role?: string; type?: string };
+    const role = r.role ?? r.type;
+    const text = partsText(m).trim();
+    if (!text) continue;
+    turns.push(`${role === 'user' ? 'Usuario' : 'Asistente'}: ${text}`);
+  }
+  const head = turns.slice(0, 4).map((t) => t.slice(0, 800));
+  const tail = turns.slice(-6).map((t) => t.slice(0, 1200));
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  for (const t of [...head, ...tail]) {
+    if (!seen.has(t)) { seen.add(t); ordered.push(t); }
+  }
+  const date = new Date(a.updatedAt).toLocaleString();
+  return `[Continuación del chat guardado "${a.title}" (${date}${a.modelLabel ? `, modelo ${a.modelLabel}` : ''}). Resumen fiel de lo hablado:]\n${ordered.join('\n\n').slice(0, 6000)}\n[Confirma en una línea que tienes el contexto y sigue ayudando.]`;
 }
 
 /** Firma barata para detectar cambios sin comparar objetos enteros. */
@@ -407,8 +430,33 @@ export const useSessions = create<SessionsState>((set, get) => ({
   },
 
   continueArchived: async () => {
-    const a = get().archived.find((c) => c.id === get().archivedId);
-    await get().createSession(a ? `${a.title} (cont.)` : undefined);
+    const c = get().client;
+    const a = get().archived.find((x) => x.id === get().archivedId);
+    if (!c || !a) return;
+    set({ busy: true, error: null });
+    try {
+      // Sesión nueva con el contexto compacto como primer mensaje: el agente
+      // confirma y se puede seguir hablando con él.
+      await get().createSession(`${a.title} (cont.)`);
+      if (get().archivedId) return; // createSession falló: sigue en archivado
+      await get().sendPrompt(buildResumeContext(a));
+    } finally {
+      set({ busy: false });
+    }
+  },
+
+  interruptActive: async () => {
+    const c = get().client;
+    const id = get().activeId;
+    if (!c || !id) return;
+    try {
+      await c.interrupt(id);
+    } catch {
+      /* sin nada en marcha: no es error */
+    } finally {
+      set({ busy: false, streaming: false });
+      await get().selectSession(id).catch(() => {});
+    }
   },
 
   refreshForms: async () => {

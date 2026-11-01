@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { mergeArchived, messagesSig, type ArchivedChat } from './sessions';
+import { buildResumeContext, mergeArchived, messagesSig, type ArchivedChat } from './sessions';
 
 const chat = (id: string, updatedAt: number): ArchivedChat => ({ id, title: id, updatedAt, modelLabel: null, messages: [] });
+
+const msg = (role: string, text: string) => ({ id: `${role}-${text.slice(0, 8)}`, role, type: role === 'user' ? 'user' : 'assistant', text });
 
 describe('mergeArchived', () => {
   it('pone el más reciente primero sin duplicados y respeta el tope', () => {
@@ -21,5 +23,27 @@ describe('messagesSig', () => {
     expect(messagesSig(a)).toBe(messagesSig([{ id: '1', text: 'hola' }]));
     expect(messagesSig(a)).not.toBe(messagesSig([{ id: '1', text: 'hola!' }]));
     expect(messagesSig(a)).not.toBe(messagesSig([...a, { id: '2', text: 'x' }]));
+  });
+});
+
+describe('buildResumeContext', () => {
+  it('incluye título, modelo y turnos con tope', () => {
+    const a: ArchivedChat = {
+      ...chat('abc', 1700000000000),
+      title: 'Mi juego',
+      modelLabel: 'opencode/mimo',
+      messages: [msg('user', 'hola'), msg('assistant', 'buenas'), msg('user', 'x'.repeat(5000))] as never,
+    };
+    const ctx = buildResumeContext(a);
+    expect(ctx).toContain('Mi juego');
+    expect(ctx).toContain('opencode/mimo');
+    expect(ctx).toContain('Usuario: hola');
+    expect(ctx).toContain('Asistente: buenas');
+    expect(ctx).toContain('Confirma en una línea');
+    expect(ctx.length).toBeLessThanOrEqual(7000);
+  });
+  it('chat vacío no rompe', () => {
+    const ctx = buildResumeContext(chat('vacio', 1));
+    expect(ctx).toContain('vacio');
   });
 });

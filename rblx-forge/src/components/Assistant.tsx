@@ -191,9 +191,9 @@ export function Assistant() {
         ))}
         {archivedId && (
           <div className="anim-fade mb-2 flex items-center gap-2 rounded-xl border border-dashed border-forge-border bg-forge-panel px-3 py-2 text-[12px] text-forge-muted">
-            <span>Chat guardado (solo lectura). Sigue en una sesión nueva:</span>
+            <span>Chat guardado. Sigue hablando: se abre una sesión nueva con el resumen.</span>
             <button onClick={() => st.continueArchived()} disabled={busy} className="btn btn-primary ml-auto !py-1 disabled:opacity-50">
-              Continuar en nueva sesión
+              Continuar hablando
             </button>
           </div>
         )}
@@ -237,17 +237,27 @@ export function Assistant() {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && send()}
-              placeholder={archivedId ? 'Chat guardado: pulsa «Continuar en nueva sesión»' : activeId ? 'Escribe un mensaje… (Enter para enviar)' : 'Crea una sesión primero'}
+              placeholder={archivedId ? 'Chat guardado: pulsa «Continuar hablando»' : activeId ? 'Escribe un mensaje… (Enter para enviar)' : 'Crea una sesión primero'}
               disabled={!activeId || busy || !!archivedId}
               className="min-w-0 flex-1 bg-transparent py-1 outline-none placeholder:text-forge-faint disabled:opacity-50"
             />
-            <button
-              onClick={send}
-              disabled={!activeId || busy || !draft.trim() || !!archivedId}
-              className="btn btn-primary"
-            >
-              Enviar ⏎
-            </button>
+            {(busy || streaming) ? (
+              <button
+                onClick={() => st.interruptActive()}
+                title="Detener respuesta"
+                className="btn btn-danger !px-3.5"
+              >
+                ■
+              </button>
+            ) : (
+              <button
+                onClick={send}
+                disabled={!activeId || !draft.trim() || !!archivedId}
+                className="btn btn-primary"
+              >
+                Enviar ⏎
+              </button>
+            )}
           </div>
         </div>
         <StatusLine />

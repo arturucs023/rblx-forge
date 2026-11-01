@@ -34,6 +34,8 @@ interface OrchState {
   busy: boolean;
   error: string | null;
   lastEvent: string | null;
+  /** Progreso en vivo de la generación del plan (coordinador). Null = inactivo. */
+  planStatus: { phase: string; detail?: string; startedAt: number; excerpt?: string } | null;
 
   refreshAll: () => Promise<void>;
   selectRun: (id: string | null) => Promise<void>;
@@ -605,6 +607,7 @@ export const useOrch = create<OrchState>((set, get) => {
     busy: false,
     error: null,
     lastEvent: null,
+    planStatus: null,
 
     refreshAll: async () => {
       set({ busy: true, error: null });
@@ -770,7 +773,11 @@ export const useOrch = create<OrchState>((set, get) => {
       if (!client) throw new Error('Conecta OpenCode primero');
       const detail = get().runDetail;
       const ws = await getWorkspaceDir().catch(() => '');
+      const t0 = Date.now();
+      const setPhase = (phase: string, detail?: string, excerpt?: string) =>
+        set({ planStatus: { phase, detail, startedAt: t0, excerpt: excerpt?.slice(0, 1500) } });
       set({ busy: true, error: null });
+      setPhase('Preparando', 'Leyendo skills del registro y agentes activos…');
       try {
         const catalog: string[] = await invoke<Array<{ id: string }>>('eval_list_skills', { query: null, grp: null, origin: null, status: null })
           .then((s) => s.map((x) => x.id)).catch(() => []);
@@ -788,15 +795,27 @@ export const useOrch = create<OrchState>((set, get) => {
           GUARDRAIL,
         ].join('\n');
         await client.sendPrompt(sess.id, prompt);
+        setPhase('Coordinador pensando', `Sesión ${sess.id.slice(0, 13)}… · esperando respuesta del modelo (puede tardar minutos)`, '');
         const deadline = Date.now() + 240000;
         let answer = '';
+        let polls = 0;
         while (Date.now() < deadline) {
           const msgs = await client.listMessages(sess.id, 20).catch(() => []);
           const t = (msgs as Array<Record<string, unknown>>).filter((m) => m['role'] === 'assistant').map((m) => extractText(m as never)).join('\n');
           if (t.trim()) { answer = t; break; }
+          polls++;
+          // Extracto en vivo: lo último que va escribiendo (sin re-render si no cambia).
+          const partial = (msgs as Array<Record<string, unknown>>)
+            .map((m) => extractText(m as never)).join('\n').slice(-600).trim();
+          const prev = get().planStatus?.excerpt ?? '';
+          const excerpt = partial || prev;
+          if (excerpt !== prev || polls % 2 === 0) {
+            setPhase('Coordinador pensando', `Sondeo ${polls} · ${Math.round((Date.now() - t0) / 1000)}s esperando al modelo…`, excerpt);
+          }
           await new Promise((r) => setTimeout(r, 5000));
         }
         await client.deleteSession(sess.id).catch(() => {});
+        setPhase('Parseando plan', 'Extrayendo el JSON de la respuesta…', answer.slice(0, 1500));
         const m = answer.match(/\{[\s\S]*\}/);
         if (!m) throw new Error('El coordinador no devolvió un plan JSON válido (¿sin respuesta del modelo? Comprueba la cuota con scripts/probe-quota.cjs, o crea las tareas a mano en Tareas).');
         const plan = JSON.parse(m[0]) as { tasks?: Array<Record<string, unknown>> };
@@ -804,6 +823,8 @@ export const useOrch = create<OrchState>((set, get) => {
         // Resolver depends_on_names → ids en dos pasadas.
         const nameToId = new Map<string, string>();
         const pending: Array<{ data: Record<string, unknown>; id: string }> = [];
+        const total = plan.tasks.slice(0, 12).length;
+        let done = 0;
         for (const t of plan.tasks.slice(0, 12)) {
           const str = (v: unknown) => (typeof v === 'string' ? v : '');
           const arr = (v: unknown) => (Array.isArray(v) ? v.filter((x) => typeof x === 'string') as string[] : []);
@@ -822,6 +843,8 @@ export const useOrch = create<OrchState>((set, get) => {
           const id = await invoke<string>('orch_task_add', { runId, task: input });
           nameToId.set(input.name.toLowerCase(), id);
           pending.push({ data: t, id });
+          done++;
+          setPhase('Creando tareas', `${done}/${total} tareas registradas…`);
         }
         for (const p of pending) {
           const names = Array.isArray(p.data['depends_on_names']) ? (p.data['depends_on_names'] as unknown[]).filter((x) => typeof x === 'string') as string[] : [];
@@ -842,9 +865,10 @@ export const useOrch = create<OrchState>((set, get) => {
         }
         await invoke('orch_message_post', { runId, taskId: null, kind: 'CONTEXT_PROVIDED', fromAgent: 'coordinator', toAgent: 'usuario', content: `Plan generado por el coordinador (${pending.length} tareas). Revísalo y envíalo a aprobación.`, files: [] }).catch(() => {});
         await refreshRun(runId);
+        setPhase('Validando', 'Comprobando ciclos, duplicados y conflictos…');
         await get().validatePlan(runId);
       } finally {
-        set({ busy: false });
+        set({ busy: false, planStatus: null });
       }
     },
 

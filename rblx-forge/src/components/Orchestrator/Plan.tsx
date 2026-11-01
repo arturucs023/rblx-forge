@@ -1,5 +1,5 @@
 // Plan: validación del DAG, niveles de ejecución, envío a aprobación y control.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useOrch } from '../../stores/orch';
 import { AgentGlyph, Empty, StateBadge } from './common';
 import { ModelPicker, type ModelValue } from '../ModelPicker';
@@ -39,6 +39,7 @@ export function Plan() {
   const validatePlan = useOrch((s) => s.validatePlan);
   const planFromGoal = useOrch((s) => s.planFromGoal);
   const setRunConfig = useOrch((s) => s.setRunConfig);
+  const planStatus = useOrch((s) => s.planStatus);
   const [msg, setMsg] = useState<string | null>(null);
 
   if (!runDetail) {
@@ -79,6 +80,7 @@ export function Plan() {
           )}
         </div>
         {msg && <p className="mb-2 text-[12px] text-forge-muted">{msg}</p>}
+        {planStatus && <PlanProgress status={planStatus} />}
         <p className="section-label mb-1">Modelo por defecto de la ejecución</p>
         <ModelPicker
           value={(runDetail.config.default_model as ModelValue | null) ?? null}
@@ -113,6 +115,41 @@ export function Plan() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Visualizador en vivo: qué hace el coordinador mientras genera el plan. */
+function PlanProgress({ status }: { status: { phase: string; detail?: string; startedAt: number; excerpt?: string } }) {
+  const [now, setNow] = useState(Date.now());
+  const [showExcerpt, setShowExcerpt] = useState(false);
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const secs = Math.max(0, Math.round((now - status.startedAt) / 1000));
+  const mm = Math.floor(secs / 60);
+  const ss = String(secs % 60).padStart(2, '0');
+  return (
+    <div className="anim-enter mb-2 rounded-xl border border-forge-accent-dim bg-forge-accent-soft px-3 py-2">
+      <div className="flex items-center gap-2">
+        <span className="dot-live inline-block h-2 w-2 rounded-full bg-forge-accent" />
+        <span className="text-[13px] font-bold">{status.phase}</span>
+        <span className="mono ml-auto text-[11px] text-forge-muted">{mm}:{ss}</span>
+      </div>
+      {status.detail && <p className="mt-0.5 truncate text-[12px] text-forge-muted" title={status.detail}>{status.detail}</p>}
+      {status.excerpt ? (
+        <div className="mt-1">
+          <button onClick={() => setShowExcerpt((v) => !v)} className="text-[11px] text-forge-accent hover:underline">
+            {showExcerpt ? '▾ Ocultar lo que va escribiendo' : '▸ Ver lo que va escribiendo'}
+          </button>
+          {showExcerpt && (
+            <pre className="mono mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded bg-forge-bg p-2 text-[11px] text-forge-muted">{status.excerpt}</pre>
+          )}
+        </div>
+      ) : (
+        <p className="mt-0.5 text-[11px] text-forge-faint">Aún sin texto del modelo: está pensando. Si tarda muchos minutos, puede ser falta de cuota.</p>
+      )}
     </div>
   );
 }
