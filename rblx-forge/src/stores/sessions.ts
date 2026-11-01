@@ -1,7 +1,23 @@
 import { create } from 'zustand';
-import { createClient, type OpenCodeClient, type PermissionRequest, type SessionMessage, type SessionSummary, type ModelInfo } from '../lib/opencode';
+import { invoke } from '@tauri-apps/api/core';
+import { createClient, type OpenCodeClient, type PermissionRequest, type SessionMessage, type SessionSummary, type ModelInfo, type FormDetail } from '../lib/opencode';
 import { eventToFeed, trackToolCall, type FeedItem, type TrackedCall } from '../lib/activity';
 import { useApp } from './app';
+
+/** Chat guardado en el equipo (persiste al cerrar la app; el servidor no). */
+export interface ArchivedChat {
+  id: string;
+  title: string;
+  updatedAt: number;
+  modelLabel: string | null;
+  messages: SessionMessage[];
+}
+
+function dirHash(dir: string): string {
+  let h = 5381;
+  for (let i = 0; i < dir.length; i++) h = ((h << 5) + h + dir.charCodeAt(i)) >>> 0;
+  return h.toString(16).padStart(8, '0');
+}
 
 interface SessionsState {
   client: OpenCodeClient | null;
@@ -9,6 +25,9 @@ interface SessionsState {
   sessions: SessionSummary[];
   activeId: string | null;
   messages: Record<string, SessionMessage[]>;
+  archived: ArchivedChat[];
+  archivedId: string | null;
+  forms: FormDetail[];
   permissions: PermissionRequest[];
   feed: FeedItem[];
   calls: Record<string, TrackedCall[]>;
@@ -38,6 +57,12 @@ interface SessionsState {
   selectSession: (id: string) => Promise<void>;
   closeSession: (id: string) => Promise<void>;
   sendPrompt: (text: string) => Promise<void>;
+  loadArchived: (dir: string) => Promise<void>;
+  viewArchived: (id: string) => void;
+  continueArchived: () => Promise<void>;
+  refreshForms: () => Promise<void>;
+  replyForm: (formId: string, answer: Record<string, unknown>) => Promise<void>;
+  cancelForm: (formId: string) => Promise<void>;
   refreshPermissions: () => Promise<void>;
   replyPermission: (requestId: string, decision: 'allow' | 'deny') => Promise<void>;
 }
@@ -53,12 +78,49 @@ function partsText(m: SessionMessage): string {
   return out.join('\n');
 }
 
+/** Fusión del historial (pura y testeada): el más reciente primero, sin
+ * duplicados por id, tope de chats. */
+export function mergeArchived(prev: ArchivedChat[], entry: ArchivedChat, cap = 20): ArchivedChat[] {
+  return [entry, ...prev.filter((c) => c.id !== entry.id)].slice(0, Math.max(1, cap));
+}
+
+/** Guarda la sesión activa en el equipo (topes: 20 chats/dir, 120 mensajes).
+ * Best-effort y silencioso: jamás rompe el flujo del chat. */
+async function persistActive() {
+  try {
+    const { cwd, activeId, archivedId, sessions, messages, activeModel } = useSessions.getState();
+    if (!cwd || !activeId || archivedId) return;
+    const msgs = messages[activeId];
+    if (!msgs || msgs.length === 0) return;
+    const meta = sessions.find((s) => s.id === activeId);
+    const am = activeModel;
+    const entry: ArchivedChat = {
+      id: activeId,
+      title: meta?.title || activeId.slice(0, 8),
+      updatedAt: Date.now(),
+      modelLabel: am ? `${am.providerID}/${am.id}${am.variant ? ` · ${am.variant}` : ''}` : null,
+      messages: msgs.slice(-120),
+    };
+    const key = `chat.${dirHash(cwd)}`;
+    let prev: ArchivedChat[] = [];
+    try {
+      const raw = await invoke<{ chats?: ArchivedChat[] } | null>('settings_get', { key });
+      if (raw && Array.isArray(raw.chats)) prev = raw.chats;
+    } catch { /* sin archivo previo */ }
+    const next = mergeArchived(prev, entry);
+    await invoke('settings_set', { key, value: { chats: next } });
+  } catch { /* persistencia silenciosa */ }
+}
+
 export const useSessions = create<SessionsState>((set, get) => ({
   client: null,
   cwd: null,
   sessions: [],
   activeId: null,
   messages: {},
+  archived: [],
+  archivedId: null,
+  forms: [],
   permissions: [],
   feed: [],
   calls: {},
@@ -120,16 +182,26 @@ export const useSessions = create<SessionsState>((set, get) => ({
         if (active) {
           get().selectSession(active).catch(() => {});
           get().refreshPermissions().catch(() => {});
+          get().refreshForms().catch(() => {});
         }
+      }
+      // El modelo puede pedir una elección en cualquier momento.
+      if (typeof e.type === 'string' && e.type.toLowerCase().includes('form')) {
+        get().refreshForms().catch(() => {});
       }
     });
     set({ client, sseOff: off, error: null });
     get().fetchModels().catch(() => {});
+    const dir = get().cwd;
+    if (dir) get().loadArchived(dir).catch(() => {});
   },
 
   setCwd: (dir) => {
-    set({ cwd: dir, activeId: null, messages: {}, permissions: [], feed: [], calls: {}, usage: null });
-    if (dir) get().loadSessions(dir).catch(() => {});
+    set({ cwd: dir, activeId: null, messages: {}, permissions: [], feed: [], calls: {}, usage: null, archived: [], archivedId: null, forms: [] });
+    if (dir) {
+      get().loadSessions(dir).catch(() => {});
+      get().loadArchived(dir).catch(() => {});
+    }
   },
 
   pushFeed: (items) =>
@@ -205,7 +277,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
     set({ busy: true, error: null });
     try {
       const s = await c.createSession({ title, directory: dir });
-      set((st) => ({ sessions: [s, ...st.sessions], activeId: s.id, busy: false }));
+      set((st) => ({ sessions: [s, ...st.sessions], activeId: s.id, archivedId: null, forms: [], busy: false }));
       await get().selectSession(s.id);
     } catch (e) {
       set({ busy: false, error: String(e) });
@@ -215,12 +287,14 @@ export const useSessions = create<SessionsState>((set, get) => ({
   selectSession: async (id) => {
     const c = get().client;
     if (!c) return;
-    set({ activeId: id });
+    set({ activeId: id, archivedId: null });
     try {
       const msgs = await c.listMessages(id);
       set((st) => ({ messages: { ...st.messages, [id]: msgs }, error: null }));
       await get().refreshPermissions();
       await get().refreshActiveModel();
+      await get().refreshForms();
+      void persistActive();
     } catch (e) {
       set({ error: String(e) });
     }
@@ -230,6 +304,8 @@ export const useSessions = create<SessionsState>((set, get) => ({
     const c = get().client;
     if (!c) return;
     try {
+      // El historial queda guardado en el equipo aunque se cierre la sesión.
+      if (id === get().activeId) await persistActive();
       await c.deleteSession(id);
       set((st) => ({
         sessions: st.sessions.filter((s) => s.id !== id),
@@ -252,12 +328,88 @@ export const useSessions = create<SessionsState>((set, get) => ({
       await new Promise((r) => setTimeout(r, 1500));
       const msgs = await c.listMessages(id);
       set((st) => ({ messages: { ...st.messages, [id]: msgs } }));
+      void persistActive();
+      await get().refreshPermissions().catch(() => {});
+      await get().refreshForms().catch(() => {});
       const last = msgs[msgs.length - 1];
       if (last) useApp.getState().pushActivity('info', 'sesion', `◀ ${partsText(last).slice(0, 200) || '(sin texto)'}`);
     } catch (e) {
       set({ error: String(e) });
     } finally {
       set({ busy: false, streaming: false });
+    }
+  },
+
+  loadArchived: async (dir) => {
+    try {
+      const raw = await invoke<{ chats?: ArchivedChat[] } | null>('settings_get', { key: `chat.${dirHash(dir)}` });
+      const chats = raw && Array.isArray(raw.chats) ? raw.chats : [];
+      const live = new Set(get().sessions.map((s) => s.id));
+      set({ archived: chats.filter((c) => c && typeof c.id === 'string' && !live.has(c.id)), archivedId: null });
+    } catch {
+      set({ archived: [] });
+    }
+  },
+
+  viewArchived: (id) => {
+    const a = get().archived.find((c) => c.id === id);
+    if (!a) return;
+    set((st) => ({ activeId: id, archivedId: id, forms: [], messages: { ...st.messages, [id]: a.messages } }));
+  },
+
+  continueArchived: async () => {
+    const a = get().archived.find((c) => c.id === get().archivedId);
+    await get().createSession(a ? `${a.title} (cont.)` : undefined);
+  },
+
+  refreshForms: async () => {
+    const c = get().client;
+    const id = get().activeId;
+    if (!c || !id || get().archivedId) {
+      if (!id) set({ forms: [] });
+      return;
+    }
+    try {
+      const list = await c.listForms(id);
+      const details: FormDetail[] = [];
+      for (const f of list.slice(-5)) {
+        try {
+          details.push(await c.getForm(id, f.id));
+        } catch {
+          details.push(f);
+        }
+      }
+      set({ forms: details });
+    } catch {
+      /* sin forms o sesión cerrada */
+    }
+  },
+
+  replyForm: async (formId, answer) => {
+    const c = get().client;
+    const id = get().activeId;
+    if (!c || !id) return;
+    set({ busy: true, error: null });
+    try {
+      await c.replyForm(id, formId, answer);
+      await get().refreshForms();
+      await get().selectSession(id);
+    } catch (e) {
+      set({ error: String(e) });
+    } finally {
+      set({ busy: false });
+    }
+  },
+
+  cancelForm: async (formId) => {
+    const c = get().client;
+    const id = get().activeId;
+    if (!c || !id) return;
+    try {
+      await c.cancelForm(id, formId);
+      await get().refreshForms();
+    } catch (e) {
+      set({ error: String(e) });
     }
   },
 

@@ -15,6 +15,35 @@ export interface ModelVariant {
   [k: string]: unknown;
 }
 
+/** Formularios interactivos de OpenCode (el modelo propone, tú eliges). */
+export interface FormOption {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+export interface FormField {
+  key: string;
+  title?: string;
+  description?: string;
+  required?: boolean;
+  hidden?: boolean;
+  type?: string;
+  options?: FormOption[];
+  default?: unknown;
+  minItems?: number;
+  maxItems?: number;
+  url?: string;
+}
+
+export interface FormDetail {
+  id: string;
+  sessionID: string;
+  title: string;
+  fields: FormField[];
+  state: { status: 'pending' | 'answered' | 'cancelled'; answer?: Record<string, unknown>; message?: string };
+}
+
 export interface ModelInfo {
   id: string;
   modelID: string;
@@ -174,6 +203,20 @@ export function createClient(opts: ClientOptions) {
       const q = directory ? '?location%5Bdirectory%5D=' + encodeURIComponent(directory) : '';
       return req<Array<{ name: string; status?: { status?: string } }>>(clean, pw, '/api/mcp' + q);
     },
+    /** Forms de la sesión (el modelo propone opciones, el usuario elige). */
+    listForms: (id: string) =>
+      req<FormDetail[]>(clean, pw, `/api/session/${encodeURIComponent(id)}/form`),
+    getForm: (sessionId: string, formId: string) =>
+      req<FormDetail>(clean, pw, `/api/session/${encodeURIComponent(sessionId)}/form/${encodeURIComponent(formId)}`),
+    replyForm: (sessionId: string, formId: string, answer: Record<string, unknown>) =>
+      req<unknown>(clean, pw, `/api/session/${encodeURIComponent(sessionId)}/form/${encodeURIComponent(formId)}/reply`, {
+        method: 'POST',
+        body: JSON.stringify({ answer }),
+      }),
+    cancelForm: (sessionId: string, formId: string, message?: string) =>
+      req<void>(clean, pw, `/api/session/${encodeURIComponent(sessionId)}/form/${encodeURIComponent(formId)}${message ? '?message=' + encodeURIComponent(message) : ''}`, {
+        method: 'DELETE',
+      }),
 
     /**
      * SSE mediante fetch+lector (EventSource no admite cabecera
