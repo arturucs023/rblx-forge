@@ -6,6 +6,7 @@ import { Empty, StateBadge, fmtTs } from './common';
 export function History() {
   const runs = useOrch((s) => s.runs);
   const selectRun = useOrch((s) => s.selectRun);
+  const deleteRun = useOrch((s) => s.deleteRun);
   const exportReport = useOrch((s) => s.exportReport);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('todos');
@@ -68,6 +69,17 @@ export function History() {
           <button onClick={() => selectRun(r.id)} className="btn btn-ghost !px-2 !py-0.5">Abrir</button>
           <button onClick={() => download(r.id, 'md')} className="btn btn-ghost !px-2 !py-0.5">MD</button>
           <button onClick={() => download(r.id, 'json')} className="btn btn-ghost !px-2 !py-0.5">JSON</button>
+          <button
+            onClick={() => {
+              if (window.confirm(`Borrar la ejecución «${r.goal.slice(0, 60)}» y todos sus datos (tareas, mensajes, auditoría)?`)) {
+                deleteRun(r.id).catch((e) => setMsg(String(e)));
+              }
+            }}
+            className="btn btn-ghost !px-2 !py-0.5 !text-forge-err"
+            title="Borrar ejecución y sus datos"
+          >
+            Borrar
+          </button>
         </div>
       ))}
       {msg && <p className="text-[12px] text-forge-err">{msg}</p>}

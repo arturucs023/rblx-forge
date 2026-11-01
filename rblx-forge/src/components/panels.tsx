@@ -8,6 +8,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'react';
 import { TOOL_DESC } from './Toolchain';
 import type { ModuleId } from './Sidebar';
+import { FirstRun } from './FirstRun';
 import { getWorkspaceDir } from '../lib/paths';
 
 export const DEFAULT_WORKSPACE = '';
@@ -66,6 +67,7 @@ export function HomeModule({ onGo }: { onGo: (m: ModuleId) => void }) {
           Proyectos, código Luau, asistente IA con OpenCode, Studio y pruebas — todo en una única aplicación de escritorio.
         </p>
       </div>
+      <FirstRun onGo={onGo} />
       <div className="card anim-enter p-4" style={{ animationDelay: '60ms' }}>
         <div className="mb-2 flex items-center gap-2">
           <span className="font-bold">OpenCode</span>

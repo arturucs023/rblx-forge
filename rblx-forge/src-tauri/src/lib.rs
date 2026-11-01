@@ -1739,6 +1739,7 @@ pub fn run() {
             orch::orch_run_resume,
             orch::orch_run_set_config,
             orch::orch_run_cancel,
+            orch::orch_run_delete,
             orch::orch_run_complete,
             orch::orch_run_fail,
             orch::orch_task_add,

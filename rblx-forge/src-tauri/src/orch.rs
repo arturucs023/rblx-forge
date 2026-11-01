@@ -1370,6 +1370,28 @@ pub fn orch_dashboard(app: AppHandle) -> Result<serde_json::Value, String> {
 }
 
 #[tauri::command]
+pub fn orch_run_delete(app: AppHandle, id: String) -> Result<bool, String> {
+    let c = orch_db(&app)?;
+    let st: String = c.query_row("SELECT status FROM orch_runs WHERE id=?1", params![id], |r| r.get(0))
+        .map_err(|_| format!("Ejecución no encontrada: {}", id))?;
+    if ["en_ejecucion", "pausado"].contains(&st.as_str()) {
+        return Err("Cancela la ejecución antes de borrarla".to_string());
+    }
+    let live: i64 = c.query_row("SELECT COUNT(*) FROM orch_tasks WHERE run_id=?1 AND state IN ('RUNNING','WAITING_APPROVAL')", params![id], |r| r.get(0)).map_err(|e| e.to_string())?;
+    if live > 0 {
+        return Err("Hay tareas en marcha: cancela primero".to_string());
+    }
+    for t in ["agent_audit_log", "execution_artifacts", "approval_requests", "agent_messages", "agent_executions"] {
+        c.execute(&format!("DELETE FROM {} WHERE run_id=?1", t), params![id]).map_err(|e| e.to_string())?;
+    }
+    c.execute("DELETE FROM task_dependencies WHERE task_id IN (SELECT id FROM orch_tasks WHERE run_id=?1)", params![id]).map_err(|e| e.to_string())?;
+    c.execute("DELETE FROM orch_tasks WHERE run_id=?1", params![id]).map_err(|e| e.to_string())?;
+    c.execute("DELETE FROM orch_runs WHERE id=?1", params![id]).map_err(|e| e.to_string())?;
+    emit(&app, "forge:orchestrator-updated", &serde_json::json!({ "run": id, "deleted": true }));
+    Ok(true)
+}
+
+#[tauri::command]
 pub fn orch_export(app: AppHandle, run_id: String, format: String) -> Result<serde_json::Value, String> {
     if !["json", "md"].contains(&format.as_str()) {
         return Err("Formato: json|md".to_string());

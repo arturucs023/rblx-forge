@@ -1,6 +1,7 @@
 // Panel principal: crear ejecución, estado, agentes, colas, aprobaciones.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useOrch } from '../../stores/orch';
+import { getProjectsParent } from '../../lib/paths';
 import { Empty, StateBadge, fmtTs } from './common';
 
 export function Dashboard({ go }: { go: (t: 'panel' | 'agentes' | 'tareas' | 'ejecucion' | 'plan' | 'revision' | 'historial') => void }) {
@@ -15,8 +16,17 @@ export function Dashboard({ go }: { go: (t: 'panel' | 'agentes' | 'tareas' | 'ej
   const [scope, setScope] = useState<'project' | 'tmp'>('project');
   const [msg, setMsg] = useState<string | null>(null);
 
+  // La carpeta de juegos ya se elige en Configuración: se reutiliza aquí.
+  useEffect(() => {
+    getProjectsParent().then((p) => { if (p) setProjectDir(p); }).catch(() => {});
+  }, []);
+
   const create = async () => {
     setMsg(null);
+    if (!projectDir.trim() && scope === 'project') {
+      setMsg('Sin carpeta de juegos: configúrala en Configuración o usa ámbito tmp aislado.');
+      return;
+    }
     try {
       const id = await createRun(goal.trim(), projectDir.trim(), scope);
       setGoal('');
@@ -29,6 +39,26 @@ export function Dashboard({ go }: { go: (t: 'panel' | 'agentes' | 'tareas' | 'ej
 
   return (
     <div className="grid gap-2 p-3 xl:grid-cols-2">
+      {runs.length === 0 && (
+        <div className="card anim-enter p-3 xl:col-span-2">
+          <p className="section-label mb-2">Cómo funciona (4 pasos)</p>
+          <div className="grid gap-2 md:grid-cols-4">
+            {[
+              ['1', 'Describe el objetivo', 'Arriba: qué quieres construir, con el máximo detalle.'],
+              ['2', 'Genera el plan', 'El coordinador (IA real) propone tareas, agentes y skills en Plan.'],
+              ['3', 'Aprueba', 'Revisa el DAG, corrige y pulsa «Aprobar y ejecutar».'],
+              ['4', 'Supervisa', 'Mira la Ejecución en vivo y decide aprobaciones en Revisión.'],
+            ].map(([n, t, h]) => (
+              <div key={n} className="rounded border border-forge-border-soft p-2">
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-forge-accent-soft text-[11px] font-bold text-forge-accent">{n}</span>
+                <p className="mt-1 text-[12px] font-bold">{t}</p>
+                <p className="text-[11px] text-forge-muted">{h}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-forge-faint">Sin modelo que responda no hay plan: comprueba la cuota con <span className="mono">node rblx-forge/scripts/probe-quota.cjs</span>. Sin IA, monta el plan a mano en Tareas (la validación es local).</p>
+        </div>
+      )}
       <div className="card anim-enter p-3">
         <p className="section-label mb-2">Nueva ejecución</p>
         <textarea
@@ -41,7 +71,8 @@ export function Dashboard({ go }: { go: (t: 'panel' | 'agentes' | 'tareas' | 'ej
           <input
             value={projectDir}
             onChange={(e) => setProjectDir(e.target.value)}
-            placeholder="Carpeta del juego (vacío = solo tmp aislados)"
+            placeholder="Carpeta de juegos (viene de Configuración)"
+            title="Carpeta de juegos configurada — puedes ajustarla para este run"
             className="input mono min-w-0 flex-1 !text-[11px]"
           />
           <select value={scope} onChange={(e) => setScope(e.target.value as 'project' | 'tmp')} className="rounded border border-forge-border bg-forge-bg px-2 py-1" title="Ámbito de escritura">

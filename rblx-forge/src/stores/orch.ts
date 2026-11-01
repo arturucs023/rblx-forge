@@ -48,6 +48,7 @@ interface OrchState {
   updateTask: (id: string, t: TaskInput) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   setTaskState: (id: string, state: string, error?: string) => Promise<void>;
+  deleteRun: (id: string) => Promise<void>;
   retryTask: (id: string) => Promise<void>;
   validatePlan: (runId: string) => Promise<PlanIssue[]>;
   planFromGoal: (runId: string, goal: string) => Promise<void>;
@@ -651,7 +652,11 @@ export const useOrch = create<OrchState>((set, get) => {
     submitPlan: async (id) => {
       const issues = await invoke<PlanIssue[]>('orch_validate_plan', { runId: id });
       set({ issues });
-      if (issues.some((x) => x.level === 'error')) throw new Error(`El plan tiene ${issues.filter((x) => x.level === 'error').length} errores: corrígelos antes de enviar a aprobación`);
+      const errs = issues.filter((x) => x.level === 'error');
+      if (errs.length) {
+        const detail = errs.slice(0, 3).map((x) => `[${x.code}] ${x.message}`).join(' | ');
+        throw new Error(`El plan tiene ${errs.length} ${errs.length === 1 ? 'error' : 'errores'}: ${detail}. ${errs.some((x) => x.code === 'EMPTY') ? 'Genera el plan con el coordinador o añade tareas a mano en Tareas.' : 'Corrígelos antes de enviar a aprobación.'}`);
+      }
       await invoke('orch_run_submit', { id });
       await refreshRun(id);
       await refreshDashboard();
@@ -713,6 +718,16 @@ export const useOrch = create<OrchState>((set, get) => {
       await invoke('orch_task_delete', { id });
       const runId = get().activeRunId;
       if (runId) await refreshRun(runId);
+    },
+
+    deleteRun: async (id) => {
+      await invoke('orch_run_delete', { id });
+      if (get().activeRunId === id) {
+        set({ activeRunId: null, runDetail: null, tasks: [], execs: [], messages: [], approvals: [], artifacts: [], audit: [], issues: [], queue: [] });
+      }
+      const runs = await invoke<OrchRun[]>('orch_run_list', { limit: 50 }).catch(() => get().runs.filter((r) => r.id !== id));
+      set({ runs });
+      await refreshDashboard().catch(() => {});
     },
 
     setTaskState: async (id, state, error) => {
@@ -783,7 +798,7 @@ export const useOrch = create<OrchState>((set, get) => {
         }
         await client.deleteSession(sess.id).catch(() => {});
         const m = answer.match(/\{[\s\S]*\}/);
-        if (!m) throw new Error('El coordinador no devolvió un plan JSON válido; créalo manualmente en Tareas');
+        if (!m) throw new Error('El coordinador no devolvió un plan JSON válido (¿sin respuesta del modelo? Comprueba la cuota con scripts/probe-quota.cjs, o crea las tareas a mano en Tareas).');
         const plan = JSON.parse(m[0]) as { tasks?: Array<Record<string, unknown>> };
         if (!plan.tasks?.length) throw new Error('Plan vacío; créalo manualmente en Tareas');
         // Resolver depends_on_names → ids en dos pasadas.

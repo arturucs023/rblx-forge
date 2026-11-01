@@ -108,11 +108,11 @@ como «no disponible». Sin presupuestos inventados.
 
 ## Limitaciones declaradas
 
-- E2E completo pendiente de cuota: el día de la prueba ningún modelo gratuito
-  respondió ni a «Reply OK» (cuota agotada tras ~10 llamadas previas OK ese
-  mismo día, incl. 12 k chars del arquitecto en la 1.ª pasada del E2E).
-  Rerun: `node rblx-forge/scripts/orch-acceptance.cjs` (elige solo un modelo
-  que responda, 3 tareas, valida con selene vendoreado, limpia todo).
+- E2E verificado (**TODO OK**, ver `docs/TESTING.md`): usa el modelo default
+  del servidor (`/api/model/default`); los gratuitos `mimo/glm/deepseek-free`
+  no respondían ese día. Pasar el modelo explícito sí funciona (probado).
+- El prompt de cada tarea DEBE incluir la ruta absoluta del ámbito: sin ella
+  el modelo puede escribir fuera (observado: write a `Temp/src/...`).
 - La revisión JSON depende de que el juez devuelva JSON válido; si no,
   WAITING_APPROVAL manual (nunca se inventa un APPROVE).
 - `background` nativo no utilizado (decisión documentada arriba).

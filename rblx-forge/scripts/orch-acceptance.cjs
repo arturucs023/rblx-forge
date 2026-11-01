@@ -117,40 +117,9 @@ async function runTask(sid, prompt, timeoutMs) {
   const tmp = path.join(fs.realpathSync(os.tmpdir()), `forge-orch-acc-${Date.now()}`);
   for (const d of ['src/server', 'src/client', 'src/shared']) fs.mkdirSync(path.join(tmp, d), { recursive: true });
   fs.writeFileSync(path.join(tmp, 'default.project.json'), '{"name":"orch-acc","tree":{"$className":"DataModel"}}');
-  const MODEL_CANDIDATES = [
-    { id: 'mimo-v2.6-flash-free', providerID: 'opencode' },
-    { id: 'glm-5.3-flash-free', providerID: 'opencode' },
-    { id: 'deepseek-v4.1-flash-free', providerID: 'opencode' },
-  ];
-  async function pickModel() {
-    for (const m of MODEL_CANDIDATES) {
-      try {
-        const s = await api('/api/session', { method: 'POST', body: JSON.stringify({ title: 'orch-pick', directory: tmp, model: m }) });
-        await api(`/api/session/${s.id}/prompt`, { method: 'POST', body: JSON.stringify({ text: 'Reply with exactly: OK' }) });
-        const t0 = Date.now();
-        let ok = false;
-        while (Date.now() - t0 < 60000) {
-          await sleep(3000);
-          const msgs = await api(`/api/session/${s.id}/message?limit=10&order=asc`);
-          const texts = [];
-          for (const mm of msgs) {
-            for (const p of mm.content || mm.parts || []) {
-              if (p && typeof p.text === 'string' && p.text.trim() && p.type !== 'reasoning') texts.push(p.text.trim());
-            }
-          }
-          if (texts.length) { ok = true; break; }
-        }
-        await api(`/api/session/${s.id}`, { method: 'DELETE' }).catch(() => {});
-        if (ok) return m;
-        log('X modelo', `${m.id} sin respuesta en 60s`);
-      } catch (e) {
-        log('X modelo', `${m.id}: ${String(e.message).slice(0, 100)}`);
-      }
-    }
-    throw new Error('ningún modelo gratuito responde (cuota agotada?)');
-  }
-  const MODEL = await pickModel();
-  log('1b modelo', `${MODEL.providerID}/${MODEL.id}`);
+  const def = await api('/api/model/default');
+  const MODEL = { id: def.modelID || def.id, providerID: def.providerID };
+  log('1b modelo', `${MODEL.providerID}/${MODEL.id} (default del servidor)`);
 
   // Tarea 1 — architect.
   const s1 = await api('/api/session', { method: 'POST', body: JSON.stringify({ title: 'orch-architect', directory: tmp, model: MODEL }) });
@@ -160,7 +129,7 @@ async function runTask(sid, prompt, timeoutMs) {
     'Criterios: módulos separados, --!strict, sin secretos.',
     'Skills (extractos, solo lectura):',
     '--- SKILL luau-core ---', excerpt('luau-core').slice(0, 1500),
-    'REGLA ABSOLUTA: escribe SOLO dentro de este directorio.',
+    `REGLA ABSOLUTA: si generas archivos, escríbelos SOLO bajo ${tmp} (ruta absoluta). PROHIBIDO tocar cualquier otro archivo.`,
     'Al terminar, resume: archivos + cómo verificar.',
   ].join('\n');
   const r1 = await runTask(s1.id, archPrompt, 240000);
@@ -173,7 +142,8 @@ async function runTask(sid, prompt, timeoutMs) {
     'TAREA: Crea src/shared/GameConfig.luau (valores por defecto + función validate) y src/server/ConfigCheck.server.luau que lo use con pcall.',
     'Contexto del arquitecto (completada):', r1.slice(0, 2000),
     'Skills (extracto):', '--- SKILL roblox-game-systems ---', excerpt('roblox-game-systems').slice(0, 1200),
-    'REGLA ABSOLUTA: escribe SOLO dentro de este directorio.',
+    `REGLA ABSOLUTA: escribe TODOS los archivos generados bajo ${tmp} (ruta absoluta). PROHIBIDO crear, modificar o eliminar cualquier otro archivo.`,
+    'Si alguna herramienta pide confirmación fuera de esa ruta, deniégala.',
   ].join('\n');
   let r2 = null, attempts = 0;
   for (;;) {

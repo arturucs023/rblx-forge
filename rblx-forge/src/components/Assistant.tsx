@@ -52,6 +52,7 @@ export function Assistant() {
   const msgs = activeId ? (messages[activeId] ?? EMPTY_MSGS) : EMPTY_MSGS;
   const liveIds = new Set(sessions.map((s) => s.id));
   const saved = archived.filter((a) => !liveIds.has(a.id));
+  const isFresh = !archivedId && msgs.length === 0;
 
   useEffect(() => {
     if (assistantDraft) {
@@ -207,6 +208,27 @@ export function Assistant() {
           {msgs.map((m) => <ChatMessage key={m.id} m={m} />)}
           {streaming && <p className="animate-pulse py-1 text-forge-accent">▸ Recibiendo respuesta…</p>}
           {error && <p className="text-forge-err">Error: {error}</p>}
+          {isFresh && !streaming && !error && (
+            <div className="anim-enter mx-auto mt-6 max-w-md rounded-xl border border-dashed border-forge-border bg-forge-panel p-4 text-center">
+              <p className="mb-2 text-[12px] font-bold text-forge-muted">Prueba con…</p>
+              <div className="flex flex-col gap-1.5">
+                {[
+                  'Explica la estructura de este proyecto y qué hace cada carpeta',
+                  'Crea un ModuleScript de ejemplo con una función documentada',
+                  '¿Qué modelo estás usando y con qué variante?',
+                ].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => { setDraft(s); setAssistantDraft(s); }}
+                    disabled={!activeId || busy}
+                    className="rounded-lg border border-forge-border-soft px-2.5 py-1.5 text-left text-[12px] text-forge-muted transition-colors hover:border-forge-accent-dim hover:text-forge-text disabled:opacity-50"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="border-t border-forge-border-soft bg-forge-panel px-3 pb-2.5 pt-2">

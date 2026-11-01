@@ -102,14 +102,18 @@ Permiso aprobar/rechazar en vivo: PENDIENTE (requiere tarea que lo dispare;
   en ese directorio; el runner reintenta sin skills y lo registra (ver
   `docs/EVALUATION.md`, Limitaciones).
 
-## FASE 10 Multi-Agent Orchestrator (2026-11-01) — TESTEADO, E2E PARCIAL
+## FASE 10 Multi-Agent Orchestrator (2026-11-01) — TESTEADO, E2E COMPLETO
 
 - Rust: `cargo test` 36/36 (8 nuevos: DAG/ciclos/ready/transiciones/permisos/
   herencia de modelo/ranking/conflictos/seed de 10 perfiles).
-- Frontend: `npm run build` y `npm run test` en verde (27/27).
-- E2E `rblx-forge/scripts/orch-acceptance.cjs`: 10 perfiles + 36 skill IDs en
-  disco verificados; servidor propio; tarea architect OK (12k chars). Después
-  ningún modelo gratuito respondió (cuota agotada; verificado que ni «Reply OK»
-  sin herramientas responde). Rerun pendiente con cuota: el script elige solo
-  el primer modelo que responda, valida con selene vendoreado y limpia todo.
-  NINGÚN resultado simulado: lo no ejecutado consta como pendiente.
+- Frontend: `npm run build` y `npm run test` en verde (29 con modelos).
+- E2E `rblx-forge/scripts/orch-acceptance.cjs`: **TODO OK** contra servidor
+  propio con el modelo default real: 10 perfiles + 36 skill IDs en disco,
+  arquitecto 12k chars, dev generó 6 .luau en el tmpdir, **selene vendoreado
+  detectó un parse_error real** y el revisor QA devolvió **verdict=REJECT con
+  1 issue** (el bucle de revisión funciona de verdad). Originales intactos,
+  puerto liberado y tmp eliminado.
+- Lecciones verificadas: los gratuitos `mimo/glm/deepseek-free` no respondían
+  (solo el default sí); pasar el modelo explícito funciona. El prompt debe
+  llevar la **ruta absoluta** del ámbito o el modelo escribe fuera (observado:
+  un write a `Temp/src/...`; corregido).
