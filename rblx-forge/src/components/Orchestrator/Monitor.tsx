@@ -1,7 +1,7 @@
 // Monitor de ejecución en vivo: qué agente trabaja, en qué, con qué modelo,
 // herramientas/llamadas, archivos, errores. Expandible por tarea.
 import { useState } from 'react';
-import { useOrch } from '../../stores/orch';
+import { goOrchTab, useOrch } from '../../stores/orch';
 import { AgentGlyph, Empty, StateBadge, fmtTs, fmtDur } from './common';
 
 export function Monitor() {
@@ -11,7 +11,9 @@ export function Monitor() {
   const cancelRun = useOrch((s) => s.cancelRun);
   const activeRunId = useOrch((s) => s.activeRunId);
   const runDetail = useOrch((s) => s.runDetail);
+  const approvals = useOrch((s) => s.approvals);
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  const pending = approvals.filter((a) => a.status === 'pendiente');
 
   if (!activeRunId) {
     return <Empty title="Sin ejecución seleccionada" hint="Elige una ejecución en el Panel para monitorizarla en vivo." />;
@@ -21,6 +23,13 @@ export function Monitor() {
 
   return (
     <div className="grid gap-2 p-3 xl:grid-cols-2">
+      {pending.length > 0 && (
+        <div className="anim-enter rounded-xl border border-forge-warn/40 bg-forge-warn-soft px-3 py-2 text-[12px] xl:col-span-2">
+          <span className="font-bold text-forge-warn">⏳ {pending.length} {pending.length === 1 ? 'aprobación pendiente' : 'aprobaciones pendientes'}</span>
+          <span className="text-forge-muted"> — una tarea espera tu decisión. </span>
+          <button onClick={() => goOrchTab('revision')} className="btn btn-primary ml-1 !py-0.5 !text-[11px]">Decidir en Revisión →</button>
+        </div>
+      )}
       <div className="card anim-enter p-3">
         <div className="mb-2 flex items-center gap-2">
           <p className="section-label">Tareas activas ({live.length})</p>

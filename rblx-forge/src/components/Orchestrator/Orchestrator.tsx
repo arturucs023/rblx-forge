@@ -33,6 +33,14 @@ export function Orchestrator() {
 
   useEffect(() => {
     if (!ready) refreshAll().catch(() => {});
+    const onGo = (e: Event) => {
+      const t = (e as CustomEvent<string>).detail;
+      if (typeof t === 'string' && ['panel', 'agentes', 'tareas', 'ejecucion', 'plan', 'revision', 'historial'].includes(t)) {
+        setTab(t as Tab);
+      }
+    };
+    document.addEventListener('forge:go-orch-tab', onGo);
+    return () => document.removeEventListener('forge:go-orch-tab', onGo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -59,9 +59,10 @@ export function Review() {
         <p className="section-label mb-2">Revisiones independientes ({reviews.length})</p>
         {reviews.length === 0 && <p className="text-[12px] text-forge-muted">Sin revisiones: otro perfil (QA/seguridad) revisa cada tarea en sesión separada.</p>}
         {reviews.map((m) => (
-          <div key={m.id} className="mono mb-1.5 border-b border-forge-border-soft pb-1 text-[11px] text-forge-muted">
-            <span className={m.kind === 'REVIEW_APPROVED' ? 'text-forge-ok' : m.kind === 'REVIEW_REJECTED' ? 'text-forge-err' : 'text-forge-accent'}>{m.kind}</span>{' '}
-            {m.from} → {m.to}: {m.content.slice(0, 300)}
+          <div key={m.id} className="mb-1.5 rounded border border-forge-border-soft bg-forge-bg p-2">
+            <span className={`mono text-[11px] font-bold ${m.kind === 'REVIEW_APPROVED' ? 'text-forge-ok' : m.kind === 'REVIEW_REJECTED' ? 'text-forge-err' : 'text-forge-accent'}`}>{m.kind}</span>
+            <span className="mono ml-1 text-[11px] text-forge-faint">{m.from} → {m.to}</span>
+            <pre className="mono mt-1 max-h-56 overflow-auto whitespace-pre-wrap text-[11px] text-forge-muted">{m.content}</pre>
           </div>
         ))}
         <p className="section-label mb-1 mt-3">Artefactos ({artifacts.length})</p>

@@ -9,7 +9,7 @@
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use tauri::{AppHandle, Emitter, Manager};
 use crate::projects::{canonical_root, resolve_in_root};
 
@@ -27,7 +27,7 @@ pub const MSG_KINDS: [&str; 10] = [
     "TASK_ASSIGNED", "TASK_STARTED", "TASK_COMPLETED", "TASK_FAILED", "BLOCKER_REPORTED",
     "REVIEW_REQUESTED", "REVIEW_APPROVED", "REVIEW_REJECTED", "CONTEXT_REQUESTED", "CONTEXT_PROVIDED",
 ];
-pub const APPROVAL_KINDS: [&str; 4] = ["plan", "risky_op", "studio_op", "retry"];
+pub const APPROVAL_KINDS: [&str; 5] = ["plan", "risky_op", "studio_op", "retry", "review"];
 pub const PERMS: [&str; 7] = [
     "READ_PROJECT", "WRITE_PROJECT", "EXECUTE_COMMANDS", "RUN_TESTS",
     "ACCESS_STUDIO", "MODIFY_PROJECT_CONFIG", "INSTALL_DEPENDENCIES",
@@ -384,7 +384,7 @@ pub fn can_transition(from: &str, to: &str) -> bool {
         ("READY", "RUNNING") | ("READY", "CANCELLED") | ("READY", "BLOCKED") => true,
         ("RUNNING", "COMPLETED") | ("RUNNING", "FAILED") | ("RUNNING", "WAITING_APPROVAL")
         | ("RUNNING", "BLOCKED") | ("RUNNING", "CANCELLED") => true,
-        ("WAITING_APPROVAL", "RUNNING") | ("WAITING_APPROVAL", "CANCELLED") => true,
+        ("WAITING_APPROVAL", "RUNNING") | ("WAITING_APPROVAL", "CANCELLED") | ("WAITING_APPROVAL", "COMPLETED") => true,
         ("BLOCKED", "READY") | ("BLOCKED", "CANCELLED") => true,
         ("FAILED", "READY") | ("FAILED", "CANCELLED") => true,
         _ => false,
@@ -1568,6 +1568,7 @@ pub fn orch_export(app: AppHandle, run_id: String, format: String) -> Result<ser
 #[cfg(test)]
 mod orch_tests {
     use super::*;
+    use std::path::PathBuf;
 
     fn t(id: &str) -> String {
         id.to_string()
@@ -1605,6 +1606,7 @@ mod orch_tests {
         assert!(can_transition("PENDING", "RUNNING"));
         assert!(can_transition("RUNNING", "WAITING_APPROVAL"));
         assert!(can_transition("WAITING_APPROVAL", "RUNNING"));
+        assert!(can_transition("WAITING_APPROVAL", "COMPLETED"));
         assert!(can_transition("FAILED", "READY"));
         assert!(!can_transition("PENDING", "COMPLETED"));
         assert!(!can_transition("COMPLETED", "READY"));

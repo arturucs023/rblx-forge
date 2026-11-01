@@ -1,7 +1,7 @@
 // Tablero de tareas por estado + editor con sugerencia de skills y dependencias.
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { useOrch } from '../../stores/orch';
+import { goOrchTab, useOrch } from '../../stores/orch';
 import { AgentGlyph, Empty, StateBadge, fmtTs } from './common';
 import { ModelPicker, type ModelValue } from '../ModelPicker';
 import { effectiveSource, modelLabel } from '../../lib/orch/models';
@@ -35,6 +35,8 @@ export function Tasks() {
   const addTask = useOrch((s) => s.addTask);
   const updateTask = useOrch((s) => s.updateTask);
   const deleteTask = useOrch((s) => s.deleteTask);
+  const approvals = useOrch((s) => s.approvals);
+  const pendingCount = approvals.filter((a) => a.status === 'pendiente').length;
   const [sel, setSel] = useState<string | null>(null);
   const [edit, setEdit] = useState<{ id: string | null; data: TaskInput } | null>(null);
   const [sug, setSug] = useState<SkillSuggestion[]>([]);
@@ -79,6 +81,12 @@ export function Tasks() {
   return (
     <div className="flex h-full flex-col p-3 lg:flex-row lg:gap-3">
       <div className="min-w-0 flex-1">
+        {pendingCount > 0 && (
+          <div className="anim-enter mb-2 rounded-xl border border-forge-warn/40 bg-forge-warn-soft px-3 py-2 text-[12px]">
+            <span className="font-bold text-forge-warn">⏳ {pendingCount} {pendingCount === 1 ? 'aprobación pendiente' : 'aprobaciones pendientes'}</span>
+            <button onClick={() => goOrchTab('revision')} className="btn btn-primary ml-2 !py-0.5 !text-[11px]">Decidir en Revisión →</button>
+          </div>
+        )}
         <div className="mb-2 flex items-center gap-2">
           <p className="section-label">Tareas ({tasks.length})</p>
           <button onClick={openNew} className="btn btn-primary ml-auto !py-1">+ Tarea</button>
