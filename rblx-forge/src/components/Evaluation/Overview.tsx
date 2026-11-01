@@ -1,6 +1,6 @@
 // Resumen: cifras reales de eval.db + gráficos SVG propios (sin datos → vacío).
 import { useEval } from '../../stores/eval';
-import { GROUP_LABELS, VERDICT_LABELS } from '../../lib/eval/types';
+import { VERDICT_LABELS, groupLabel } from '../../lib/eval/types';
 
 function Bar({ label, value, max, tone }: { label: string; value: number; max: number; tone: string }) {
   return (
@@ -17,6 +17,7 @@ function Bar({ label, value, max, tone }: { label: string; value: number; max: n
 export function Overview() {
   const d = useEval((s) => s.dashboard);
   const skills = useEval((s) => s.skills);
+  const grpPairs = useEval((s) => s.groups);
   if (!d) {
     return (
       <div className="mx-auto max-w-md p-6 text-center">
@@ -77,7 +78,7 @@ export function Overview() {
         <p className="section-label mb-2">Skills por grupo (registro real)</p>
         {groups.length === 0 && <p className="text-[12px] text-forge-muted">Sin skills registradas.</p>}
         {groups.map(([g, n]) => (
-          <Bar key={g} label={GROUP_LABELS[g] ?? g} value={n} max={maxG} tone="var(--color-forge-info)" />
+          <Bar key={g} label={groupLabel(grpPairs, g)} value={n} max={maxG} tone="var(--color-forge-info)" />
         ))}
         {skills.length > 0 && <p className="mono mt-1 text-[10px] text-forge-faint">total listado: {skills.length}</p>}
       </div>

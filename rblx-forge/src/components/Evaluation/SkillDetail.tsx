@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useEval } from '../../stores/eval';
 import { getWorkspaceDir } from '../panels';
-import { GROUP_LABELS, VERDICT_LABELS, type ConceptHit } from '../../lib/eval/types';
+import { VERDICT_LABELS, groupLabel, type ConceptHit } from '../../lib/eval/types';
 
 const SEV_TONE: Record<string, string> = {
   CRITICAL: 'text-forge-err',
@@ -19,6 +19,7 @@ export function SkillDetailView({ onBack, visible }: { onBack: () => void; visib
   const analyze = useEval((s) => s.analyze);
   const [hist, setHist] = useState<{ snapshots: Array<{ hash: string; created_at: number; findings?: number; critical?: number }>; regression_notes: string[] } | null>(null);
   const [profile, setProfile] = useState<ConceptHit[] | null>(null);
+  const grpPairs = useEval((s) => s.groups);
   const [msg, setMsg] = useState<string | null>(null);
   if (!visible || !d) return null;
   const s = d.skill;
@@ -49,7 +50,7 @@ export function SkillDetailView({ onBack, visible }: { onBack: () => void; visib
       <div className="mb-2 flex items-center gap-2">
         <button onClick={onBack} className="btn btn-ghost">← Lista</button>
         <p className="font-bold"><span className="mono text-forge-accent">{s.id}</span></p>
-        <span className="text-[11px] text-forge-muted">{GROUP_LABELS[s.grp] ?? s.grp} · {s.origin} · {s.status}</span>
+        <span className="text-[11px] text-forge-muted">{groupLabel(grpPairs, s.grp)} · {s.origin} · {s.status}</span>
         <button onClick={reanalyze} className="btn btn-ghost ml-auto">Analizar ahora</button>
         <button onClick={async () => {
           setMsg(null);

@@ -1,7 +1,7 @@
 // Lista de skills: búsqueda, filtros reales, ordenación. Sin datos → vacío.
 import { useMemo, useState } from 'react';
 import { useEval } from '../../stores/eval';
-import { GROUP_LABELS } from '../../lib/eval/types';
+import { groupLabel } from '../../lib/eval/types';
 
 type SortKey = 'id' | 'score' | 'runs';
 
@@ -12,6 +12,7 @@ export function Skills({ onOpenSkill }: { onOpenSkill: () => void }) {
   const origin = useEval((s) => s.origin);
   const status = useEval((s) => s.status);
   const setFilter = useEval((s) => s.setFilter);
+  const grpPairs = useEval((s) => s.groups);
   const openSkill = useEval((s) => s.openSkill);
   const busy = useEval((s) => s.busy);
   const [sort, setSort] = useState<SortKey>('id');
@@ -52,7 +53,7 @@ export function Skills({ onOpenSkill }: { onOpenSkill: () => void }) {
         <input value={q} onChange={(e) => setFilter({ q: e.target.value })} placeholder="Buscar skill…" className="input min-w-40 flex-1 !text-[12px]" />
         <select value={grp} onChange={(e) => setFilter({ grp: e.target.value })} className="rounded border border-forge-border bg-forge-bg px-2 py-1">
           <option value="todos">Todos los grupos ({skills.length})</option>
-          {groups.map((g) => <option key={g} value={g}>{GROUP_LABELS[g] ?? g}</option>)}
+          {groups.map((g) => <option key={g} value={g}>{groupLabel(grpPairs, g)}</option>)}
         </select>
         <select value={origin} onChange={(e) => setFilter({ origin: e.target.value })} className="rounded border border-forge-border bg-forge-bg px-2 py-1">
           <option value="todos">Cualquier origen</option>
@@ -93,7 +94,7 @@ export function Skills({ onOpenSkill }: { onOpenSkill: () => void }) {
                 className={`cursor-pointer border-t border-forge-border-soft hover:bg-forge-panel2 ${sel === s.id ? 'bg-forge-panel2' : ''}`}
               >
                 <td className="px-2 py-1"><span className="mono text-forge-accent">{s.id}</span><div className="max-w-md truncate text-[11px] text-forge-muted">{s.name}</div></td>
-                <td className="px-2 py-1 text-forge-muted">{GROUP_LABELS[s.grp] ?? s.grp}</td>
+                <td className="px-2 py-1 text-forge-muted">{groupLabel(grpPairs, s.grp)}</td>
                 <td className="px-2 py-1 text-forge-muted">{s.origin}</td>
                 <td className="px-2 py-1"><span className={s.status === 'eliminada' ? 'text-forge-err' : s.status === 'activa' ? 'text-forge-ok' : 'text-forge-warn'}>{s.status}</span></td>
                 <td className="mono px-2 py-1 text-right">{typeof s.last_score === 'number' ? s.last_score.toFixed(1) : '—'}</td>

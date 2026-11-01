@@ -9,7 +9,7 @@ import { listen } from '@tauri-apps/api/event';
 import { getWorkspaceDir } from '../components/panels';
 import { useSessions } from './sessions';
 import type {
-  Benchmark, Dashboard, EvalSkill, Finding, RunDetail, RunSummary, SkillDetail,
+  Benchmark, Dashboard, EvalSkill, Finding, RunDetail, RunSummary, SkillDetail, GroupPair,
 } from '../lib/eval/types';
 import { autoVerdict, computeScore, type AutoCheckOutcome, type DimId } from '../lib/eval/scoring';
 
@@ -17,6 +17,7 @@ interface EvalState {
   ready: boolean;
   skills: EvalSkill[];
   benchmarks: Benchmark[];
+  groups: GroupPair[];
   dashboard: Dashboard | null;
   runs: RunSummary[];
   detail: RunDetail | null;
@@ -445,6 +446,7 @@ export const useEval = create<EvalState>((set, get) => {
     ready: false,
     skills: [],
     benchmarks: [],
+    groups: [],
     dashboard: null,
     runs: [],
     detail: null,
@@ -475,13 +477,14 @@ export const useEval = create<EvalState>((set, get) => {
         if (ws) {
           await invoke('eval_scan', { workspaceDir: ws }).catch(() => null);
         }
-        const [skills, benchmarks, runs, dashboard] = await Promise.all([
+        const [skills, benchmarks, runs, dashboard, groups] = await Promise.all([
           invoke<EvalSkill[]>('eval_list_skills', { query: null, grp: null, origin: null, status: null }).catch(() => [] as EvalSkill[]),
           invoke<Benchmark[]>('eval_list_benchmarks', {}).catch(() => [] as Benchmark[]),
           invoke<RunSummary[]>('eval_list_runs', { limit: 100 }).catch(() => [] as RunSummary[]),
           invoke<Dashboard>('eval_dashboard', {}).catch(() => null as unknown as Dashboard),
+          invoke<GroupPair[]>('eval_groups', {}).catch(() => [] as GroupPair[]),
         ]);
-        set({ skills, benchmarks, runs, dashboard, ready: true });
+        set({ skills, benchmarks, runs, dashboard, groups, ready: true });
         // Suscripción a eventos (una vez).
         if (eventsOff.length === 0) {
           const names = ['skill_registry_updated', 'skill_analysis_started', 'skill_analysis_completed', 'benchmark_queued', 'benchmark_started', 'benchmark_progress', 'benchmark_completed', 'benchmark_failed', 'benchmark_cancelled', 'evaluation_completed', 'regression_detected'];

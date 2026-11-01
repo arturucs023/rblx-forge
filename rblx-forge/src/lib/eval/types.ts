@@ -139,6 +139,14 @@ export const GROUP_LABELS: Record<string, string> = {
   performance: 'Performance',
 };
 
+/** Etiquetas servidas por el backend (fuente única); fallback local si falla. */
+export type GroupPair = [string, string];
+export function groupLabel(groups: GroupPair[] | null | undefined, id: string): string {
+  const hit = groups?.find((g) => g[0] === id);
+  if (hit) return hit[1];
+  return GROUP_LABELS[id] ?? id;
+}
+
 export const VERDICT_LABELS: Record<string, string> = {
   NOT_EVALUATED: 'Sin evaluar',
   PASSED: 'Aprobada',

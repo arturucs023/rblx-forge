@@ -1462,6 +1462,7 @@ pub fn run() {
             project_lint,
             workspace_stats,
             eval::eval_db_init,
+            eval::eval_groups,
             eval::eval_scan,
             eval::eval_list_skills,
             eval::eval_get_skill,

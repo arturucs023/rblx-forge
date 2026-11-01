@@ -1172,6 +1172,11 @@ pub fn seed_benchmarks() -> Vec<Benchmark> {
 // ---------------------------------------------------------------------------
 
 #[tauri::command]
+pub fn eval_groups() -> Vec<(String, String)> {
+    GROUPS.iter().map(|(id, label)| (id.to_string(), label.to_string())).collect()
+}
+
+#[tauri::command]
 pub fn eval_db_init(app: AppHandle) -> Result<serde_json::Value, String> {
     migrate(&app)?;
     Ok(eval_dashboard_inner(&app)?)

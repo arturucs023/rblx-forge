@@ -1,12 +1,13 @@
 // Catálogo de benchmarks: criterios, checks y lanzamiento real a la cola.
 import { useMemo, useState } from 'react';
 import { useEval } from '../../stores/eval';
-import { GROUP_LABELS } from '../../lib/eval/types';
+import { groupLabel } from '../../lib/eval/types';
 
 export function Benchmarks() {
   const benches = useEval((s) => s.benchmarks);
   const skills = useEval((s) => s.skills);
   const queueBenchmark = useEval((s) => s.queueBenchmark);
+  const grpPairs = useEval((s) => s.groups);
   const [cat, setCat] = useState('todas');
   const [sel, setSel] = useState<string | null>(null);
   const [skillText, setSkillText] = useState('');
@@ -53,7 +54,7 @@ export function Benchmarks() {
         <div className="mb-2 flex items-center gap-1 text-[12px]">
           <select value={cat} onChange={(e) => setCat(e.target.value)} className="rounded border border-forge-border bg-forge-bg px-2 py-1">
             <option value="todas">Todas ({benches.length})</option>
-            {cats.map((c) => <option key={c} value={c}>{GROUP_LABELS[c] ?? c}</option>)}
+            {cats.map((c) => <option key={c} value={c}>{groupLabel(grpPairs, c)}</option>)}
           </select>
           <span className="mono ml-auto text-[11px] text-forge-faint">{list.length} benchmarks</span>
         </div>
