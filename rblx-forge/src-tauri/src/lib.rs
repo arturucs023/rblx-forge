@@ -478,8 +478,18 @@ fn opencode_status(state: State<ForgeState>) -> ServerStatus {
 // Configuración persistente (JSON por clave, sin secretos de proveedores)
 // ---------------------------------------------------------------------------
 
+/// Claves de configuración válidas: puntos permitidos (`workspace.dir`,
+/// `toolchain.rojo`), separadores prohibidos (anti-escape del directorio).
+fn settings_key_ok(key: &str) -> bool {
+    !(key.is_empty()
+        || key.len() > 64
+        || key == "."
+        || key == ".."
+        || !key.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.'))
+}
+
 fn settings_path(app: &AppHandle, key: &str) -> Result<std::path::PathBuf, String> {
-    if key.is_empty() || key.len() > 64 || !key.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+    if !settings_key_ok(key) {
         return Err("Clave de configuración inválida".to_string());
     }
     let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
@@ -1302,6 +1312,18 @@ mod toolchain_tests {
     }
 
     #[test]
+    fn settings_keys_con_punto_y_sin_escape() {
+        // Las claves con punto que usa la app deben aceptarse (bug real:
+        // antes se rechazaban y nada con `.` se guardaba).
+        for k in ["workspace.dir", "projects.parent", "paths.references", "toolchain.rojo", "testing.history"] {
+            assert!(super::settings_key_ok(k), "debe aceptar {}", k);
+        }
+        for k in ["", ".", "..", "a/b", "a\\b", "a:b", "../x", "con espacios", &"x".repeat(65)] {
+            assert!(!super::settings_key_ok(k), "debe rechazar {:?}", k);
+        }
+    }
+
+    #[test]
     fn probes_no_panican_y_git_existe() {
         // git está instalado en esta máquina: el probe debe encontrarlo.
         let g = run_version("git", &["--version"]);
@@ -1421,6 +1443,7 @@ mod toolchain_tests {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_log::Builder::new().build())
         // Una sola instancia: un segundo lanzamiento enfoca la ventana
         // existente en lugar de duplicar la app (y su servidor).

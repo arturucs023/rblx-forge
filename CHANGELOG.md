@@ -2,7 +2,15 @@
 
 Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)`.
 
-## 2026-11-01 — Parpadeo de consolas eliminado (VERIFICADO)
+## 2026-11-01 — Rutas configurables con selector + fix de guardado (VERIFICADO)
+
+- Bug real: el validador de claves rechazaba el punto → `workspace.dir`,
+  `projects.parent`, `toolchain.*` y `testing.history` NUNCA se guardaban.
+  Fix + test de claves (`cargo test` 26/26).
+- Configuración con DOS rutas + «Seleccionar…» nativo (plugin-dialog):
+  entorno (skills/referencias/herramientas) y carpeta donde se crean juegos.
+  Guardado con verificación por relectura y error visible si falla.
+- Wizard de proyecto e importador con selector y valor inicial desde ajustes.
 
 - Causa: cada `Command::new` en Windows abría una CMD visible (detección,
   `where`/`--version`, `tasklist`, servidores gestionados).

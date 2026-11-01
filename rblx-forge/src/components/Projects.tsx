@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useProjects, DEFAULT_PARENT } from '../stores/projects';
+import { getProjectsParent, pickDirectory } from '../lib/paths';
 import { StudioPanel } from './Studio';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -222,6 +223,10 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
   const st = useProjects.getState();
   const busy = useProjects((s) => s.busy);
 
+  useEffect(() => {
+    getProjectsParent().then((p) => { if (p) setParent(p); }).catch(() => {});
+  }, []);
+
   const submit = async () => {
     await st.create(name.trim(), parent.trim(), template, git);
     if (!useProjects.getState().error) onClose();
@@ -232,9 +237,17 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
       <label className="mb-2 block text-[12px]">Nombre
         <input value={name} onChange={(e) => setName(e.target.value)} className="mt-0.5 w-full rounded border border-forge-border bg-forge-bg px-2 py-1" />
       </label>
-      <label className="mb-2 block text-[12px]">Carpeta padre (existente)
-        <input value={parent} onChange={(e) => setParent(e.target.value)} placeholder="p. ej. C:\MisJuegos  |  /home/usuario/juegos" className="mono mt-0.5 w-full rounded border border-forge-border bg-forge-bg px-2 py-1 text-[11px]" />
-      </label>
+      <div className="mb-2 text-[12px]">Carpeta donde crear el juego
+        <div className="mt-0.5 flex gap-1">
+          <input value={parent} onChange={(e) => setParent(e.target.value)} placeholder="Configúrala en Configuración o elígela aquí" className="mono min-w-0 flex-1 rounded border border-forge-border bg-forge-bg px-2 py-1 text-[11px]" />
+          <button onClick={async () => {
+            try {
+              const sel = await pickDirectory('Carpeta donde crear el juego');
+              if (sel) setParent(sel);
+            } catch { /* el usuario cancela: sin ruido */ }
+          }} className="btn btn-ghost shrink-0 !px-2">…</button>
+        </div>
+      </div>
       <label className="mb-2 block text-[12px]">Plantilla
         <select value={template} onChange={(e) => setTemplate(e.target.value)} className="mt-0.5 w-full rounded border border-forge-border bg-forge-bg px-2 py-1">
           <option value="base-rojo">base-rojo — bootstrap servidor/cliente, config, spec de humo, stylua/selene</option>
@@ -261,7 +274,15 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
   return (
     <Modal title="Importar proyecto Rojo" onClose={onClose}>
       <p className="mb-2 text-[12px] text-forge-muted">Carpeta que contenga un <span className="mono">default.project.json</span> válido. Solo lectura + registro; no se modifica nada.</p>
-      <input value={path} onChange={(e) => setPath(e.target.value)} placeholder="C:\ruta\a\mi-juego" className="mono mb-2 w-full rounded border border-forge-border bg-forge-bg px-2 py-1 text-[11px]" />
+      <div className="mb-2 flex gap-1">
+        <input value={path} onChange={(e) => setPath(e.target.value)} placeholder="Elige la carpeta del juego" className="mono min-w-0 flex-1 rounded border border-forge-border bg-forge-bg px-2 py-1 text-[11px]" />
+        <button onClick={async () => {
+          try {
+            const sel = await pickDirectory('Carpeta del proyecto Rojo a importar');
+            if (sel) setPath(sel);
+          } catch { /* cancelado */ }
+        }} className="btn btn-ghost shrink-0 !px-2">…</button>
+      </div>
       <div className="text-right">
         <button onClick={submit} disabled={!path.trim()} className="rounded bg-forge-accent px-3 py-1 font-bold text-black disabled:opacity-50">Importar</button>
       </div>

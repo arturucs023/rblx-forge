@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { getWorkspaceDir } from './components/panels';
+import {
+  KEY_PARENT, KEY_WORKSPACE, getProjectsParent, pickDirectory, setSetting,
+} from './lib/paths';
 import { Sidebar, type ModuleId } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
 import { Assistant } from './components/Assistant';
@@ -76,39 +79,103 @@ function Central({ module, go }: { module: ModuleId; go: (m: ModuleId) => void }
   }
 }
 
+function PathRow({ label, hint, value, onPick, onType }: {
+  label: string; hint: string; value: string;
+  onPick: () => void; onType: (v: string) => void;
+}) {
+  return (
+    <div className="mb-2">
+      <p className="mb-1 text-[12px] font-bold">{label}</p>
+      <p className="mb-1 text-[11px] text-forge-muted">{hint}</p>
+      <div className="flex gap-2">
+        <input
+          value={value}
+          onChange={(e) => onType(e.target.value)}
+          placeholder="Sin configurar — usa «Seleccionar…»"
+          className="input mono min-w-0 flex-1 !text-[12px]"
+        />
+        <button onClick={onPick} className="btn btn-ghost shrink-0">Seleccionar…</button>
+      </div>
+    </div>
+  );
+}
+
 function WorkspaceSettings() {
-  const [dir, setDir] = useState('');
+  const [ws, setWs] = useState('');
+  const [parent, setParent] = useState('');
   const [saved, setSaved] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [stats, setStats] = useState<{ installed: number; own: number; total: number } | null>(null);
+
   useEffect(() => {
-    getWorkspaceDir().then((d) => {
-      setDir(d);
-      invoke<{ installed: number; own: number; total: number }>('workspace_stats', { workspaceDir: d }).then(setStats).catch(() => {});
-    }).catch(() => {});
+    getWorkspaceDir().then(setWs).catch(() => {});
+    getProjectsParent().then(setParent).catch(() => {});
   }, []);
-  const save = async () => {
-    const trimmed = dir.trim();
-    if (!trimmed) return;
-    await invoke('settings_set', { key: 'workspace.dir', value: trimmed });
+  useEffect(() => {
+    if (!ws) { setStats(null); return; }
+    invoke<{ installed: number; own: number; total: number }>('workspace_stats', { workspaceDir: ws })
+      .then(setStats).catch(() => setStats(null));
+  }, [ws, saved]);
+
+  const pick = async (which: 'ws' | 'parent') => {
+    setError(null);
     try {
-      setStats(await invoke('workspace_stats', { workspaceDir: trimmed }));
-    } catch {
-      setStats(null);
+      const sel = await pickDirectory(
+        which === 'ws' ? 'Carpeta del entorno RBLX Forge' : 'Carpeta donde crear los juegos',
+      );
+      if (sel) {
+        if (which === 'ws') setWs(sel);
+        else setParent(sel);
+      }
+    } catch (e) {
+      setError(String(e));
     }
-    setSaved(new Date().toLocaleTimeString());
   };
+
+  const save = async () => {
+    setError(null);
+    setSaved(null);
+    if (!ws.trim() || !parent.trim()) {
+      setError('Configura las dos rutas antes de guardar.');
+      return;
+    }
+    setBusy(true);
+    try {
+      await setSetting(KEY_WORKSPACE, ws);
+      await setSetting(KEY_PARENT, parent);
+      setSaved(new Date().toLocaleTimeString());
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl p-3">
-      <p className="mb-1 text-[12px] font-bold">Espacio de trabajo</p>
-      <p className="mb-1 text-[11px] text-forge-muted">Carpeta raíz del entorno Roblox (skills, referencias, herramientas). Se usa para contar skills y resolver toolchains vendoreados.</p>
-      <div className="flex gap-2">
-        <input value={dir} onChange={(e) => { setDir(e.target.value); setSaved(null); }} placeholder="C:\ruta\al\workspace" className="input mono min-w-0 flex-1 !text-[12px]" />
-        <button onClick={save} className="btn btn-ghost">Guardar</button>
+      <PathRow
+        label="Carpeta del entorno (skills, referencias, herramientas)"
+        hint="Raíz del workspace: aquí viven .agents/skills, .opencode/skills, references y tools. Solo lectura para el motor de evaluación."
+        value={ws}
+        onPick={() => pick('ws')}
+        onType={setWs}
+      />
+      <PathRow
+        label="Carpeta donde se crean los juegos"
+        hint="Los nuevos proyectos Rojo se crean dentro de esta carpeta. Puede ser distinta del entorno (p. ej. Documentos/MisJuegos)."
+        value={parent}
+        onPick={() => pick('parent')}
+        onType={setParent}
+      />
+      {error && <p className="mb-1 text-[12px] text-forge-err">{error}</p>}
+      <div className="flex items-center gap-2">
+        <button onClick={save} disabled={busy} className="btn btn-primary">Guardar rutas</button>
+        <p className="mono text-[11px] text-forge-muted">
+          {stats ? `Skills detectadas: ${stats.total} (${stats.installed} instaladas + ${stats.own} propias)` : 'Sin comprobar.'}
+          {saved ? ` · guardado ${saved} (verificado por relectura)` : ''}
+        </p>
       </div>
-      <p className="mono mt-1 text-[11px] text-forge-muted">
-        {stats ? `Skills detectadas: ${stats.total} (${stats.installed} instaladas + ${stats.own} propias)` : 'Sin comprobar.'}
-        {saved ? ` · guardado ${saved}` : ''}
-      </p>
     </div>
   );
 }

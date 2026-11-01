@@ -8,16 +8,12 @@ import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'react';
 import { TOOL_DESC } from './Toolchain';
 import type { ModuleId } from './Sidebar';
+import { getWorkspaceDir } from '../lib/paths';
 
 export const DEFAULT_WORKSPACE = '';
 
-export async function getWorkspaceDir(): Promise<string> {
-  try {
-    const v = await invoke<string | null>('settings_get', { key: 'workspace.dir' });
-    if (typeof v === 'string' && v.trim()) return v.trim();
-  } catch { /* sin configurar */ }
-  return '';
-}
+// Fuente única de rutas: src/lib/paths.ts (con selector de carpetas).
+export { getWorkspaceDir };
 
 export function PendingBadge({ phase }: { phase: string }) {
   return (
