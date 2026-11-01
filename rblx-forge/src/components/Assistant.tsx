@@ -116,12 +116,23 @@ export function Assistant() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickRef = useRef(true);
 
+  const msgs = activeId ? (messages[activeId] ?? EMPTY_MSGS) : EMPTY_MSGS;
+  const liveIds = new Set(sessions.map((s) => s.id));
+  const saved = archived.filter((a) => !liveIds.has(a.id));
+
   useEffect(() => {
     if (assistantDraft) {
       setDraft(assistantDraft);
       setAssistantDraft(null);
     }
   }, [assistantDraft, setAssistantDraft]);
+
+  // Auto-scroll: sigue al chat solo si ya estabas abajo (no te arranca del historial).
+  // Va ANTES de cualquier return: los hooks deben ejecutarse siempre en el mismo orden (React #310).
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el && stickRef.current) el.scrollTop = el.scrollHeight;
+  }, [msgs, streaming]);
 
   if (!client) {
     return (
@@ -135,10 +146,6 @@ export function Assistant() {
     );
   }
 
-  const msgs = activeId ? (messages[activeId] ?? EMPTY_MSGS) : EMPTY_MSGS;
-  const liveIds = new Set(sessions.map((s) => s.id));
-  const saved = archived.filter((a) => !liveIds.has(a.id));
-
   const send = async () => {
     const text = draft.trim();
     if (!text || busy || archivedId) return;
@@ -147,10 +154,6 @@ export function Assistant() {
   };
 
   // Auto-scroll: sigue al chat solo si ya estabas abajo (no te arranca del historial).
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el && stickRef.current) el.scrollTop = el.scrollHeight;
-  }, [msgs, streaming]);
   const onScroll = () => {
     const el = scrollRef.current;
     if (el) stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
