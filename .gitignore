@@ -1,0 +1,37 @@
+# Dependencias (se reinstalan con npm install / cargo)
+node_modules/
+rblx-forge/node_modules/
+
+# Build de Rust / Tauri (se regenera con cargo build / tauri build)
+rblx-forge/src-tauri/target/
+target/
+
+# Build del frontend (se regenera con npm run build)
+rblx-forge/dist/
+dist/
+
+# Artefactos e instaladores generados
+*.msi
+*.nsis.zip
+
+# Logs y temporales
+*.log
+npm-debug.log*
+*.tmp
+*.temp
+
+# Variables de entorno y secretos (nunca se suben)
+.env
+.env.*
+*.pem
+*.key
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Cachés
+.eslintcache
+*.tsbuildinfo
+.vite/

@@ -1,0 +1,28 @@
+{
+  "name": "RobloxDevEnvironment",
+  "servePort": 34872,
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "CoinGameShared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "CoinGameServer": {
+        "$path": "src/server"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "CoinGameClient": {
+          "$path": "src/client"
+        }
+      }
+    }
+  }
+}
