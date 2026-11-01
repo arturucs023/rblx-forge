@@ -10,6 +10,7 @@ import { LuauEditor } from './components/Editor';
 import { Toolchain } from './components/Toolchain';
 import { Library } from './components/Library';
 import { Testing } from './components/Testing';
+import { Evaluation } from './components/Evaluation/Evaluation';
 import { Viewport } from './components/Viewport';
 import { ModuleBoundary } from './components/ErrorBoundary';
 import { useProjects } from './stores/projects';
@@ -57,6 +58,8 @@ function Central({ module, go }: { module: ModuleId; go: (m: ModuleId) => void }
       return <Library />;
     case 'testing':
       return <Testing />;
+    case 'evaluacion':
+      return <Evaluation />;
     case 'viewport':
       return <Viewport />;
     case 'configuracion':

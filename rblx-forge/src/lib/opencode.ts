@@ -126,6 +126,15 @@ export function createClient(opts: ClientOptions) {
         method: 'POST',
         body: JSON.stringify({ text }),
       }),
+    /** Prompt completo (verificado OpenAPI 2.2.4): adjunta skills registradas por ID. */
+    sendPromptFull: (id: string, body: { text: string; skills?: string[] }) =>
+      req<SessionMessage>(clean, pw, `/api/session/${encodeURIComponent(id)}/prompt`, {
+        method: 'POST',
+        body: JSON.stringify({
+          text: body.text,
+          ...(body.skills?.length ? { skills: body.skills.map((s) => ({ id: s })) } : {}),
+        }),
+      }),
     listMessages: (id: string, limit = 100) =>
       req<SessionMessage[]>(
         clean,

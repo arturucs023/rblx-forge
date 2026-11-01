@@ -13,6 +13,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 mod projects;
 mod terminal;
 mod watcher;
+mod eval;
 use projects::*;
 use terminal::{PtyState, pty_close, pty_create, pty_list, pty_resize, pty_scrollback, pty_write};
 use watcher::{WatchState, fs_watch_start, fs_watch_stop};
@@ -1460,6 +1461,27 @@ pub fn run() {
             tool_run,
             project_lint,
             workspace_stats,
+            eval::eval_db_init,
+            eval::eval_scan,
+            eval::eval_list_skills,
+            eval::eval_get_skill,
+            eval::eval_analyze,
+            eval::eval_list_benchmarks,
+            eval::eval_get_benchmark,
+            eval::eval_tech_profile,
+            eval::eval_create_tmpdir,
+            eval::eval_list_tmpfiles,
+            eval::eval_read_tmpfile,
+            eval::eval_cleanup_tmpdir,
+            eval::eval_save_run,
+            eval::eval_update_run,
+            eval::eval_list_runs,
+            eval::eval_get_run,
+            eval::eval_compare_runs,
+            eval::eval_skill_history,
+            eval::eval_dashboard,
+            eval::eval_prune_runs,
+            eval::eval_export,
         ])
         .on_window_event(|window, event| {
             // Al cerrar la ventana principal, detener el servidor gestionado.

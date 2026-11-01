@@ -85,3 +85,19 @@ Permiso aprobar/rechazar en vivo: PENDIENTE (requiere tarea que lo dispare;
 - PENDIENTE manual (sin simular): clics E2E en la app; terminal en sesión
   interactiva; permiso aprobar/rechazar en vivo; `rojo serve` + plugin con
   proyecto real; TestEZ con runner; MSI en máquina limpia.
+
+## FASE 9 Skill Evaluation Engine (2026-11-01) — PROBADO
+
+- Rust: `cargo test` 25/25 (registro/duplicados/renombres, estático A-D+T,
+  crossrefs, 30 benchmarks con distribución y pesos, grupos, tmp guard,
+  migrate/run/snapshot/prune en SQLite real en memoria).
+- Frontend: `npm run test` 20/20 (scoring honesto, autoVerdict, heurística Lua,
+  contratos de tipos). `npm run build` OK.
+- E2E `rblx-forge/scripts/eval-acceptance.cjs`: TODO OK contra servidor propio
+  (puerto 28982, v2.2.4, pid propio eliminado; global 28894 intacto): 148 skills,
+  sesión en tmpdir con copias, prompt de benchmark real, respuesta del modelo,
+  .luau generados solo en tmpdir, hash de originales idéntico, permisos OK,
+  puerto liberado y tmp eliminado.
+- Observación honesta: el servidor rechazó `skills:[{id}]` con ID no registrado
+  en ese directorio; el runner reintenta sin skills y lo registra (ver
+  `docs/EVALUATION.md`, Limitaciones).

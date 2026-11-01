@@ -2,6 +2,27 @@
 
 Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)`.
 
+## 2026-11-01 — Skill Evaluation Engine FASE 9 (verificado)
+
+- Registro centralizado: 148 skills descubiertas (61 instaladas + 87 propias),
+  hash SHA-256, estados (activa/nueva/modificada/renombrada/duplicada/eliminada),
+  grupos desde contenido real, evento `skill_registry_updated` (probado).
+- Analizador estático determinista EVAL-A/B/C/D + serie T (DataStore en
+  cliente, bucles sin espera, WaitForChild sin timeout): reproducible,
+  severidades CRITICAL→INFO, sin auto-modificación (probado, 25 tests Rust).
+- Perfil técnico por skill: 25 conceptos (mencionado/explicado/aplicado) con
+  evidencia y enlace a doc oficial; `aplicado` ⇒ NEEDS_VERIFICATION (probado).
+- 30 benchmarks reales con distribución 6/5/4/4/3/3/2/1/2, criterios
+  auto+semánticos ponderados y checks deterministas (probado).
+- Runner con OpenCode real: tmpdirs `forge-eval-*`, denegación fuera del tmpdir,
+  verificación pre/post de originales, timeout, cancelación, concurrencia 1–2,
+  juez semántico en sesión independiente (verificado E2E en servidor propio).
+- Scoring 0–100 honesto (sin criterios ⇒ sin nota; críticos ⇒ BLOCKED),
+  regresión por snapshots append-only, comparador run-vs-run y por skill,
+  dashboard con gráficos reales o vacíos, informes JSON/CSV/Markdown (probado).
+- E2E `rblx-forge/scripts/eval-acceptance.cjs`: TODO OK (148 skills, servidor
+  propio v2.2.4, prompt real, .luau generados en tmpdir, originales intactos).
+
 ## Publicación en GitHub (rblx-forge, repo público MIT)
 - README reescrito, LICENSE MIT neutral, .gitignore, sanitización de rutas
   personales (defaults neutros configurables), identidad de commit neutral.

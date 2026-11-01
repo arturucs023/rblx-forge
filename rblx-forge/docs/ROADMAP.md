@@ -9,6 +9,9 @@
 - [x] FASE 6 — Biblioteca visual (16 refs reales, licencias, favoritos).
 - [x] FASE 7 — Centro de pruebas (lint real + historial; TestEZ/multi sin runner).
 - [x] FASE 8 — Viewport (comparador honesto), release interna, pulido base.
+- [x] FASE 9 — Skill Evaluation Engine (registro 148, estático, perfil técnico,
+  30 benchmarks, runner OpenCode real aislado, scoring honesto, regresión,
+  dashboard, informes). Ver `EVALUATION.md`.
 
 ## Próximo (no iniciado, por valor)
 

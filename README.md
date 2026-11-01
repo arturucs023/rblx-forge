@@ -36,6 +36,7 @@ keys en el repo.
 |---|---|
 | Biblioteca de skills | 148 skills: 61 instaladas de 5 colecciones + 87 propias organizadas en 12 disciplinas |
 | RBLX Forge | App de escritorio (Tauri 2 + React + Rust): proyectos, editor Luau, terminal, asistente OpenCode con streaming y permisos, biblioteca visual, testing |
+| Skill Evaluation Engine | Registro de 148 skills, análisis estático, perfil técnico, 30 benchmarks con runner OpenCode real aislado, scoring honesto, regresión y comparador (ver `rblx-forge/docs/EVALUATION.md`) |
 | Toolchain vendoreada | Rojo, StyLua, Selene, Wally + TestEZ, todo dentro del repo |
 | Referencias visuales | 16 imágenes verificadas con licencia y atribución |
 | Docs | Arquitectura, catálogo, guía de estilo, dirección de arte, MCP, toolchain, testing, seguridad, workflow |
