@@ -101,3 +101,15 @@ Permiso aprobar/rechazar en vivo: PENDIENTE (requiere tarea que lo dispare;
 - Observación honesta: el servidor rechazó `skills:[{id}]` con ID no registrado
   en ese directorio; el runner reintenta sin skills y lo registra (ver
   `docs/EVALUATION.md`, Limitaciones).
+
+## FASE 10 Multi-Agent Orchestrator (2026-11-01) — TESTEADO, E2E PARCIAL
+
+- Rust: `cargo test` 36/36 (8 nuevos: DAG/ciclos/ready/transiciones/permisos/
+  herencia de modelo/ranking/conflictos/seed de 10 perfiles).
+- Frontend: `npm run build` y `npm run test` en verde (27/27).
+- E2E `rblx-forge/scripts/orch-acceptance.cjs`: 10 perfiles + 36 skill IDs en
+  disco verificados; servidor propio; tarea architect OK (12k chars). Después
+  ningún modelo gratuito respondió (cuota agotada; verificado que ni «Reply OK»
+  sin herramientas responde). Rerun pendiente con cuota: el script elige solo
+  el primer modelo que responda, valida con selene vendoreado y limpia todo.
+  NINGÚN resultado simulado: lo no ejecutado consta como pendiente.

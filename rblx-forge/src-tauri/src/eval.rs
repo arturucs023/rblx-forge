@@ -152,7 +152,7 @@ fn open_db(app: &AppHandle) -> Result<Connection, String> {
 }
 
 /// Migración + semilla sobre una conexión ya abierta (testeable sin Tauri).
-fn migrate_conn(c: &Connection) -> Result<(), String> {
+pub(crate) fn migrate_conn(c: &Connection) -> Result<(), String> {
     c.execute_batch(
         "PRAGMA journal_mode=WAL;
          CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL);
@@ -220,6 +220,8 @@ fn migrate_conn(c: &Connection) -> Result<(), String> {
         )
         .map_err(|e| e.to_string())?;
     }
+    // Tablas del orquestador (misma DB, coherente).
+    crate::orch::migrate_orch_tables(c)?;
     Ok(())
 }
 

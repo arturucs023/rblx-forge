@@ -14,6 +14,7 @@ mod projects;
 mod terminal;
 mod watcher;
 mod eval;
+mod orch;
 use projects::*;
 use terminal::{PtyState, pty_close, pty_create, pty_list, pty_resize, pty_scrollback, pty_write};
 use watcher::{WatchState, fs_watch_start, fs_watch_stop};
@@ -1724,6 +1725,48 @@ pub fn run() {
             eval::eval_dashboard,
             eval::eval_prune_runs,
             eval::eval_export,
+            orch::orch_db_init,
+            orch::orch_list_profiles,
+            orch::orch_save_profile,
+            orch::orch_delete_profile,
+            orch::orch_suggest_skills,
+            orch::orch_run_create,
+            orch::orch_run_list,
+            orch::orch_run_get,
+            orch::orch_run_submit,
+            orch::orch_run_approve,
+            orch::orch_run_pause,
+            orch::orch_run_resume,
+            orch::orch_run_cancel,
+            orch::orch_run_complete,
+            orch::orch_run_fail,
+            orch::orch_task_add,
+            orch::orch_task_list,
+            orch::orch_task_update,
+            orch::orch_task_update_result,
+            orch::orch_task_delete,
+            orch::orch_task_set_state,
+            orch::orch_validate_plan,
+            orch::orch_exec_start,
+            orch::orch_exec_finish,
+            orch::orch_exec_list,
+            orch::orch_message_post,
+            orch::orch_message_list,
+            orch::orch_approval_request,
+            orch::orch_approval_list,
+            orch::orch_approval_decide,
+            orch::orch_artifact_add,
+            orch::orch_artifact_list,
+            orch::orch_audit_add,
+            orch::orch_audit_list,
+            orch::orch_dashboard,
+            orch::orch_ready_tasks,
+            orch::orch_resolve_model,
+            orch::orch_risky_ops,
+            orch::orch_is_risky,
+            orch::orch_permissions,
+            orch::orch_message_kinds,
+            orch::orch_export,
         ])
         .on_window_event(|window, event| {
             // Al cerrar la ventana principal, detener el servidor gestionado.

@@ -12,6 +12,9 @@
 - [x] FASE 9 — Skill Evaluation Engine (registro 148, estático, perfil técnico,
   30 benchmarks, runner OpenCode real aislado, scoring honesto, regresión,
   dashboard, informes). Ver `EVALUATION.md`.
+- [x] FASE 10 — Multi-Agent Orchestrator (10 perfiles, DAG validado, runner
+  real con revisiones independientes, aprobaciones, auditoría, 7 vistas).
+  E2E real parcial por cuota free (ver `MULTI_AGENT_ORCHESTRATOR.md`).
 
 ## Próximo (no iniciado, por valor)
 

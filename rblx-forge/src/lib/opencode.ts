@@ -54,6 +54,16 @@ export interface ModelInfo {
   cost?: ModelCost[];
 }
 
+export interface AgentInfo {
+  id: string;
+  name?: string;
+  mode?: string;
+  model?: { id: string; providerID: string; variant?: string } | null;
+  description?: string;
+  hidden?: boolean;
+  [k: string]: unknown;
+}
+
 export interface SessionSummary {
   id: string;
   title?: string | null;
@@ -150,11 +160,27 @@ export function createClient(opts: ClientOptions) {
       const s = q.toString();
       return req<SessionSummary[]>(clean, pw, '/api/session' + (s ? '?' + s : ''));
     },
-    createSession: (body?: { title?: string; directory?: string }) =>
+    createSession: (body?: { title?: string; directory?: string; agent?: string; model?: { id: string; providerID: string; variant?: string } }) =>
       req<SessionSummary>(clean, pw, '/api/session', {
         method: 'POST',
         body: JSON.stringify(body ?? {}),
       }),
+    /** Fork nativo: rama una sesión (hija observable e independiente). */
+    forkSession: (id: string, before?: string) =>
+      req<SessionSummary>(clean, pw, `/api/session/${encodeURIComponent(id)}/fork`, {
+        method: 'POST',
+        body: JSON.stringify(before ? { before } : {}),
+      }),
+    /** Cambia el agente nativo dentro de una sesión existente. */
+    switchSessionAgent: (id: string, agent: string) =>
+      req<unknown>(clean, pw, `/api/session/${encodeURIComponent(id)}/agent`, {
+        method: 'POST',
+        body: JSON.stringify({ agent }),
+      }),
+    /** Agentes nativos disponibles (primary/subagent/all). */
+    listAgents: () => req<AgentInfo[]>(clean, pw, '/api/agent'),
+    getAgent: (agentId: string) =>
+      req<AgentInfo>(clean, pw, `/api/agent/${encodeURIComponent(agentId)}`),
     deleteSession: (id: string) =>
       req<void>(clean, pw, `/api/session/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     sendPrompt: (id: string, text: string) =>

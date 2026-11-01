@@ -14,6 +14,7 @@ import { Toolchain } from './components/Toolchain';
 import { Library } from './components/Library';
 import { Testing } from './components/Testing';
 import { Evaluation } from './components/Evaluation/Evaluation';
+import { Orchestrator } from './components/Orchestrator/Orchestrator';
 import { Viewport } from './components/Viewport';
 import { ModuleBoundary } from './components/ErrorBoundary';
 import { useProjects } from './stores/projects';
@@ -63,6 +64,8 @@ function Central({ module, go }: { module: ModuleId; go: (m: ModuleId) => void }
       return <Testing />;
     case 'evaluacion':
       return <Evaluation />;
+    case 'orquestador':
+      return <Orchestrator />;
     case 'viewport':
       return <Viewport />;
     case 'configuracion':

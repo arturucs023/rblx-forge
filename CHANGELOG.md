@@ -2,7 +2,22 @@
 
 Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)`.
 
-## 2026-11-01 — Variantes de modelo + actualización de OpenCode (VERIFICADO)
+## 2026-11-01 — Multi-Agent Orchestrator FASE 10 (implementado + testeado, E2E parcial)
+
+- Backend `orch.rs` (45 comandos, 10 tablas en eval.db): 10 perfiles integrados
+  (2–5 skills reales cada uno), DAG validado, estados estrictos 8+7, mensajes
+  tipados, aprobaciones, artefactos con hash, auditoría, export.
+  `cargo test` 36/36 (28 previos + 8 orch), cero warnings.
+- Frontend: store con runner real (sesiones OpenCode por tarea, scope-guard,
+  timeouts, reintentos con fork nativo, revisión independiente con veredicto
+  JSON, aprobaciones trasladadas a permisos reales) + 7 vistas integradas.
+  `npm run build` OK, vitest 27/27.
+- Integración OpenCode verificada: 7 agentes nativos listados, fork/switch
+  probados a nivel de contrato, `skills[]` con fallback conocido.
+- E2E `scripts/orch-acceptance.cjs` PARCIAL: 10 perfiles + 36 skill IDs
+  verificados en disco, servidor propio, arquitecto respondió 12k chars;
+  después ningún modelo gratuito respondió (cuota agotada ese día; rerun
+  pendiente cuando haya cuota).
 
 - Variantes por sesión: el selector muestra las variantes reales del modelo
   (`low/medium/high/max/…`, 41 de 58 modelos las tienen, verificado contra
