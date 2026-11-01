@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mergeArchived, type ArchivedChat } from './sessions';
+import { mergeArchived, messagesSig, type ArchivedChat } from './sessions';
 
 const chat = (id: string, updatedAt: number): ArchivedChat => ({ id, title: id, updatedAt, modelLabel: null, messages: [] });
 
@@ -11,5 +11,15 @@ describe('mergeArchived', () => {
     const many = Array.from({ length: 25 }, (_, i) => chat(`c${i}`, i));
     expect(mergeArchived(many, chat('nuevo', 99))).toHaveLength(20);
     expect(mergeArchived(many, chat('nuevo', 99))[0].id).toBe('nuevo');
+  });
+});
+
+describe('messagesSig', () => {
+  it('detecta cambios de contenido y longitud', () => {
+    const a = [{ id: '1', text: 'hola' }];
+    expect(messagesSig([])).toBe('0');
+    expect(messagesSig(a)).toBe(messagesSig([{ id: '1', text: 'hola' }]));
+    expect(messagesSig(a)).not.toBe(messagesSig([{ id: '1', text: 'hola!' }]));
+    expect(messagesSig(a)).not.toBe(messagesSig([...a, { id: '2', text: 'x' }]));
   });
 });

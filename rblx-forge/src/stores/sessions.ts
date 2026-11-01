@@ -84,6 +84,53 @@ export function mergeArchived(prev: ArchivedChat[], entry: ArchivedChat, cap = 2
   return [entry, ...prev.filter((c) => c.id !== entry.id)].slice(0, Math.max(1, cap));
 }
 
+/** Firma barata para detectar cambios sin comparar objetos enteros. */
+export function messagesSig(arr: SessionMessage[]): string {
+  if (arr.length === 0) return '0';
+  const last = JSON.stringify(arr[arr.length - 1]);
+  return `${arr.length}:${last.length}:${last.slice(-200)}`;
+}
+
+/** Lazo de refresco continuo del chat (500 ms). El SSE puede cortarse o
+ * tardar; el polling garantiza ver qué hace el modelo, los permisos y los
+ * forms sin depender de un solo reintento. */
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+let pollTick = 0;
+
+function ensurePoll() {
+  if (pollTimer) return;
+  pollTimer = setInterval(() => {
+    void (async () => {
+      try {
+        const { client, activeId, archivedId, busy, streaming } = useSessions.getState();
+        if (!client || !activeId || archivedId) return;
+        pollTick++;
+        const msgs = await client.listMessages(activeId);
+        const st = useSessions.getState();
+        const prev = st.messages[activeId] ?? [];
+        if (messagesSig(prev) !== messagesSig(msgs)) {
+          useSessions.setState({ messages: { ...st.messages, [activeId]: msgs } });
+          void persistActive();
+        }
+        // Permisos y forms: críticos para aprobar a tiempo; cada ~2 s o si hay actividad.
+        if (pollTick % 4 === 0 || busy || streaming) {
+          await useSessions.getState().refreshPermissions().catch(() => {});
+          await useSessions.getState().refreshForms().catch(() => {});
+        }
+      } catch {
+        /* transitorio: el siguiente tick reintenta */
+      }
+    })();
+  }, 500);
+}
+
+function stopPoll() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
 /** Guarda la sesión activa en el equipo (topes: 20 chats/dir, 120 mensajes).
  * Best-effort y silencioso: jamás rompe el flujo del chat. */
 async function persistActive() {
@@ -192,6 +239,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
     });
     set({ client, sseOff: off, error: null });
     get().fetchModels().catch(() => {});
+    ensurePoll();
     const dir = get().cwd;
     if (dir) get().loadArchived(dir).catch(() => {});
   },
@@ -255,6 +303,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
   },
 
   disconnect: () => {
+    stopPoll();
     get().sseOff?.();
     set({ client: null, sessions: [], activeId: null, messages: {}, permissions: [], sseOff: null });
   },
