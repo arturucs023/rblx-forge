@@ -196,18 +196,19 @@ export function createClient(opts: ClientOptions) {
       req<AgentInfo>(clean, pw, `/api/agent/${encodeURIComponent(agentId)}`),
     deleteSession: (id: string) =>
       req<void>(clean, pw, `/api/session/${encodeURIComponent(id)}`, { method: 'DELETE' }),
-    sendPrompt: (id: string, text: string) =>
+    sendPrompt: (id: string, text: string, files?: PromptFileAttachment[]) =>
       req<SessionMessage>(clean, pw, `/api/session/${encodeURIComponent(id)}/prompt`, {
         method: 'POST',
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, ...(files?.length ? { files } : {}) }),
       }),
     /** Prompt completo (verificado OpenAPI 2.2.4): adjunta skills registradas por ID. */
-    sendPromptFull: (id: string, body: { text: string; skills?: string[] }) =>
+    sendPromptFull: (id: string, body: { text: string; skills?: string[]; files?: PromptFileAttachment[] }) =>
       req<SessionMessage>(clean, pw, `/api/session/${encodeURIComponent(id)}/prompt`, {
         method: 'POST',
         body: JSON.stringify({
           text: body.text,
           ...(body.skills?.length ? { skills: body.skills.map((s) => ({ id: s })) } : {}),
+          ...(body.files?.length ? { files: body.files } : {}),
         }),
       }),
     listMessages: (id: string, limit = 100) =>
@@ -310,6 +311,12 @@ export function createClient(opts: ClientOptions) {
       };
     },
   };
+}
+
+/** Adjunto de archivo (verificado: `files:[{uri}]` → 200, scripts/probe-attach.cjs). */
+export interface PromptFileAttachment {
+  uri: string;
+  name?: string;
 }
 
 export type OpenCodeClient = ReturnType<typeof createClient>;

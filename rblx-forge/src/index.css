@@ -108,3 +108,19 @@ body {
 .row-hover { transition: background 0.12s ease; }
 .row-hover:hover { background: var(--color-forge-panel2); }
 :focus-visible { outline: 2px solid var(--color-forge-accent-dim); outline-offset: 1px; }
+
+/* Resaltado de sintaxis (highlight.js) con paleta Forge */
+.hljs { color: var(--color-forge-text); background: transparent; }
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in { color: var(--color-forge-accent); }
+.hljs-string, .hljs-regexp, .hljs-addition { color: var(--color-forge-ok); }
+.hljs-number, .hljs-literal { color: #e8b33d; }
+.hljs-title, .hljs-title.function_, .hljs-section { color: var(--color-forge-info); }
+.hljs-comment, .hljs-quote { color: var(--color-forge-faint); font-style: italic; }
+.hljs-variable, .hljs-template-variable, .hljs-attr, .hljs-attribute { color: #c792ea; }
+.hljs-name, .hljs-selector-id, .hljs-selector-class { color: var(--color-forge-info); }
+.hljs-type, .hljs-class .hljs-title { color: #7fdbca; }
+.hljs-operator, .hljs-punctuation { color: var(--color-forge-muted); }
+.hljs-deletion { color: var(--color-forge-err); }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: bold; }
+.hljs-link { color: var(--color-forge-info); }

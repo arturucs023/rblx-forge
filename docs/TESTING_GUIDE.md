@@ -26,3 +26,13 @@
 - Runner TestEZ ejecutable (manual en Studio o CI con `run-in-roblox`): specs
   aún no escritos; `wally install` + `Packages/TestEZ.lua` listos.
 - Multi-cliente del prototipo CoinGame (2 clientes recogiendo a la vez).
+
+## Verificación del Asistente (2026-11-02)
+
+- `npm run build` (tsc + vite) OK; `vitest run` 12 ficheros / 46 tests OK,
+  incluyendo `chat/text`, `chat/models` y `opencode` (contrato type/role).
+- `scripts/probe-attach.cjs` y `probe-attach2.cjs` contra servidor OpenCode
+  propio: `files:[{uri:'file://…'}]` → 200; el modelo leyó el contenido real
+  del adjunto (palabra aleatoria verificada); forma de tool parts y tiempos
+  `ran/completed` confirmados. Sin Studio: la comprobación visual en la app
+  queda pendiente de revisión manual.

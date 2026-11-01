@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
-import { createClient, type OpenCodeClient, type PermissionRequest, type SessionMessage, type SessionSummary, type ModelInfo, type FormDetail } from '../lib/opencode';
+import { createClient, type OpenCodeClient, type PermissionRequest, type SessionMessage, type SessionSummary, type ModelInfo, type FormDetail, type PromptFileAttachment } from '../lib/opencode';
+import { userText as userTextOf, assistantTexts as assistantTextsOf } from '../lib/chat/text';
 import { eventToFeed, trackToolCall, type FeedItem, type TrackedCall } from '../lib/activity';
 import { useApp } from './app';
 
@@ -56,11 +57,12 @@ interface SessionsState {
   createSession: (title?: string, directory?: string) => Promise<void>;
   selectSession: (id: string) => Promise<void>;
   closeSession: (id: string) => Promise<void>;
-  sendPrompt: (text: string) => Promise<void>;
+  sendPrompt: (text: string, files?: PromptFileAttachment[]) => Promise<void>;
   interruptActive: () => Promise<void>;
   loadArchived: (dir: string) => Promise<void>;
   viewArchived: (id: string) => void;
   continueArchived: () => Promise<void>;
+  deleteArchived: (id: string) => Promise<void>;
   refreshForms: () => Promise<void>;
   replyForm: (formId: string, answer: Record<string, unknown>) => Promise<void>;
   cancelForm: (formId: string) => Promise<void>;
@@ -68,14 +70,13 @@ interface SessionsState {
   replyPermission: (requestId: string, decision: 'allow' | 'deny') => Promise<void>;
 }
 
-/** Extrae texto visible. Contrato real: user.text, assistant.content[] (se
- * excluye reasoning), con tolerancia a la forma antigua parts[]. */
+/** Extrae texto visible. Contrato real: user.text o user.payload.text,
+ * assistant.content[] (se excluye reasoning), con tolerancia a parts[]. */
 function partsText(m: SessionMessage): string {
   const out: string[] = [];
-  if (typeof m.text === 'string' && m.text.trim()) out.push(m.text);
-  for (const p of m.content ?? m.parts ?? []) {
-    if (typeof p.text === 'string' && p.text.trim() && p.type !== 'reasoning') out.push(p.text);
-  }
+  const head = userTextOf(m);
+  if (head.trim()) out.push(head.trim());
+  for (const t of assistantTextsOf(m)) out.push(t);
   return out.join('\n');
 }
 
@@ -388,14 +389,15 @@ export const useSessions = create<SessionsState>((set, get) => ({
     }
   },
 
-  sendPrompt: async (text) => {
+  sendPrompt: async (text, files) => {
     const c = get().client;
     const id = get().activeId;
-    if (!c || !id || !text.trim()) return;
+    if (!c || !id || (!text.trim() && !(files?.length))) return;
     set({ busy: true, streaming: true, error: null });
-    useApp.getState().pushActivity('info', 'sesion', `▶ ${text.slice(0, 120)}`);
+    const label = text.trim() ? text.slice(0, 120) : `${files?.length ?? 0} adjunto(s)`;
+    useApp.getState().pushActivity('info', 'sesion', `▶ ${label}${files?.length ? ` [${files.map((f) => f.name).join(', ')}]` : ''}`);
     try {
-      await c.sendPrompt(id, text);
+      await c.sendPrompt(id, text, files?.length ? files : undefined);
       // El stream llega por SSE; releer tras una ventana para consolidar.
       await new Promise((r) => setTimeout(r, 1500));
       const msgs = await c.listMessages(id);
@@ -427,6 +429,21 @@ export const useSessions = create<SessionsState>((set, get) => ({
     const a = get().archived.find((c) => c.id === id);
     if (!a) return;
     set((st) => ({ activeId: id, archivedId: id, forms: [], messages: { ...st.messages, [id]: a.messages } }));
+  },
+
+  deleteArchived: async (id) => {
+    const dir = get().cwd;
+    const next = get().archived.filter((c) => c.id !== id);
+    set((st) => ({
+      archived: next,
+      activeId: st.archivedId === id ? null : st.activeId,
+      archivedId: st.archivedId === id ? null : st.archivedId,
+    }));
+    if (dir) {
+      try {
+        await invoke('settings_set', { key: `chat.${dirHash(dir)}`, value: { chats: next } });
+      } catch { /* best-effort: el estado en memoria ya manda */ }
+    }
   },
 
   continueArchived: async () => {

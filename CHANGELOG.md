@@ -2,6 +2,21 @@
 
 Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)`.
 
+## 2026-11-02 — Rediseño del Asistente (IMPLEMENTADO, verificado sin Studio)
+
+- Chat con Markdown real (GFM: tablas, listas, citas, enlaces), resaltado de
+  sintaxis highlight.js con paleta Forge y botón copiar por bloque y por mensaje.
+- Bloques de herramientas con estado real (completada/error/en curso/pendiente),
+  duración medida por el servidor, salida expandible y errores visibles.
+- Selector de modelo con búsqueda, agrupación por proveedor, coste real y
+  variantes; composer con auto-resize, Enter/Shift+Enter, adjuntos file://
+  (verificado 200 + lectura real E2E) y botón detener ■.
+- Historial con búsqueda, fechas, borrado de guardados y continuación con contexto.
+- Corrección: los mensajes del usuario viajan en `payload.text` (verificado en
+  volcados); ahora se renderizan y se guardan en el historial.
+- `npm run build` OK, vitest 12/12 (46 tests), hooks LIMPIO. Sin dependencias
+  de IA nuevas; Orchestrator y Skills intactos.
+
 ## 2026-11-01 — Aplicar a Roblox + feedback de revisión (VERIFICADO)
 
 - Botón «Aplicar todo a Roblox»: copia de una vez lo generado (tmpdir por run,
