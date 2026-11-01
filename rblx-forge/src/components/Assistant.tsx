@@ -2,105 +2,38 @@ import { useEffect, useRef, useState } from 'react';
 import { useSessions } from '../stores/sessions';
 import type { FormDetail, MessagePart, SessionMessage } from '../lib/opencode';
 import { sessionTotals, formatTokens, formatCost, EMPTY_MSGS } from '../lib/session-stats';
-import type { ModelInfo } from '../lib/opencode';
 import { defaultValues, isSingleChoice, validateAnswer, type FieldValues } from '../lib/forms';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useApp } from '../stores/app';
-
-function costLabel(m: ModelInfo): string {
-  const c = m.cost?.[0];
-  if (!c) return 'coste n/d';
-  const inp = typeof c.input === 'number' ? c.input : null;
-  const out = typeof c.output === 'number' ? c.output : null;
-  if (inp === 0 && out === 0) return 'gratis';
-  const f = (v: number | null) => (v === null ? '?' : `$${v}`);
-  return `${f(inp)}/${f(out)} por 1M tokens`;
-}
-
-import { getVariants, variantHint } from '../lib/model-variants';
+import { ModelPicker } from './ModelPicker';
 
 function ModelBar() {
   const { activeId, models, defaultModel, activeModel, switchModel, busy } = useSessions();
-  const [open, setOpen] = useState(false);
-  const [changingVariant, setChangingVariant] = useState(false);
+  const [changing, setChanging] = useState(false);
   if (!activeId) return null;
   const current = activeModel
     ? models.find((m) => m.id === activeModel.id && m.providerID === activeModel.providerID)
     : null;
-  const variants = getVariants(current);
-  const byProvider = new Map<string, ModelInfo[]>();
-  for (const m of models) {
-    const arr = byProvider.get(m.providerID) ?? [];
-    arr.push(m);
-    byProvider.set(m.providerID, arr);
-  }
-  const changeVariant = async (v: string) => {
-    if (!activeModel) return;
-    setChangingVariant(true);
-    try {
-      await switchModel({ providerID: activeModel.providerID, id: activeModel.id, variant: v || undefined });
-    } finally {
-      setChangingVariant(false);
-    }
-  };
   return (
     <div className="anim-fade mb-2.5 rounded-xl border border-forge-border bg-forge-panel px-3 py-2">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <span className="section-label">Modelo</span>
-        <span className="mono text-[12px] font-bold text-forge-accent">
-          {activeModel ? `${activeModel.providerID}/${activeModel.id}` : '(cargando…)'}
-        </span>
-        {activeModel?.variant && <span className="pill pill-ok">{activeModel.variant}</span>}
-        {current && <span className="pill pill-neutral">{current.name}</span>}
-        {current && <span className="mono text-[11px] text-forge-muted">{costLabel(current)}</span>}
-      {!current && defaultModel && (
-        <span className="text-[11px] text-forge-muted">defecto: {defaultModel.providerID}/{defaultModel.id}</span>
-      )}
-      <button onClick={() => setOpen((v) => !v)} disabled={busy || models.length === 0} className="btn btn-ghost ml-auto !py-0.5 !text-[11px] disabled:opacity-50">
-        Cambiar ▾
-      </button>
       </div>
-      {open && (
-        <select
-          className="input mt-2 w-full"
-          value={activeModel ? `${activeModel.providerID}\n${activeModel.id}` : ''}
-          onChange={(e) => {
-            const [providerID, id] = e.target.value.split('\n');
-            if (providerID && id) switchModel({ providerID, id });
-            setOpen(false);
-          }}
-        >
-          <option value="">Elegir modelo… ({models.length} disponibles)</option>
-          {[...byProvider.entries()].map(([prov, list]) => (
-            <optgroup key={prov} label={prov}>
-              {list.map((m) => {
-                const n = getVariants(m).length;
-                return (
-                  <option key={`${prov}\n${m.id}`} value={`${prov}\n${m.id}`}>
-                    {m.name || m.id} · {costLabel(m)}{n ? ` · ${n} variantes` : ''}
-                  </option>
-                );
-              })}
-            </optgroup>
-          ))}
-        </select>
-      )}
-      {variants.length > 0 && activeModel && (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="section-label">Variante</span>
-          <select
-            className="input min-w-40 flex-1"
-            value={activeModel.variant ?? ''}
-            disabled={busy || changingVariant}
-            onChange={(e) => changeVariant(e.target.value)}
-            title={variantHint(variants.length)}
-          >
-            <option value="">Por defecto del servidor</option>
-            {variants.map((v) => (
-              <option key={v} value={v}>{v}</option>
-            ))}
-          </select>
-        </div>
+      <ModelPicker
+        value={activeModel}
+        disabled={busy || changing}
+        onChange={async (v) => {
+          if (!v) return;
+          setChanging(true);
+          try {
+            await switchModel(v);
+          } finally {
+            setChanging(false);
+          }
+        }}
+      />
+      {!current && !activeModel && defaultModel && (
+        <span className="text-[11px] text-forge-muted">defecto: {defaultModel.providerID}/{defaultModel.id}</span>
       )}
       <div className="mt-1 w-full text-[10px] leading-4 text-forge-faint">
         El plan y la facturación los gestiona OpenCode; aquí eliges qué modelo usa cada sesión. Revisa el coste antes de tareas largas.

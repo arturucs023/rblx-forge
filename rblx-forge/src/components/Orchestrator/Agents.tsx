@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useOrch } from '../../stores/orch';
 import { useSessions } from '../../stores/sessions';
 import { AgentGlyph, Empty } from './common';
+import { ModelPicker, type ModelValue } from '../ModelPicker';
 import type { AgentProfile } from '../../lib/orch/types';
 
 const ALL_PERMS = ['READ_PROJECT', 'WRITE_PROJECT', 'EXECUTE_COMMANDS', 'RUN_TESTS', 'ACCESS_STUDIO', 'MODIFY_PROJECT_CONFIG', 'INSTALL_DEPENDENCIES'];
@@ -156,7 +157,15 @@ export function Agents() {
                 })}
               </div>
             </div>
-            <label className="mb-1 block text-[12px]">Agente nativo OpenCode (opcional)
+            <div className="mb-1 text-[12px]">Modelo del agente
+            <ModelPicker
+              value={(edit['model'] as ModelValue | null) ?? null}
+              allowInherit
+              inheritLabel="Heredar de la ejecución"
+              onChange={(v) => setEdit({ ...edit, model: v })}
+            />
+          </div>
+          <label className="mb-1 block text-[12px]">Agente nativo OpenCode (opcional)
               <select value={String(edit['native_agent'] ?? '')} onChange={(e) => setEdit({ ...edit, native_agent: e.target.value || null })} className="mt-0.5 w-full rounded border border-forge-border bg-forge-bg px-2 py-1">
                 <option value="">Ninguno (sesión normal)</option>
                 {nativeAgents.map((a) => <option key={a.id} value={a.id}>{a.id}{a.mode ? ` · ${a.mode}` : ''}</option>)}

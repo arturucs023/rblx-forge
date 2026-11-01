@@ -713,6 +713,21 @@ fn default_config() -> serde_json::Value {
     })
 }
 
+fn normalize_config(rc: &RunConfig) -> serde_json::Value {
+    let mut cfg = default_config();
+    if let Some(m) = &rc.default_model { cfg["default_model"] = m.clone(); }
+    if let Some(v) = rc.max_parallel { cfg["max_parallel"] = serde_json::json!(v.clamp(1, 2)); }
+    if let Some(v) = rc.task_timeout_ms { cfg["task_timeout_ms"] = serde_json::json!(v.clamp(60000, 3600000)); }
+    if let Some(v) = rc.global_timeout_ms { cfg["global_timeout_ms"] = serde_json::json!(v.clamp(300000, 21600000)); }
+    if let Some(v) = rc.max_retries { cfg["max_retries"] = serde_json::json!(v.clamp(0, 5)); }
+    if let Some(s) = &rc.scope {
+        if ["project", "tmp"].contains(&s.as_str()) {
+            cfg["scope"] = serde_json::json!(s);
+        }
+    }
+    cfg
+}
+
 #[tauri::command]
 pub fn orch_run_create(app: AppHandle, goal: String, project_dir: String, config: Option<RunConfig>) -> Result<String, String> {
     if goal.trim().len() < 10 {
@@ -720,20 +735,10 @@ pub fn orch_run_create(app: AppHandle, goal: String, project_dir: String, config
     }
     let c = orch_db(&app)?;
     let id = short_id("orch");
-    let mut cfg = default_config();
-    if let Some(rc) = config {
-        if let Some(m) = rc.default_model { cfg["default_model"] = m; }
-        if let Some(v) = rc.max_parallel { cfg["max_parallel"] = serde_json::json!(v.clamp(1, 2)); }
-        if let Some(v) = rc.task_timeout_ms { cfg["task_timeout_ms"] = serde_json::json!(v.clamp(60000, 3600000)); }
-        if let Some(v) = rc.global_timeout_ms { cfg["global_timeout_ms"] = serde_json::json!(v.clamp(300000, 21600000)); }
-        if let Some(v) = rc.max_retries { cfg["max_retries"] = serde_json::json!(v.clamp(0, 5)); }
-        if let Some(s) = rc.scope {
-            if !["project", "tmp"].contains(&s.as_str()) {
-                return Err("scope: project|tmp".to_string());
-            }
-            cfg["scope"] = serde_json::json!(s);
-        }
-    }
+    let cfg = normalize_config(&config.unwrap_or(RunConfig {
+        default_model: None, max_parallel: None, task_timeout_ms: None,
+        global_timeout_ms: None, max_retries: None, scope: None,
+    }));
     c.execute(
         "INSERT INTO orch_runs(id,goal,project_dir,status,created_at,config) VALUES(?1,?2,?3,'borrador',?4,?5)",
         params![id, goal.trim(), project_dir.trim(), now_secs(), serde_json::to_string(&cfg).unwrap()],
@@ -821,6 +826,20 @@ pub fn orch_run_complete(app: AppHandle, id: String, report: Option<String>) -> 
     }
     run_transition(&app, &c, &id, &["en_ejecucion", "pausado"], "completada", "forge:orchestrator-completed")
 }
+#[tauri::command]
+pub fn orch_run_set_config(app: AppHandle, id: String, config: RunConfig) -> Result<bool, String> {
+    let c = orch_db(&app)?;
+    let cur: String = c.query_row("SELECT status FROM orch_runs WHERE id=?1", params![id], |r| r.get(0))
+        .map_err(|_| format!("Ejecución no encontrada: {}", id))?;
+    if !["borrador", "pendiente_aprobacion"].contains(&cur.as_str()) {
+        return Err("La configuración solo se cambia antes de ejecutar".to_string());
+    }
+    let cfg = normalize_config(&config);
+    c.execute("UPDATE orch_runs SET config=?1 WHERE id=?2", params![serde_json::to_string(&cfg).unwrap(), id]).map_err(|e| e.to_string())?;
+    emit(&app, "forge:orchestrator-updated", &serde_json::json!({ "run": id }));
+    Ok(true)
+}
+
 #[tauri::command]
 pub fn orch_run_fail(app: AppHandle, id: String, report: Option<String>) -> Result<bool, String> {
     let c = orch_db(&app)?;

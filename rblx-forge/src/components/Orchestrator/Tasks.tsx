@@ -1,8 +1,10 @@
 // Tablero de tareas por estado + editor con sugerencia de skills y dependencias.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useOrch } from '../../stores/orch';
 import { AgentGlyph, Empty, StateBadge, fmtTs } from './common';
+import { ModelPicker, type ModelValue } from '../ModelPicker';
+import { effectiveSource, modelLabel } from '../../lib/orch/models';
 import type { OrchTask, SkillSuggestion, TaskInput } from '../../lib/orch/types';
 
 const COLS: Array<{ state: string; title: string }> = [
@@ -26,6 +28,7 @@ function blankTask(agentId: string): TaskInput {
 export function Tasks() {
   const tasks = useOrch((s) => s.tasks);
   const profiles = useOrch((s) => s.profiles);
+  const runDetail = useOrch((s) => s.runDetail);
   const activeRunId = useOrch((s) => s.activeRunId);
   const retryTask = useOrch((s) => s.retryTask);
   const setTaskState = useOrch((s) => s.setTaskState);
@@ -111,7 +114,7 @@ export function Tasks() {
       </div>
       <div className="mt-2 w-full shrink-0 lg:mt-0 lg:w-[26rem]">
         {!current && !edit && <p className="card p-3 text-[12px] text-forge-muted">Selecciona una tarea para verla, o crea una nueva.</p>}
-        {current && !edit && <TaskDetail t={current} agentName={profiles.find((p) => p.id === current.agent_id)?.name ?? current.agent_id} onEdit={() => setEdit({ id: current.id, data: {
+        {current && !edit && <TaskDetail t={current} agentName={profiles.find((p) => p.id === current.agent_id)?.name ?? current.agent_id} agentModel={profiles.find((p) => p.id === current.agent_id)?.model ?? null} runDefault={runDetail?.config.default_model ?? null} onEdit={() => setEdit({ id: current.id, data: {
           name: current.name, description: current.description, objective: current.objective, agent_id: current.agent_id,
           skills: [...current.skills], model: current.model, priority: current.priority, acceptance: [...current.acceptance],
           files: [...current.files], depends_on: [...current.depends_on],
@@ -151,16 +154,28 @@ export function Tasks() {
   );
 }
 
-function TaskDetail({ t, agentName, onEdit, onRetry, onForce, onDelete, msg }: {
-  t: OrchTask; agentName: string;
+function TaskDetail({ t, agentName, agentModel, runDefault, onEdit, onRetry, onForce, onDelete, msg }: {
+  t: OrchTask; agentName: string; agentModel: ModelValue | null; runDefault: ModelValue | null;
   onEdit: () => void; onRetry: () => void; onForce: (s: string) => void; onDelete: () => void;
   msg: string | null;
 }) {
+  const [effective, setEffective] = useState<ModelValue | null>(null);
+  useEffect(() => {
+    let alive = true;
+    invoke<ModelValue | null>('orch_resolve_model', { task: t.model ?? null, agent: agentModel, runDefault })
+      .then((m) => { if (alive) setEffective(m); })
+      .catch(() => { if (alive) setEffective(null); });
+    return () => { alive = false; };
+  }, [t.id, t.model, agentModel, runDefault]);
   return (
     <div className="card anim-enter max-h-full overflow-auto p-3">
       <p className="font-bold">{t.name}</p>
       <p className="mono text-[11px] text-forge-faint">{t.id} · {fmtTs(t.created_at)}{t.finished_at ? ` → ${fmtTs(t.finished_at)}` : ''} · intentos {t.attempts}</p>
       <p className="mt-1"><StateBadge state={t.state} /> <span className="mono ml-1 text-[11px] text-forge-muted">{agentName}</span></p>
+      <p className="section-label mb-1 mt-2">Modelo efectivo (origen: {effectiveSource(t.model ?? null, agentModel, runDefault)})</p>
+      <p className="mono text-[11px] text-forge-muted">
+        {modelLabel(effective)} · tarea: {modelLabel(t.model ?? null)} · agente: {modelLabel(agentModel)} · ejecución: {modelLabel(runDefault)}
+      </p>
       <p className="mt-1 text-[12px] font-semibold">Objetivo</p>
       <p className="text-[12px] text-forge-muted">{t.objective || '—'}</p>
       {t.description && <><p className="mt-1 text-[12px] font-semibold">Descripción</p><p className="text-[12px] text-forge-muted">{t.description}</p></>}
@@ -233,6 +248,9 @@ function TaskEditor({ data, setData, profiles, tasks, editingId, sug, onSuggest,
         ))}
         <p className="text-[11px] text-forge-faint">Sugerencias según el objetivo + veredictos del Evaluation Engine. FAILED/BLOCKED se evitan salvo decisión explícita.</p>
       </div>
+      <label className="mb-1 block text-[12px]">Modelo (vacío = heredar del agente)
+        <ModelPicker value={data.model ?? null} allowInherit inheritLabel="Heredar del agente" onChange={(v) => upd({ model: v })} />
+      </label>
       <label className="mb-1 block text-[12px]">Aceptación (una por línea)
         <textarea value={data.acceptance.join('\n')} onChange={(e) => upd({ acceptance: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) })} className="input mono mt-0.5 min-h-14 w-full !text-[11px]" />
       </label>

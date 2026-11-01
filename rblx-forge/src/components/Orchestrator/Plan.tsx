@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useOrch } from '../../stores/orch';
 import { AgentGlyph, Empty, StateBadge } from './common';
+import { ModelPicker, type ModelValue } from '../ModelPicker';
 import type { OrchTask } from '../../lib/orch/types';
 
 function levels(tasks: OrchTask[]): OrchTask[][] {
@@ -37,6 +38,7 @@ export function Plan() {
   const cancelRun = useOrch((s) => s.cancelRun);
   const validatePlan = useOrch((s) => s.validatePlan);
   const planFromGoal = useOrch((s) => s.planFromGoal);
+  const setRunConfig = useOrch((s) => s.setRunConfig);
   const [msg, setMsg] = useState<string | null>(null);
 
   if (!runDetail) {
@@ -77,7 +79,16 @@ export function Plan() {
           )}
         </div>
         {msg && <p className="mb-2 text-[12px] text-forge-muted">{msg}</p>}
-        <p className="section-label mb-1">Validación ({errors.length} errores · {warnings.length} avisos)</p>
+        <p className="section-label mb-1">Modelo por defecto de la ejecución</p>
+        <ModelPicker
+          value={(runDetail.config.default_model as ModelValue | null) ?? null}
+          allowInherit
+          inheritLabel="Heredar (modelo de la sesión)"
+          onChange={(v) => act(async () => {
+            await setRunConfig(runDetail.id, { ...runDetail.config, default_model: v });
+          }, 'Modelo por defecto actualizado.')}
+        />
+        <p className="section-label mb-1 mt-2">Validación ({errors.length} errores · {warnings.length} avisos)</p>
         {issues.length === 0 && <p className="text-[12px] text-forge-muted">Pulsa «Validar». Sin errores no hay aprobación.</p>}
         {errors.map((x, i) => <p key={i} className="text-[12px] text-forge-err">[{x.code}] {x.message}</p>)}
         {warnings.map((x, i) => <p key={i} className="text-[12px] text-forge-warn">[{x.code}] {x.message}</p>)}

@@ -56,6 +56,7 @@ interface OrchState {
   exportReport: (runId: string, format: string) => Promise<{ filename: string; content: string }>;
   saveProfile: (p: Record<string, unknown>) => Promise<void>;
   deleteProfile: (id: string) => Promise<void>;
+  setRunConfig: (id: string, config: Record<string, unknown>) => Promise<void>;
 }
 
 async function sha256Hex(text: string): Promise<string> {
@@ -875,6 +876,11 @@ export const useOrch = create<OrchState>((set, get) => {
       await invoke('orch_delete_profile', { id });
       const profiles = await invoke<AgentProfile[]>('orch_list_profiles', {}).catch(() => get().profiles);
       set({ profiles });
+    },
+
+    setRunConfig: async (id, config) => {
+      await invoke('orch_run_set_config', { id, config });
+      await refreshRun(id);
     },
   };
 });
