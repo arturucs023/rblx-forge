@@ -31,7 +31,7 @@ sobre tu cuenta. Pulsa «Create API Token».
 
 ## 6. Copia el token AHORA (solo se muestra una vez)
 
-![Diálogo con el token recién creado listo para copiar](../imagesMarkdown/copiar-token.png)
+![Diálogo con el token recién creado listo para copiar](../imagesMarkdown/copiar-token-v2.png)
 
 Importante:
 
