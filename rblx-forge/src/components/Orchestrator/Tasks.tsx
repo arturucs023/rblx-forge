@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { goOrchTab, useOrch } from '../../stores/orch';
 import { AgentGlyph, Empty, StateBadge, fmtTs } from './common';
+import { implementableTasks } from '../../lib/orch/artifacts';
 import { ModelPicker, type ModelValue } from '../ModelPicker';
 import { effectiveSource, modelLabel } from '../../lib/orch/models';
 import type { OrchTask, SkillSuggestion, TaskInput } from '../../lib/orch/types';
@@ -31,12 +32,17 @@ export function Tasks() {
   const runDetail = useOrch((s) => s.runDetail);
   const activeRunId = useOrch((s) => s.activeRunId);
   const retryTask = useOrch((s) => s.retryTask);
+  const implementTask = useOrch((s) => s.implementTask);
+  const implementRun = useOrch((s) => s.implementRun);
+  const artifacts = useOrch((s) => s.artifacts);
   const setTaskState = useOrch((s) => s.setTaskState);
   const addTask = useOrch((s) => s.addTask);
   const updateTask = useOrch((s) => s.updateTask);
   const deleteTask = useOrch((s) => s.deleteTask);
   const approvals = useOrch((s) => s.approvals);
   const pendingCount = approvals.filter((a) => a.status === 'pendiente').length;
+  const impls = activeRunId ? implementableTasks(tasks.filter((t) => t.run_id === activeRunId), artifacts) : [];
+  const implIds = new Set(impls.map((o) => o.task.id));
   const [sel, setSel] = useState<string | null>(null);
   const [edit, setEdit] = useState<{ id: string | null; data: TaskInput } | null>(null);
   const [sug, setSug] = useState<SkillSuggestion[]>([]);
@@ -89,7 +95,24 @@ export function Tasks() {
         )}
         <div className="mb-2 flex items-center gap-2">
           <p className="section-label">Tareas ({tasks.length})</p>
-          <button onClick={openNew} className="btn btn-primary ml-auto !py-1">+ Tarea</button>
+          {impls.length > 0 && (
+            <button
+              onClick={async () => {
+                setMsg(null);
+                try {
+                  const r = await implementRun(activeRunId!);
+                  setMsg(`Implementando ${r.queued} tarea(s) en Roblox (estructura visible: ${r.nodes} nodos). Sigue el progreso en Ejecución.`);
+                } catch (e) {
+                  setMsg(String(e));
+                }
+              }}
+              className="btn btn-primary ml-auto !py-1"
+              title="Reprograma las tareas completadas sin .luau con brief de implementación real en Roblox"
+            >
+              Implementar diseño ({impls.length})
+            </button>
+          )}
+          <button onClick={openNew} className={`btn btn-primary ${impls.length ? '' : 'ml-auto'} !py-1`}>+ Tarea</button>
         </div>
         {tasks.length === 0 && <Empty title="Plan vacío" hint="Añade tareas a mano o genera el plan con el coordinador en la pestaña Plan." />}
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
@@ -122,7 +145,15 @@ export function Tasks() {
       </div>
       <div className="mt-2 w-full shrink-0 lg:mt-0 lg:w-[26rem]">
         {!current && !edit && <p className="card p-3 text-[12px] text-forge-muted">Selecciona una tarea para verla, o crea una nueva.</p>}
-        {current && !edit && <TaskDetail t={current} agentName={profiles.find((p) => p.id === current.agent_id)?.name ?? current.agent_id} agentModel={profiles.find((p) => p.id === current.agent_id)?.model ?? null} runDefault={runDetail?.config.default_model ?? null} onEdit={() => setEdit({ id: current.id, data: {
+        {current && !edit && <TaskDetail t={current} needsImpl={implIds.has(current.id)} onImplement={async () => {
+          setMsg(null);
+          try {
+            const r = await implementTask(current.id);
+            setMsg(`Reprogramada para implementar en Roblox (estructura visible: ${r.nodes} nodos). Sigue el progreso en Ejecución.`);
+          } catch (e) {
+            setMsg(String(e));
+          }
+        }} agentName={profiles.find((p) => p.id === current.agent_id)?.name ?? current.agent_id} agentModel={profiles.find((p) => p.id === current.agent_id)?.model ?? null} runDefault={runDetail?.config.default_model ?? null} onEdit={() => setEdit({ id: current.id, data: {
           name: current.name, description: current.description, objective: current.objective, agent_id: current.agent_id,
           skills: [...current.skills], model: current.model, priority: current.priority, acceptance: [...current.acceptance],
           files: [...current.files], depends_on: [...current.depends_on],
@@ -162,8 +193,8 @@ export function Tasks() {
   );
 }
 
-function TaskDetail({ t, agentName, agentModel, runDefault, onEdit, onRetry, onForce, onDelete, msg }: {
-  t: OrchTask; agentName: string; agentModel: ModelValue | null; runDefault: ModelValue | null;
+function TaskDetail({ t, needsImpl, onImplement, agentName, agentModel, runDefault, onEdit, onRetry, onForce, onDelete, msg }: {
+  t: OrchTask; needsImpl: boolean; onImplement: () => void; agentName: string; agentModel: ModelValue | null; runDefault: ModelValue | null;
   onEdit: () => void; onRetry: () => void; onForce: (s: string) => void; onDelete: () => void;
   msg: string | null;
 }) {
@@ -203,6 +234,7 @@ function TaskDetail({ t, agentName, agentModel, runDefault, onEdit, onRetry, onF
       <div className="mt-2 flex flex-wrap gap-1">
         {['PENDING', 'READY', 'BLOCKED', 'FAILED'].includes(t.state) && <button onClick={onEdit} className="btn btn-ghost">Editar</button>}
         {t.state === 'FAILED' && <button onClick={onRetry} className="btn btn-primary !py-1">Reintentar</button>}
+        {t.state === 'COMPLETED' && needsImpl && <button onClick={onImplement} className="btn btn-primary !py-1" title="Reprograma esta tarea con brief de implementación real (.luau) usando el diseño aprobado">Implementar en Roblox</button>}
         {t.state === 'WAITING_APPROVAL' && <span className="self-center text-[11px] text-forge-warn">Decide en Revisión.</span>}
         {['PENDING', 'READY', 'BLOCKED', 'FAILED', 'CANCELLED'].includes(t.state) && <button onClick={onDelete} className="btn btn-ghost !text-forge-err">Eliminar</button>}
         {(t.state === 'BLOCKED' || t.state === 'FAILED') && <button onClick={() => onForce('READY')} className="btn btn-ghost" title="Forzar a lista (registrado en auditoría)">Forzar lista</button>}

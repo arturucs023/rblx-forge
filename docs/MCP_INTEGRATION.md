@@ -1,5 +1,26 @@
 # Integración MCP
 
+## Autoconfiguración (comando `mcp_ensure_roblox`)
+
+Si el proyecto no tiene el puente `roblox-studio`, el panel Studio ofrece
+**Autoconfigurar MCP**: escribe `.opencode/opencode.json` fusionando solo la
+entrada `roblox-studio` (`npx -y @chrrxs/robloxstudio-mcp@latest
+--auto-install-plugin`, comando recomendado de las releases) sin tocar el
+resto. Si el JSON existe y no parsea, no lo toca (error explícito). Avisa si
+no hay `npx` (instalar Node.js LTS). Después: crear una sesión nueva del
+proyecto para que OpenCode cargue el MCP y recomprobar aquí.
+
+## Plugin de Studio (manual, obligatorio)
+
+1. Ve a https://github.com/Chrrxs/robloxstudio-mcp/releases y descarga el
+   `MCPPlugin.rbxmx` de la última release (o usa `--auto-install-plugin`,
+   que lo instala solo la primera vez).
+2. En Roblox Studio: pestaña **Plugins → carpeta de plugins** y pega el
+   `.rbxmx` ahí.
+3. Cierra y reabre Studio **del todo**.
+4. En Studio: **Assistant → ⋯ → Manage MCP Servers** → activar servidor (una
+   vez por instalación) + indicador verde de cliente conectado.
+
 ## Servidores (`opencode mcp list`, 2026-11-01: 3 connected)
 
 | Servidor | Alcance | Comando | Uso |

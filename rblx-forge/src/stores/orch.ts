@@ -9,6 +9,7 @@ import { getWorkspaceDir } from '../components/panels';
 import { useSessions } from './sessions';
 import { isAssistantMessage } from '../lib/opencode';
 import { formatReviewFeedback, findLastRejection } from '../lib/orch/review';
+import { implementableTasks } from '../lib/orch/artifacts';
 import { luaBalanceHeuristic } from './eval';
 import type {
   AgentProfile, Approval, Artifact, AgentMessage, AuditEntry, OrchDashboard,
@@ -54,6 +55,10 @@ interface OrchState {
   setTaskState: (id: string, state: string, error?: string) => Promise<void>;
   deleteRun: (id: string) => Promise<void>;
   retryTask: (id: string) => Promise<void>;
+  /** Reprograma una tarea COMPLETED solo-diseño con brief de implementación. */
+  implementTask: (id: string) => Promise<{ nodes: number }>;
+  /** Reprograma todas las COMPLETED sin .luau del run activo. */
+  implementRun: (runId: string) => Promise<{ queued: number; nodes: number }>;
   validatePlan: (runId: string) => Promise<PlanIssue[]>;
   planFromGoal: (runId: string, goal: string) => Promise<void>;
   postMessage: (runId: string, kind: string, from: string, to: string, content: string, taskId?: string) => Promise<void>;
@@ -89,6 +94,12 @@ export function goOrchTab(tab: string) {
  * Clave taskId → lista de {action, res} ya aprobadas por el usuario.
  */
 const preApproved = new Map<string, Array<{ action: string; res: string }>>();
+
+/**
+ * Briefs de implementación (no persistidos: viven para el próximo runTask).
+ * Clave taskId → instrucción con el diseño aprobado + estructura visible.
+ */
+const implementBriefs = new Map<string, string>();
 
 export function matchPreApproval(approved: Array<{ action: string; res: string }>, action: string, resources: string[]): boolean {
   const a = (action ?? '').toLowerCase();
@@ -209,6 +220,31 @@ export const useOrch = create<OrchState>((set, get) => {
     return detail.project_dir;
   }
 
+  /** Estructura visible del ámbito para el brief (rojo_tree o tmpdir, con tope). */
+  async function scopeTreeExcerpt(detail: RunDetail, runId: string): Promise<{ text: string; nodes: number }> {
+    try {
+      if (detail.config.scope !== 'tmp' && detail.project_dir) {
+        const nodes = await invoke<Array<{ name: string; class?: string; rel?: string | null; children?: unknown[] }>>('rojo_tree', { projectDir: detail.project_dir });
+        const names: string[] = [];
+        const walk = (ns: Array<{ name: string; children?: unknown[] }>, depth: number): void => {
+          if (depth > 3) return;
+          for (const n of ns.slice(0, 40)) {
+            names.push(`${'  '.repeat(depth)}${n.name}`);
+            if (Array.isArray(n.children)) walk(n.children as Array<{ name: string; children?: unknown[] }>, depth + 1);
+            if (names.length >= 80) return;
+          }
+        };
+        walk(nodes as Array<{ name: string; children?: unknown[] }>, 0);
+        return { text: names.join('\n').slice(0, 3000), nodes: names.length };
+      }
+      const tmp = detail.tmp_dir ?? (await scopeDirFor(detail, runId));
+      const files = await invoke<Array<{ rel: string }>>('eval_list_tmpfiles', { tmp }).catch(() => [] as Array<{ rel: string }>);
+      return { text: files.map((f) => f.rel).slice(0, 80).join('\n').slice(0, 3000), nodes: Math.min(files.length, 80) };
+    } catch {
+      return { text: '', nodes: 0 };
+    }
+  }
+
   async function skillExcerpts(skillIds: string[]): Promise<string> {
     if (!skillIds.length) return '';
     const ws = await getWorkspaceDir().catch(() => '');
@@ -298,16 +334,33 @@ export const useOrch = create<OrchState>((set, get) => {
 
       await invoke('orch_task_set_state', { id: taskId, state: 'RUNNING' }).catch(() => {});
       await invoke('orch_message_post', { runId, taskId, kind: 'TASK_STARTED', fromAgent: profile.id, toAgent: 'coordinator', content: `Inicio: ${task.name}`, files: [] }).catch(() => {});
+      // La sesión se crea ANTES que la ejecución para persistir su id
+      // (reintento con fork, cancelación real y Monitor la necesitan).
+      const sess = await client.createSession({
+        title: `ORCH ${task.name.slice(0, 40)}`,
+        directory: scopeDir,
+        ...(profile.native_agent ? { agent: profile.native_agent } : {}),
+        ...(modelVal ? { model: modelVal } : {}),
+      });
+      sessionId = sess.id;
+      await invoke('orch_task_set_session', { id: taskId, sessionId }).catch(() => {});
       execId = await invoke<string>('orch_exec_start', {
-        exec: { task_id: taskId, agent_id: profile.id, session_id: null, model: modelVal, skills: task.skills },
+        exec: { task_id: taskId, agent_id: profile.id, session_id: sessionId, model: modelVal, skills: task.skills },
       });
       set((s) => ({ activeExecs: { ...s.activeExecs, [taskId]: execId } }));
+      await invoke('orch_audit_add', { runId, actor: profile.id, action: 'session_created', tool: 'opencode.session', files: [], permission: 'WRITE_PROJECT', result: sessionId }).catch(() => {});
+      await refreshRun(runId).catch(() => {});
+      // Si esta tarea viene de "Implementar", el brief trae el diseño aprobado
+      // + la estructura visible del proyecto y exige código .luau real.
+      const brief = implementBriefs.get(taskId) ?? null;
+      if (brief) implementBriefs.delete(taskId);
 
       const skillsBlock = await skillExcerpts(task.skills);
       const ctx = await depContext(runId, task);
       const priorFeedback = findLastRejection(get().messages.filter((m) => m.task_id === taskId), taskId);
       const accept = task.acceptance.length ? `Criterios de aceptación (verificables):\n${task.acceptance.map((a) => `- ${a}`).join('\n')}` : 'Criterios: archivos existentes, código Luau válido, sin errores evidentes.';
       const prompt = [
+        brief ? `${brief}` : '',
         `Eres ${profile.name} (${profile.specialty}) en una orquestación multiagente de RBLX Forge. No converses: ejecuta y entrega.`,
         `Responsabilidades: ${profile.responsibilities.join('; ')}`,
         `LÍMITES: ${profile.limits.join('; ')}`,
@@ -320,18 +373,11 @@ export const useOrch = create<OrchState>((set, get) => {
         ctx ? `Contexto de dependencias completadas:\n${ctx}` : '',
         ``,
         `REGLA ABSOLUTA: escribe TODOS los archivos bajo ${scopeDir}. PROHIBIDO crear, modificar o eliminar cualquier otro archivo.`,
+        `ENTREGABLE: código .luau real y funcional. Un informe .md SOLO documenta y NO cuenta como implementación: si la tarea pide un sistema, debes crear sus .luau.`,
         GUARDRAIL,
         `Al terminar, resume: archivos creados/modificados + cómo verificar el resultado.`,
       ].filter(Boolean).join('\n');
 
-      const sess = await client.createSession({
-        title: `ORCH ${task.name.slice(0, 40)} ${execId.slice(-6)}`,
-        directory: scopeDir,
-        ...(profile.native_agent ? { agent: profile.native_agent } : {}),
-        ...(modelVal ? { model: modelVal } : {}),
-      });
-      sessionId = sess.id;
-      await invoke('orch_audit_add', { runId, actor: profile.id, action: 'session_created', tool: 'opencode.session', files: [], permission: 'WRITE_PROJECT', result: sessionId }).catch(() => {});
       try {
         await client.sendPromptFull(sessionId, { text: prompt, skills: task.skills.length ? task.skills : undefined });
       } catch (e) {
@@ -341,11 +387,22 @@ export const useOrch = create<OrchState>((set, get) => {
           throw e;
         }
       }
+      await refreshRun(runId).catch(() => {});
 
       const taskTimeout = detail.config.task_timeout_ms ?? 600000;
       const deadline = Date.now() + taskTimeout;
       const normScope = scopeDir.replace(/\//g, '\\').toLowerCase();
       let transcript = '';
+      // Refresco en vivo throttled: sin esto el Monitor se queda congelado
+      // en el estado previo mientras el agente trabaja (hasta 10 min).
+      let lastLive = 0;
+      const liveRefresh = async () => {
+        if (Date.now() - lastLive > 10000) {
+          lastLive = Date.now();
+          await refreshRun(runId).catch(() => {});
+        }
+      };
+      const quietInterrupt = (sid: string) => client.interrupt(sid).catch(() => {});
       for (;;) {
         if (get().cancelReq[taskId]) {
           await client.interrupt(sessionId).catch(() => {});
@@ -370,8 +427,10 @@ export const useOrch = create<OrchState>((set, get) => {
           await invoke('orch_exec_finish', { id: execId, status: 'FAILED', tokens: null, cost: null, transcript: transcript.slice(0, 8000) }).catch(() => {});
           await invoke('orch_task_set_state', { id: taskId, state: 'FAILED', error: `Timeout de tarea (${Math.round(taskTimeout / 60000)} min)` }).catch(() => {});
           await invoke('orch_message_post', { runId, taskId, kind: 'TASK_FAILED', fromAgent: profile.id, toAgent: 'coordinator', content: 'Timeout superado.', files: [] }).catch(() => {});
+          await refreshRun(runId).catch(() => {});
           return;
         }
+        await liveRefresh();
         // Guardia de permisos: denegar fuera del ámbito; lo riesgoso pide aprobación.
         try {
           const perms = await client.listPermissions(sessionId);
@@ -414,8 +473,13 @@ export const useOrch = create<OrchState>((set, get) => {
               await client.interrupt(sessionId).catch(() => {});
               await invoke('orch_exec_finish', { id: execId, status: 'CANCELLED', tokens: null, cost: null, transcript: transcript.slice(0, 8000) }).catch(() => {});
               await invoke('orch_task_set_state', { id: taskId, state: 'CANCELLED', error: 'Cancelada por el usuario' }).catch(() => {});
+              await refreshRun(runId).catch(() => {});
               return;
             }
+            // La sesión del trabajador ya entregó su resumen: se interrumpe
+            // para que no siga trabajando en segundo plano (era el "sigue
+            // haciendo lo que he pedido" tras terminar).
+            await quietInterrupt(sessionId);
             break;
           }
         } catch { /* reintentar */ }
@@ -477,8 +541,9 @@ export const useOrch = create<OrchState>((set, get) => {
       }
 
       const tokens = extractTokensFromTranscript(sessionId);
+      const rels = files.map((f) => f.rel);
       const resultText = [
-        `Archivos generados: ${files.length}`,
+        `Archivos generados: ${files.length}${rels.length ? ` (${rels.slice(0, 15).join(', ')})` : ''}`,
         autoNotes.length ? `Checks: ${autoNotes.join(' | ')}` : 'Sin checks de archivos (sin lista esperada)',
         lintNote,
         transcript ? `Resumen del agente:\n${transcript.slice(0, 4000)}` : 'Sin resumen textual del agente.',
@@ -490,7 +555,7 @@ export const useOrch = create<OrchState>((set, get) => {
       const reviewer = await reviewerFor(task, get().profiles);
       if (reviewer) {
         await invoke('orch_message_post', { runId, taskId, kind: 'REVIEW_REQUESTED', fromAgent: 'coordinator', toAgent: reviewer.id, content: `Revisar: ${task.name}`, files: task.files }).catch(() => {});
-        const review = await runReview(runId, task, reviewer, resultText, autoOk, scopeDir);
+        const review = await runReview(runId, task, reviewer, resultText, autoOk, scopeDir, rels);
         if (review.verdict === 'APPROVE') {
           await invoke('orch_task_set_state', { id: taskId, state: 'COMPLETED' }).catch(() => {});
           const okMsg = review.notes.length ? `Aprobado: ${task.name}. Notas: ${review.notes.join(' | ').slice(0, 500)}` : `Aprobado: ${task.name}`;
@@ -518,10 +583,12 @@ export const useOrch = create<OrchState>((set, get) => {
           await invoke('orch_task_set_state', { id: taskId, state: 'WAITING_APPROVAL', error: 'Revisión no concluyente: decide en Revisión (hay propuesta que aprobar o rechazar)' }).catch(() => {});
         }
       } else {
+        await quietInterrupt(sessionId);
         await invoke('orch_task_set_state', { id: taskId, state: autoOk === false ? 'FAILED' : 'COMPLETED', error: autoOk === false ? autoNotes.join(' | ') : undefined }).catch(() => {});
       }
     } catch (e) {
       try {
+        if (sessionId) await useSessions.getState().client?.interrupt(sessionId).catch(() => {});
         if (execId) await invoke('orch_exec_finish', { id: execId, status: 'FAILED', tokens: null, cost: null, transcript: null }).catch(() => {});
         const t = task;
         if (t) await invoke('orch_task_set_state', { id: t.id, state: 'FAILED', error: String(e).slice(0, 500) }).catch(() => {});
@@ -579,7 +646,7 @@ export const useOrch = create<OrchState>((set, get) => {
     return out;
   }
 
-  async function runReview(runId: string, task: OrchTask, reviewer: { id: string; name: string; specialty: string }, resultText: string, autoOk: boolean | null, _scopeDir: string): Promise<{ verdict: 'APPROVE' | 'REJECT' | 'UNKNOWN'; notes: string[]; issues: string[]; missing: string[] }> {
+  async function runReview(runId: string, task: OrchTask, reviewer: { id: string; name: string; specialty: string }, resultText: string, autoOk: boolean | null, _scopeDir: string, rels: string[]): Promise<{ verdict: 'APPROVE' | 'REJECT' | 'UNKNOWN'; notes: string[]; issues: string[]; missing: string[] }> {
     const none = { verdict: 'UNKNOWN' as const, notes: [] as string[], issues: [] as string[], missing: [] as string[] };
     const client = useSessions.getState().client;
     if (!client) return none;
@@ -592,8 +659,10 @@ export const useOrch = create<OrchState>((set, get) => {
         `Eres ${reviewer.name} (${reviewer.specialty}), revisor INDEPENDIENTE. No reimplementes nada: solo revisa.`,
         `Tarea ejecutada por otro agente: ${task.name} — ${task.objective}`,
         `Resultado (extracto):\n${resultText.slice(0, 8000)}`,
+        `Archivos generados: ${rels.length ? rels.slice(0, 20).join(', ') : '(ninguno)'}`,
         `Criterios de aceptación:\n${task.acceptance.length ? task.acceptance.map((a) => `- ${a}`).join('\n') : '(genéricos: archivos existentes, código válido)'}`,
         `Checks automáticos: ${autoOk === null ? 'no concluyentes' : autoOk ? 'OK' : 'CON FALLOS'}.`,
+        `REGLA: si la tarea pedía implementar código .luau y SOLO hay .md/documentación sin código, el veredicto debe ser REJECT con ese motivo.`,
         `Responde SOLO con JSON válido: {"verdict":"APPROVE"|"REJECT","notes":[],"issues":[],"missing":[]}. Lo no verificable va en missing, nunca inventado.`,
       ].join('\n');
       await client.sendPrompt(sess.id, prompt);
@@ -812,6 +881,54 @@ export const useOrch = create<OrchState>((set, get) => {
       await get().setTaskState(id, 'READY');
     },
 
+    implementTask: async (id) => {
+      const task = get().tasks.find((t) => t.id === id);
+      if (!task) throw new Error('Tarea inexistente');
+      if (task.state !== 'COMPLETED') throw new Error(`Solo se implementan tareas COMPLETED (está ${task.state})`);
+      const runId = task.run_id;
+      const detail = await invoke<RunDetail>('orch_run_get', { id: runId });
+      const scopeDir = detail.config.scope === 'tmp' || !detail.project_dir
+        ? (detail.tmp_dir ?? '')
+        : detail.project_dir;
+      // Estructura visible para el modelo (detección honesta: si está vacía se dice).
+      const tree = await scopeTreeExcerpt(detail, runId);
+      const nodes = tree.nodes;
+      const rels = get().artifacts.filter((a) => a.task_id === id).map((a) => a.rel);
+      const brief = [
+        `FASE DE IMPLEMENTACIÓN: el diseño de esta tarea ya está aprobado. Ahora PROGRAMA de verdad en Roblox.`,
+        `Diseño aprobado (resultado anterior):\n${(task.result ?? '').slice(0, 3000)}`,
+        `Ya generaste antes (NO vale reentregar solo esto):\n${rels.length ? rels.join(', ') : '(nada)'}`,
+        nodes > 0
+          ? `Estructura visible del ámbito (${nodes} nodos, el modelo SÍ la ve):\n${tree.text}`
+          : `Estructura del ámbito NO visible (vacía o ilegible): trabaja solo con el diseño y el ámbito ${scopeDir || '(desconocido)'}.`,
+        `REGLAS: crea archivos .luau REALES y funcionales bajo ${scopeDir || 'el ámbito'}. Un .md SOLO es documentación y NO vale como entrega. Criterios:\n${task.acceptance.length ? task.acceptance.map((a) => `- ${a}`).join('\n') : '- código .luau válido que cumpla el objetivo'}`,
+      ].join('\n\n');
+      implementBriefs.set(id, brief.slice(0, 8000));
+      await invoke('orch_message_post', {
+        runId, taskId: id, kind: 'CONTEXT_PROVIDED', fromAgent: 'usuario', toAgent: task.agent_id,
+        content: `El usuario pide IMPLEMENTAR en Roblox (estructura visible: ${nodes} nodos). Se reprograma la tarea con brief de implementación.`,
+        files: task.files,
+      }).catch(() => {});
+      await get().setTaskState(id, 'READY');
+      return { nodes };
+    },
+
+    implementRun: async (runId) => {
+      const st = get();
+      const cands = implementableTasks(
+        st.tasks.filter((t) => t.run_id === runId),
+        st.artifacts,
+      );
+      let nodes = 0;
+      for (const { task: t } of cands) {
+        try {
+          const r = await get().implementTask(t.id);
+          nodes = Math.max(nodes, r.nodes);
+        } catch { /* una tarea que falle no bloquea al resto */ }
+      }
+      return { queued: cands.length, nodes };
+    },
+
     validatePlan: async (runId) => {
       const issues = await invoke<PlanIssue[]>('orch_validate_plan', { runId });
       set({ issues });
@@ -841,7 +958,7 @@ export const useOrch = create<OrchState>((set, get) => {
           `Skills disponibles (usa SOLO estos IDs, 2–5 por tarea):\n${catalog.join(', ')}`,
           'Responde SOLO con JSON válido, sin explicaciones fuera del JSON:',
           '{"tasks":[{"name":"","description":"","objective":"","agent_id":"","skills":[],"priority":1-5,"acceptance":[""],"files":[],"depends_on_names":[]}]}',
-          'Reglas: tareas pequeñas y verificables; dependencias por nombre; archivos con rutas relativas que no colisionen entre tareas paralelas; máximo 12 tareas.',
+          'Reglas: tareas pequeñas y verificables; dependencias por nombre; "files" OBLIGATORIO con las rutas .luau que cada tarea DEBE crear (un informe .md nunca sustituye al código); "acceptance" debe exigir esos archivos; máximo 12 tareas.',
           GUARDRAIL,
         ].join('\n');
         await client.sendPrompt(sess.id, prompt);

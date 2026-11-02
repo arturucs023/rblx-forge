@@ -14,6 +14,7 @@ mod projects;
 mod terminal;
 mod watcher;
 mod images;
+mod mcp;
 mod eval;
 mod orch;
 use projects::*;
@@ -1704,6 +1705,7 @@ pub fn run() {
             tool_run,
             project_lint,
             workspace_stats,
+            mcp::mcp_ensure_roblox,
             images::cf_images_generate,
             images::cf_cloudflare_check,
             images::images_save_upload,
@@ -1755,6 +1757,7 @@ pub fn run() {
             orch::orch_task_list,
             orch::orch_task_update,
             orch::orch_task_update_result,
+            orch::orch_task_set_session,
             orch::orch_task_delete,
             orch::orch_task_set_state,
             orch::orch_validate_plan,

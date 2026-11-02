@@ -385,6 +385,10 @@ pub fn can_transition(from: &str, to: &str) -> bool {
         ("RUNNING", "COMPLETED") | ("RUNNING", "FAILED") | ("RUNNING", "WAITING_APPROVAL")
         | ("RUNNING", "BLOCKED") | ("RUNNING", "CANCELLED") => true,
         ("WAITING_APPROVAL", "RUNNING") | ("WAITING_APPROVAL", "CANCELLED") | ("WAITING_APPROVAL", "COMPLETED") => true,
+        // Reanudación tras aprobar en Revisión (decideApproval → READY → pump).
+        ("WAITING_APPROVAL", "READY") => true,
+        // Re-implementación de un diseño ya completado (implementTask → READY).
+        ("COMPLETED", "READY") => true,
         ("BLOCKED", "READY") | ("BLOCKED", "CANCELLED") => true,
         ("FAILED", "READY") | ("FAILED", "CANCELLED") => true,
         _ => false,
@@ -1047,11 +1051,26 @@ pub fn orch_task_set_state(app: AppHandle, id: String, state: String, error: Opt
 }
 
 #[tauri::command]
-pub fn orch_task_update_result(app: AppHandle, id: String, result: String) -> Result<bool, String> {
-    let c = orch_db(&app)?;
+pub fn orch_task_update_result(app: AppHandle, id: String, result: String) -> Result<bool, String> {    let c = orch_db(&app)?;
     load_task(&c, &id)?;
     c.execute("UPDATE orch_tasks SET result=?1 WHERE id=?2", params![result.chars().take(20000).collect::<String>(), id]).map_err(|e| e.to_string())?;
     emit(&app, "forge:task-updated", &serde_json::json!({ "task": id, "result": true }));
+    Ok(true)
+}
+
+/// Vincula la sesión de OpenCode que ejecuta la tarea (para reintento con
+/// fork, cancelación real vía interrupt y visibilidad en el Monitor).
+/// Sin esto session_id quedaba siempre null y esas tres vías morían en silencio.
+#[tauri::command]
+pub fn orch_task_set_session(app: AppHandle, id: String, session_id: String) -> Result<bool, String> {
+    if session_id.trim().is_empty() {
+        return Err("session_id vacío".to_string());
+    }
+    let c = orch_db(&app)?;
+    load_task(&c, &id)?;
+    c.execute("UPDATE orch_tasks SET session_id=?1 WHERE id=?2", params![session_id.trim(), id])
+        .map_err(|e| e.to_string())?;
+    emit(&app, "forge:task-updated", &serde_json::json!({ "task": id, "session": true }));
     Ok(true)
 }
 
@@ -1609,7 +1628,9 @@ mod orch_tests {
         assert!(can_transition("WAITING_APPROVAL", "COMPLETED"));
         assert!(can_transition("FAILED", "READY"));
         assert!(!can_transition("PENDING", "COMPLETED"));
-        assert!(!can_transition("COMPLETED", "READY"));
+        // Reanudación tras aprobar en Revisión + re-implementación de diseño.
+        assert!(can_transition("WAITING_APPROVAL", "READY"));
+        assert!(can_transition("COMPLETED", "READY"));
         assert!(!can_transition("RUNNING", "READY"));
         assert!(can_transition("BLOCKED", "CANCELLED"));
     }
