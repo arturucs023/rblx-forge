@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { getSetting, setSetting } from '../lib/paths';
+import { classifyToken } from '../lib/images';
 
 export const KEY_CF_ACCOUNT = 'cloudflare.accountId';
 export const KEY_CF_TOKEN = 'cloudflare.apiToken';
@@ -84,12 +85,14 @@ export function CloudflareSettings() {
     }
   };
 
+  const tokenKind = classifyToken(token);
   return (
     <div className="max-w-3xl p-3">
       <p className="mb-1 text-[12px] font-bold">Imágenes · Cloudflare Workers AI (FLUX.1 schnell)</p>
       <p className="mb-2 text-[11px] text-forge-muted">
         Cuenta gratuita de Cloudflare + token con permisos Workers AI (10.000 Neurons/día gratis).
-        Cómo conseguirlo: panel de Cloudflare → Workers AI → «Usar API REST» → crear token y copiar el Account ID.
+        Cómo conseguirlo: panel de Cloudflare → Workers AI → «Usar API REST» → crear token, pulsar
+        «Copiar API token» en el diálogo (se muestra UNA sola vez) y copiar el Account ID.
       </p>
       <label className="mb-2 block">
         <span className="mb-0.5 block text-[12px] text-forge-muted">Account ID</span>
@@ -111,6 +114,17 @@ export function CloudflareSettings() {
             {show ? 'Ocultar' : 'Mostrar'}
           </button>
         </div>
+        {tokenKind === 'maybe-account-id' && (
+          <p className="mt-1 text-[11px] text-forge-warn">
+            Eso parece un Account ID (32 hex), no el token: el token es la cadena larga del diálogo de creación.
+          </p>
+        )}
+        {tokenKind === 'short' && token.trim() && (
+          <p className="mt-1 text-[11px] text-forge-warn">
+            Demasiado corto para ser un token (¿copiaste el valor recortado «cfat…» de la lista? El completo
+            solo sale en el diálogo de creación; si lo cerraste, crea otro y cópialo entero).
+          </p>
+        )}
       </label>
       {err && <p className="mb-1 text-[12px] text-forge-err">{err}</p>}
       {msg && <p className="mono mb-1 text-[11px] text-forge-ok">{msg}</p>}

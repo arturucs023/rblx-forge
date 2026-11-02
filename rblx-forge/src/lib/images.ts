@@ -43,6 +43,16 @@ export function imageErrorMessage(err: unknown): string {
   return s.slice(0, 400);
 }
 
+/** Clasificación orientativa del campo token (solo ayuda, nunca bloquea).
+ * El API token es una cadena larga (≈40 chars); el Account ID son 32 hex. */
+export function classifyToken(raw: string): 'empty' | 'maybe-account-id' | 'short' | 'maybe-token' {
+  const v = raw.trim();
+  if (!v) return 'empty';
+  if (/^[0-9a-f]{32}$/i.test(v)) return 'maybe-account-id';
+  if (v.length < 30) return 'short';
+  return 'maybe-token';
+}
+
 export function formatBytes(n: number): string {
   if (!Number.isFinite(n) || n < 0) return 'n/d';
   if (n < 1024) return `${n} B`;

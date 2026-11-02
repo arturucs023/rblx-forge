@@ -1,6 +1,15 @@
 // Tests puros del modo Imágenes (sin red ni Tauri).
 import { describe, expect, it } from 'vitest';
-import { clampSteps, formatBytes, imageErrorMessage, normalizeSeed, validatePrompt } from './images';
+import { clampSteps, classifyToken, formatBytes, imageErrorMessage, normalizeSeed, validatePrompt } from './images';
+
+describe('classifyToken', () => {
+  it('orienta sin bloquear', () => {
+    expect(classifyToken('')).toBe('empty');
+    expect(classifyToken('0f1e2d3c4b5a69788796a5b4c3d2e1f0')).toBe('maybe-account-id');
+    expect(classifyToken('cfat...0ce8')).toBe('short');
+    expect(classifyToken('x'.repeat(40))).toBe('maybe-token');
+  });
+});
 
 describe('clampSteps', () => {
   it('defecto 4 y recorte 1..=8', () => {
