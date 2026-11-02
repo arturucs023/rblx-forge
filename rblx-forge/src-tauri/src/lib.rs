@@ -1707,6 +1707,8 @@ pub fn run() {
             images::cf_images_generate,
             images::cf_cloudflare_check,
             images::images_save_upload,
+            images::google_images_generate,
+            images::google_check_key,
             eval::eval_db_init,
             eval::eval_groups,
             eval::eval_scan,

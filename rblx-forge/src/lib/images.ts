@@ -66,6 +66,74 @@ export function pastedImageName(n: number): string {
   return `[Image ${Math.max(1, Math.floor(n))}]`;
 }
 
+/** Catálogo de modelos de imagen (contratos y precios verificados en docs).
+ * Cloudflare: Neurons (pricing 2026-10-20). Google: $/imagen sin capa gratis. */
+export type ImageProvider = 'cloudflare' | 'google';
+
+export interface ImageModelOption {
+  provider: ImageProvider;
+  model: string;
+  label: string;
+  /** Coste aproximado por imagen generada (texto listo para UI). */
+  costHint: string;
+  supportsSteps: boolean;
+  supportsSeed: boolean;
+}
+
+export const IMAGE_MODELS: ImageModelOption[] = [
+  {
+    provider: 'cloudflare',
+    model: '@cf/black-forest-labs/flux-1-schnell',
+    label: 'FLUX.1 schnell',
+    costHint: '≈58 Neurons/imagen a 4 pasos',
+    supportsSteps: true,
+    supportsSeed: true,
+  },
+  {
+    provider: 'google',
+    model: 'gemini-nano-banana-2.1',
+    label: 'Nano Banana 2.1',
+    costHint: '≈$0,0336/imagen (de pago)',
+    supportsSteps: false,
+    supportsSeed: false,
+  },
+  {
+    provider: 'google',
+    model: 'gemini-2.5-flash-image',
+    label: 'Nano Banana (2.5)',
+    costHint: '≈$0,039/imagen (de pago)',
+    supportsSteps: false,
+    supportsSeed: false,
+  },
+];
+
+export const PROVIDER_LABEL: Record<ImageProvider, string> = {
+  cloudflare: 'Cloudflare Workers AI',
+  google: 'Google Gemini',
+};
+
+/** Estimación schnell con los pasos elegidos (fórmula oficial: 4 tiles 512²
+ * × 4,80 + pasos × 9,60; salida 1024² supuesta). Medición real de un usuario:
+ * 173 Neurons a 4 pasos (la contabilidad interna difiere de la fórmula
+ * ingenua), por eso existe la calibración de abajo. */
+export function schnellEstimate(steps: number): number {
+  const s = Math.min(8, Math.max(1, Math.floor(steps)));
+  return 4 * 4.8 + s * 9.6;
+}
+
+/** Estimación calibrada: parte de una medición real a 4 pasos (la del panel
+ * de Cloudflare) y ajusta la parte variable con la tarifa oficial 9,60/step.
+ * Sin medición, cae a la fórmula oficial. */
+export function calibratedSchnellEstimate(steps: number | null | undefined, measuredAt4: number | null | undefined): number {
+  const s = typeof steps === 'number' && Number.isFinite(steps)
+    ? Math.min(8, Math.max(1, Math.floor(steps)))
+    : FLUX_DEFAULT_STEPS;
+  if (typeof measuredAt4 === 'number' && Number.isFinite(measuredAt4) && measuredAt4 > 0) {
+    return Math.max(0, measuredAt4 + (s - FLUX_DEFAULT_STEPS) * 9.6);
+  }
+  return schnellEstimate(s);
+}
+
 /** ¿Es un chip de imagen pegada/adjunta (se muestra sin 📎)? */
 export function isImageChipName(name: string): boolean {
   return /^\[Image \d+\]/i.test(name.trim());

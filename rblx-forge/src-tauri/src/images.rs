@@ -14,6 +14,132 @@ pub const FLUX_DEFAULT_STEPS: u8 = 4;
 pub const FLUX_MAX_STEPS: u8 = 8;
 pub const FLUX_MAX_PROMPT_CHARS: usize = 2048;
 
+/// Modelos de imagen soportados (contratos verificados en docs oficiales).
+/// Cloudflare: precios en Neurons (pricing 2026-10-20). Google: $/imagen.
+pub const GOOGLE_MODEL_21: &str = "gemini-nano-banana-2.1";
+pub const GOOGLE_MODEL_25: &str = "gemini-2.5-flash-image";
+/// Tope de prompt para Google (límite de la app, no del modelo).
+pub const GOOGLE_MAX_PROMPT_CHARS: usize = 8000;
+
+/// Estimación honesta de FLUX.1 schnell: 4,80 Neurons por tile 512² más
+/// 9,60 por paso (pricing oficial). La API no admite tamaño: se supone salida
+/// 1024² (4 tiles). Con otros tamaños reales la cifra varía.
+pub fn cf_schnell_estimate_neurons(steps: u8) -> f64 {
+    4.0 * 4.80 + steps as f64 * 9.60
+}
+
+/// Coste aprox. por imagen de Google (pricing oficial ai.google.dev):
+/// 2.1 → $0,0336 (1K); 2.5 → $0,039. Sin capa gratuita para imágenes.
+pub fn google_cost_per_image(model: &str) -> Option<f64> {
+    match model {
+        m if m == GOOGLE_MODEL_21 => Some(0.0336),
+        m if m == GOOGLE_MODEL_25 => Some(0.039),
+        _ => None,
+    }
+}
+
+pub fn validate_google_model(model: &str) -> Result<String, String> {
+    let m = model.trim().to_string();
+    if m == GOOGLE_MODEL_21 || m == GOOGLE_MODEL_25 {
+        Ok(m)
+    } else {
+        Err("Modelo de Google no soportado (usa Nano Banana 2.1 o 2.5).".to_string())
+    }
+}
+
+pub fn validate_google_prompt(prompt: &str) -> Result<String, String> {
+    let p = prompt.trim().to_string();
+    if p.is_empty() {
+        return Err("El prompt está vacío: describe la imagen que quieres generar.".to_string());
+    }
+    if p.chars().count() > GOOGLE_MAX_PROMPT_CHARS {
+        return Err(format!(
+            "El prompt supera los {GOOGLE_MAX_PROMPT_CHARS} caracteres (límite de la app)."
+        ));
+    }
+    Ok(p)
+}
+
+/// Extrae la imagen base64 de la respuesta de la Interactions API de Google
+/// (`interaction.output_image.data`, contrato documentado). Si el formato
+/// cambia, se buscan `inlineData.data` como respaldo; si no hay nada, error
+/// con un extracto real en vez de inventar.
+pub fn parse_google_image_response(body: &str) -> Result<(Vec<u8>, String), String> {
+    let v: serde_json::Value =
+        serde_json::from_str(body).map_err(|e| format!("Respuesta no JSON de Google: {e}"))?;
+    if let Some(data) = v
+        .get("interaction")
+        .and_then(|i| i.get("output_image"))
+        .and_then(|o| o.get("data"))
+        .and_then(|d| d.as_str())
+    {
+        let mime = v
+            .get("interaction")
+            .and_then(|i| i.get("output_image"))
+            .and_then(|o| o.get("mime_type"))
+            .and_then(|m| m.as_str())
+            .unwrap_or("image/png")
+            .to_string();
+        return decode_b64_image(data).map(|b| (b, mime));
+    }
+    // Respaldo: primer inlineData.data encontrado (formato generateContent).
+    if let Some((data, mime)) = find_inline_data(&v) {
+        return decode_b64_image(&data).map(|b| (b, mime));
+    }
+    let err = v
+        .get("error")
+        .and_then(|e| e.get("message"))
+        .and_then(|m| m.as_str())
+        .unwrap_or("");
+    if !err.is_empty() {
+        return Err(format!("Google devolvió un error: {}", err.chars().take(400).collect::<String>()));
+    }
+    Err(format!(
+        "Respuesta sin imagen (formato inesperado): {}",
+        body.chars().take(300).collect::<String>()
+    ))
+}
+
+fn decode_b64_image(data: &str) -> Result<Vec<u8>, String> {
+    use base64::Engine as _;
+    let clean = match data.find(";base64,") {
+        Some(i) => &data[i + 8..],
+        None => data,
+    };
+    base64::engine::general_purpose::STANDARD
+        .decode(clean.trim())
+        .map_err(|e| format!("La imagen base64 no se pudo decodificar: {e}"))
+}
+
+fn find_inline_data(v: &serde_json::Value) -> Option<(String, String)> {
+    if let Some(o) = v.as_object() {
+        if let Some(inline) = o.get("inlineData").or_else(|| o.get("inline_data")) {
+            if let (Some(data), mime) = (
+                inline.get("data").and_then(|d| d.as_str()),
+                inline
+                    .get("mimeType")
+                    .or_else(|| inline.get("mime_type"))
+                    .and_then(|m| m.as_str())
+                    .unwrap_or("image/png"),
+            ) {
+                return Some((data.to_string(), mime.to_string()));
+            }
+        }
+        for child in o.values() {
+            if let Some(hit) = find_inline_data(child) {
+                return Some(hit);
+            }
+        }
+    } else if let Some(arr) = v.as_array() {
+        for child in arr {
+            if let Some(hit) = find_inline_data(child) {
+                return Some(hit);
+            }
+        }
+    }
+    None
+}
+
 #[derive(serde::Serialize, Clone, Debug)]
 pub struct GeneratedImage {
     pub file: String,
@@ -274,6 +400,114 @@ pub fn cf_cloudflare_check(api_token: String) -> Result<CloudflareCheck, String>
         })
     }
 }
+/// Genera con Google (Nano Banana) vía Interactions API y guarda en
+/// `save_dir/generated-images/`. La clave viaja solo en memoria.
+/// Coste: de pago SIEMPRE (sin capa gratuita para imágenes): 2.1 ≈ $0,0336,
+/// 2.5 ≈ $0,039 por imagen 1K (pricing oficial ai.google.dev).
+#[tauri::command]
+pub fn google_images_generate(
+    _app: AppHandle,
+    api_key: String,
+    model: String,
+    prompt: String,
+    save_dir: String,
+) -> Result<GeneratedImage, String> {
+    if api_key.trim().is_empty() {
+        return Err("Falta la API key de Google (Configuración → Imágenes).".to_string());
+    }
+    let model = validate_google_model(&model)?;
+    let prompt = validate_google_prompt(&prompt)?;
+
+    let t0 = std::time::Instant::now();
+    let payload = serde_json::json!({
+        "model": model,
+        "input": [{ "type": "text", "text": prompt }],
+    });
+    let resp = ureq::post("https://generativelanguage.googleapis.com/v1beta/interactions")
+        .set("x-goog-api-key", api_key.trim())
+        .set("Content-Type", "application/json")
+        .set("Api-Revision", "2026-05-20")
+        .timeout(std::time::Duration::from_secs(180))
+        .send_json(payload)
+        .map_err(|e| match e {
+            ureq::Error::Status(code, r) => {
+                let body = r
+                    .into_string()
+                    .unwrap_or_default()
+                    .chars()
+                    .take(400)
+                    .collect::<String>();
+                format!("Google HTTP {code}: {body}")
+            }
+            other => transport_message(&other),
+        })?;
+    let body = resp
+        .into_string()
+        .map_err(|e| format!("No se pudo leer la respuesta: {e}"))?;
+    let (bytes, mime) = parse_google_image_response(&body)?;
+    if bytes.is_empty() {
+        return Err("Google devolvió una imagen vacía.".to_string());
+    }
+    let elapsed_ms = t0.elapsed().as_millis() as u64;
+    let ext = match mime.as_str() {
+        m if m.contains("jpeg") || m.contains("jpg") => "jpg",
+        m if m.contains("webp") => "webp",
+        m if m.contains("gif") => "gif",
+        _ => sniff_extension(&bytes),
+    };
+    let dir = std::path::Path::new(&save_dir).join("generated-images");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("No se pudo crear la carpeta: {e}"))?;
+    let stamp = chrono_stamp();
+    let file = dir.join(format!("nano-{stamp}.{ext}"));
+    std::fs::write(&file, &bytes).map_err(|e| format!("No se pudo guardar la imagen: {e}"))?;
+    Ok(GeneratedImage {
+        file: file.to_string_lossy().to_string(),
+        size: bytes.len() as u64,
+        usage: google_cost_per_image(&model).map(|c| format!("≈ ${c:.4} por imagen (pricing oficial)")),
+        elapsed_ms,
+    })
+}
+
+/// Verifica la API key de Google sin gastar (lista modelos, llamada gratuita).
+#[tauri::command]
+pub fn google_check_key(api_key: String) -> Result<CloudflareCheck, String> {
+    if api_key.trim().is_empty() {
+        return Err("Falta la API key de Google (Configuración → Imágenes).".to_string());
+    }
+    let resp = ureq::get("https://generativelanguage.googleapis.com/v1beta/models")
+        .set("x-goog-api-key", api_key.trim())
+        .timeout(std::time::Duration::from_secs(20))
+        .call()
+        .map_err(|e| match e {
+            ureq::Error::Status(code, r) => {
+                let body = r
+                    .into_string()
+                    .unwrap_or_default()
+                    .chars()
+                    .take(300)
+                    .collect::<String>();
+                format!("Google HTTP {code} al verificar la clave: {body}")
+            }
+            other => transport_message(&other),
+        })?;
+    let body = resp
+        .into_string()
+        .map_err(|e| format!("No se pudo leer la respuesta: {e}"))?;
+    let v: serde_json::Value =
+        serde_json::from_str(&body).map_err(|e| format!("Respuesta no JSON: {e}"))?;
+    let ok = v.get("models").and_then(|m| m.as_array()).is_some();
+    Ok(CloudflareCheck {
+        reachable: true,
+        valid: ok,
+        status: None,
+        detail: if ok {
+            "Clave válida: Google responde con la lista de modelos.".to_string()
+        } else {
+            "Respuesta sin lista de modelos (formato inesperado).".to_string()
+        },
+    })
+}
+
 /// Genera la imagen y la guarda en `save_dir/generated-images/`.
 /// El token viaja solo en memoria (parámetro, jamás a disco ni logs).
 #[tauri::command]
@@ -424,5 +658,32 @@ mod images_tests {
         assert_eq!(validate_upload_ext(".JPEG").as_deref(), Ok("jpg"));
         assert!(validate_upload_ext("svg").is_err());
         assert!(validate_upload_ext("").is_err());
+    }
+
+    #[test]
+    fn estimaciones_y_modelos_google() {
+        // schnell: 4 tiles x 4,80 + pasos x 9,60.
+        assert!((cf_schnell_estimate_neurons(4) - 57.6).abs() < 0.01);
+        assert!((cf_schnell_estimate_neurons(8) - 96.0).abs() < 0.01);
+        assert_eq!(google_cost_per_image(GOOGLE_MODEL_21), Some(0.0336));
+        assert_eq!(google_cost_per_image(GOOGLE_MODEL_25), Some(0.039));
+        assert!(google_cost_per_image("otro").is_none());
+        assert!(validate_google_model(GOOGLE_MODEL_21).is_ok());
+        assert!(validate_google_model("gpt-x").is_err());
+        assert!(validate_google_prompt("  ").is_err());
+        assert!(validate_google_prompt("un dragón").is_ok());
+    }
+
+    #[test]
+    fn parseo_google_interactions() {
+        let ok = r#"{"interaction":{"id":"abc","output_image":{"data":"aGk=","mime_type":"image/png"}}}"#;
+        let (b, m) = parse_google_image_response(ok).unwrap();
+        assert_eq!(b, b"hi");
+        assert_eq!(m, "image/png");
+        let fb = r#"{"candidates":[{"content":{"parts":[{"inlineData":{"mimeType":"image/jpeg","data":"aGk="}}]}}]}"#;
+        assert!(parse_google_image_response(fb).is_ok());
+        let err = r#"{"error":{"message":"API key not valid"}}"#;
+        assert!(parse_google_image_response(err).unwrap_err().contains("Google"));
+        assert!(parse_google_image_response("{}").is_err());
     }
 }

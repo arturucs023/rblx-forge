@@ -24,6 +24,12 @@ Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)
   como `file://`); también llegan adjuntos desde Imágenes y Referencias.
 - Referencias: conteos por categoría, filtro de favoritas y «Adjuntar imagen»
   (archivo real al Asistente) además de «Enviar ruta».
+- Imágenes: selector de modelo por proveedor (como el del Asistente) con coste
+  aprox. por imagen — FLUX.1 schnell (calibrado con medición real: 173 Neurons
+  a 4 pasos; la fórmula oficial subestima), Nano Banana 2.1 (≈$0,0336) y Nano
+  Banana 2.5 (≈$0,039); pasos/semilla solo para Cloudflare. Clave de Google en
+  Configuración con «Probar clave» (lista modelos, gratis). Google es de pago
+  siempre, sin capa gratuita para imágenes.
 - `npm run test` 68/68, `cargo test` 43/43, `npm run build` OK. Generación real
   pendiente de credenciales del usuario (contrato verificado en docs).
 

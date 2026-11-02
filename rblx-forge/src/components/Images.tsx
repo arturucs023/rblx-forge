@@ -1,11 +1,19 @@
-// Modo Imágenes: genera arte con FLUX.1 schnell (Cloudflare Workers AI).
-// Guarda en `<proyecto>/generated-images/` y muestra la galería. Requiere
-// proyecto abierto + credenciales en Configuración → Imágenes.
-import { useCallback, useEffect, useState } from 'react';
+// Modo Imágenes: genera arte con Cloudflare (FLUX.1 schnell) o Google
+// (Nano Banana) y guarda en `<proyecto>/generated-images/` con galería.
+// Requiere proyecto abierto + claves en Configuración → Imágenes.
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { useProjects } from '../stores/projects';
-import { clampSteps, formatBytes, imageErrorMessage, normalizeSeed, validatePrompt } from '../lib/images';
-import { getCloudflareAccount, getCloudflareToken } from './CloudflareSettings';
+import {
+  IMAGE_MODELS, PROVIDER_LABEL, calibratedSchnellEstimate, clampSteps,
+  formatBytes, imageErrorMessage, normalizeSeed, validatePrompt,
+  type ImageModelOption,
+} from '../lib/images';
+import { getSetting, setSetting } from '../lib/paths';
+import { getCloudflareAccount, getCloudflareToken, getGoogleKey } from './CloudflareSettings';
+
+const KEY_MEASURED_SCHNELL = 'images.measured.schnell';
+const FLUX_ID = '@cf/black-forest-labs/flux-1-schnell';
 
 interface GenEntry {
   name: string;
@@ -13,8 +21,28 @@ interface GenEntry {
   size: number;
 }
 
+interface LastGen {
+  secs: string;
+  label: string;
+  size: number;
+  cost: string;
+}
+
+function costHint(m: ImageModelOption, steps: number, measured: number | null): string {
+  if (m.model === FLUX_ID) {
+    const est = Math.round(calibratedSchnellEstimate(steps, measured));
+    return measured != null
+      ? `≈${est} Neurons/imagen (tu medición)`
+      : `≈${est} Neurons/imagen (fórmula oficial)`;
+  }
+  return m.costHint;
+}
+
 export function Images() {
   const project = useProjects((s) => s.active);
+  const [modelId, setModelId] = useState<string>(FLUX_ID);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
   const [prompt, setPrompt] = useState('');
   const [steps, setSteps] = useState(4);
   const [seed, setSeed] = useState('');
@@ -23,10 +51,37 @@ export function Images() {
   const [copied, setCopied] = useState<string | null>(null);
   const [files, setFiles] = useState<GenEntry[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  /** Resumen de la última generación: tiempo, pasos, semilla y coste reportado. */
-  const [lastGen, setLastGen] = useState<{
-    secs: string; steps: number; seed: string; size: number; usage: string | null;
-  } | null>(null);
+  const [lastGen, setLastGen] = useState<LastGen | null>(null);
+  const [measured, setMeasured] = useState<number | null>(null);
+  const [calInput, setCalInput] = useState('');
+
+  const model = IMAGE_MODELS.find((m) => m.model === modelId) ?? IMAGE_MODELS[0];
+  const isCf = model.provider === 'cloudflare';
+
+  useEffect(() => {
+    getSetting(KEY_MEASURED_SCHNELL)
+      .then((v) => {
+        const n = Number(v);
+        if (Number.isFinite(n) && n > 0) setMeasured(n);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPickerOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [pickerOpen]);
 
   const list = useCallback(async () => {
     if (!project) {
@@ -52,40 +107,85 @@ export function Images() {
     void list();
   }, [list]);
 
-  const generate = async () => {
-    setError(null);
-    const bad = validatePrompt(prompt);
-    if (bad) {
-      setError(bad);
+  const saveCalibration = async () => {
+    const n = Math.floor(Number(calInput.replace(',', '.')));
+    if (!Number.isFinite(n) || n <= 0 || n > 100000) {
+      setError('Pon los Neurons que marcó tu panel (un número, p. ej. 173).');
       return;
     }
+    try {
+      await setSetting(KEY_MEASURED_SCHNELL, String(n));
+      setMeasured(n);
+      setCalInput('');
+      setError(null);
+    } catch (e) {
+      setError(`No se pudo guardar la calibración: ${String(e).slice(0, 160)}`);
+    }
+  };
+
+  const generate = async () => {
+    setError(null);
     if (!project) {
       setError('Abre un proyecto: las imágenes se guardan en su carpeta.');
       return;
     }
+    const promptLimit = isCf ? 2048 : 8000;
+    if (!prompt.trim()) {
+      setError('Describe la imagen que quieres generar.');
+      return;
+    }
+    if ([...prompt.trim()].length > promptLimit) {
+      setError(`El prompt supera los ${promptLimit} caracteres.`);
+      return;
+    }
     setBusy(true);
     try {
-      const [accountId, apiToken] = await Promise.all([getCloudflareAccount(), getCloudflareToken()]);
-      const usedSteps = clampSteps(steps);
-      const usedSeed = normalizeSeed(seed);
-      const out = await invoke<{ file: string; size: number; usage?: string | null; elapsed_ms?: number }>('cf_images_generate', {
-        accountId,
-        apiToken,
-        prompt: prompt.trim(),
-        steps: usedSteps,
-        seed: usedSeed ?? null,
-        saveDir: project.path,
-      });
-      setLastGen({
-        secs: out.elapsed_ms != null ? (out.elapsed_ms / 1000).toFixed(1) : '—',
-        steps: usedSteps,
-        seed: usedSeed != null ? String(usedSeed) : 'aleatoria',
-        size: out.size,
-        usage: out.usage ?? null,
-      });
+      const bad = isCf ? validatePrompt(prompt) : null;
+      if (bad) {
+        setError(bad);
+        setBusy(false);
+        return;
+      }
+      if (isCf) {
+        const [accountId, apiToken] = await Promise.all([getCloudflareAccount(), getCloudflareToken()]);
+        const usedSteps = clampSteps(steps);
+        const usedSeed = normalizeSeed(seed);
+        const out = await invoke<{ file: string; size: number; usage?: string | null; elapsed_ms?: number }>('cf_images_generate', {
+          accountId,
+          apiToken,
+          prompt: prompt.trim(),
+          steps: usedSteps,
+          seed: usedSeed ?? null,
+          saveDir: project.path,
+        });
+        const cost = out.usage
+          ? `coste reportado: ${out.usage}`
+          : `≈${Math.round(calibratedSchnellEstimate(usedSteps, measured))} Neurons${measured != null ? ' (tu medición)' : ' (fórmula oficial; calibra con tu panel)'}`;
+        setLastGen({
+          secs: out.elapsed_ms != null ? (out.elapsed_ms / 1000).toFixed(1) : '—',
+          label: `${model.label} · ${usedSteps} pasos · semilla ${usedSeed != null ? String(usedSeed) : 'aleatoria'}`,
+          size: out.size,
+          cost,
+        });
+        setSelected(out.file);
+      } else {
+        const apiKey = await getGoogleKey();
+        const out = await invoke<{ file: string; size: number; usage?: string | null; elapsed_ms?: number }>('google_images_generate', {
+          apiKey,
+          model: model.model,
+          prompt: prompt.trim(),
+          saveDir: project.path,
+        });
+        setLastGen({
+          secs: out.elapsed_ms != null ? (out.elapsed_ms / 1000).toFixed(1) : '—',
+          label: model.label,
+          size: out.size,
+          cost: out.usage ?? model.costHint.replace('≈', '≈') + ' (de pago, sin capa gratis)',
+        });
+        setSelected(out.file);
+      }
       setPrompt('');
       await list();
-      setSelected(out.file);
     } catch (e) {
       setError(imageErrorMessage(e));
     } finally {
@@ -125,19 +225,20 @@ export function Images() {
   }
 
   const selEntry = files.find((f) => `${project.path}/${f.rel}`.replace(/\\/g, '/') === (selected ?? '').replace(/\\/g, '/'));
+  const providers = [...new Set(IMAGE_MODELS.map((m) => m.provider))];
 
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-forge-border-soft bg-forge-panel/70 px-3 py-2">
         <p className="font-bold">Imágenes · {project.name}</p>
         <p className="text-[11px] text-forge-muted">
-          FLUX.1 schnell vía Cloudflare Workers AI · se guardan en «generated-images» del proyecto
+          Cloudflare o Google · se guardan en «generated-images» del proyecto
         </p>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         <div className="card mb-3 p-3">
           <label className="mb-1 block text-[12px] text-forge-muted" htmlFor="img-prompt">
-            Describe la imagen (1–2048 caracteres)
+            Describe la imagen (máx. {isCf ? '2.048' : '8.000'} caracteres)
           </label>
           <textarea
             id="img-prompt"
@@ -149,40 +250,128 @@ export function Images() {
             className="input max-h-40 min-h-[64px] w-full resize-y disabled:opacity-50"
           />
           <div className="mt-2 flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 text-[12px] text-forge-muted">
-              Pasos
-              <input
-                type="range"
-                min={1}
-                max={8}
-                value={steps}
-                onChange={(e) => setSteps(clampSteps(Number(e.target.value)))}
+            <div ref={pickerRef} className="relative">
+              <button
+                onClick={() => setPickerOpen((v) => !v)}
                 disabled={busy}
-                className="w-28"
-                title="Más pasos = más calidad y más espera (máx. 8)"
-              />
-              <span className="mono font-bold text-forge-text">{steps}</span>
-            </label>
-            <label className="flex items-center gap-2 text-[12px] text-forge-muted">
-              Semilla
-              <input
-                value={seed}
-                onChange={(e) => setSeed(e.target.value)}
-                placeholder="aleatoria"
-                inputMode="numeric"
-                disabled={busy}
-                className="input mono w-28 !py-1 !text-[12px] disabled:opacity-50"
-              />
-            </label>
+                title="Elegir modelo de imagen"
+                className="flex max-w-full items-center gap-1.5 rounded-lg border border-forge-border bg-forge-panel px-2 py-1 text-left transition-colors hover:border-forge-accent-dim disabled:opacity-50"
+              >
+                <span className="mono min-w-0 flex-1 truncate text-[12px] font-bold text-forge-accent">
+                  {model.label}
+                </span>
+                <span className="mono hidden shrink-0 truncate text-[10px] text-forge-faint sm:block">
+                  {costHint(model, steps, model.model === FLUX_ID ? measured : null)}
+                </span>
+                <span className="shrink-0 text-[11px] text-forge-faint">{pickerOpen ? '▴' : '▾'}</span>
+              </button>
+              {pickerOpen && (
+                <div className="anim-enter absolute bottom-full left-0 z-50 mb-1 flex max-h-[60vh] w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-forge-border bg-forge-panel shadow-2xl">
+                  <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
+                    {providers.map((p) => (
+                      <div key={p} className="mb-1 rounded-lg border border-forge-border-soft">
+                        <p className="mono px-2 pb-0.5 pt-1.5 text-[10px] uppercase tracking-wide text-forge-faint">
+                          {PROVIDER_LABEL[p]}
+                        </p>
+                        <div className="p-1">
+                          {IMAGE_MODELS.filter((m) => m.provider === p).map((m) => {
+                            const sel = m.model === modelId;
+                            return (
+                              <button
+                                key={m.model}
+                                onClick={() => {
+                                  setModelId(m.model);
+                                  setPickerOpen(false);
+                                }}
+                                title={`${m.model} · ${m.costHint}`}
+                                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors ${sel ? 'bg-forge-accent-soft' : 'hover:bg-forge-panel2'}`}
+                              >
+                                <span className={`w-4 shrink-0 text-center text-[12px] ${sel ? 'text-forge-accent' : 'text-transparent'}`}>✓</span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block truncate text-[12.5px] font-semibold text-forge-text">{m.label}</span>
+                                  <span className="mono block truncate text-[10px] text-forge-faint">
+                                    {costHint(m, steps, m.model === FLUX_ID ? measured : null)}
+                                  </span>
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t border-forge-border-soft px-2 py-1">
+                    <p className="mono text-center text-[10px] text-forge-faint">
+                      Cloudflare: Neurons (10.000/día gratis) · Google: de pago, sin capa gratis
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+            {isCf ? (
+              <>
+                <label className="flex items-center gap-2 text-[12px] text-forge-muted">
+                  Pasos
+                  <input
+                    type="range"
+                    min={1}
+                    max={8}
+                    value={steps}
+                    onChange={(e) => setSteps(clampSteps(Number(e.target.value)))}
+                    disabled={busy}
+                    className="w-28"
+                    title="Más pasos = más calidad, espera y Neurons (máx. 8)"
+                  />
+                  <span className="mono font-bold text-forge-text">{steps}</span>
+                </label>
+                <label className="flex items-center gap-2 text-[12px] text-forge-muted">
+                  Semilla
+                  <input
+                    value={seed}
+                    onChange={(e) => setSeed(e.target.value)}
+                    placeholder="aleatoria"
+                    inputMode="numeric"
+                    disabled={busy}
+                    className="input mono w-28 !py-1 !text-[12px] disabled:opacity-50"
+                  />
+                </label>
+              </>
+            ) : (
+              <span className="text-[11px] text-forge-faint">Google fija resolución y pasos (1K por defecto).</span>
+            )}
             <button onClick={generate} disabled={busy || !prompt.trim()} className="btn btn-primary ml-auto disabled:opacity-40">
               {busy ? 'Generando…' : 'Generar imagen'}
             </button>
           </div>
+          {isCf && (
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-forge-muted">
+              {measured != null ? (
+                <span>
+                  Calibrado con tu medición: <span className="mono font-bold text-forge-text">{measured} Neurons</span> a 4 pasos.
+                  (<button onClick={() => { setMeasured(null); setCalInput(''); }} className="underline" title="Borra la calibración y vuelve a la fórmula oficial">quitar</button>)
+                </span>
+              ) : (
+                <>
+                  <span>¿Cuánto marcó tu panel de Cloudflare la última vez?</span>
+                  <input
+                    value={calInput}
+                    onChange={(e) => setCalInput(e.target.value)}
+                    placeholder="p. ej. 173"
+                    inputMode="numeric"
+                    disabled={busy}
+                    className="input mono w-24 !py-0.5 !text-[11px] disabled:opacity-50"
+                  />
+                  <button onClick={saveCalibration} disabled={busy} className="btn btn-ghost !py-0.5 !text-[11px]">
+                    Guardar medición
+                  </button>
+                </>
+              )}
+            </div>
+          )}
           {busy && <p className="mt-2 animate-pulse text-[12px] text-forge-accent">El modelo está dibujando (puede tardar un minuto)…</p>}
           {lastGen && !busy && (
             <p className="mono mt-2 text-[11px] text-forge-muted">
-              Última: {lastGen.secs} s · {lastGen.steps} pasos · semilla {lastGen.seed} · {formatBytes(lastGen.size)}
-              {lastGen.usage ? ` · coste reportado: ${lastGen.usage}` : ' · la API no desglosa el coste (se descuenta de tus 10.000 Neurons/día)'}
+              Última ({lastGen.label}): {lastGen.secs} s · {formatBytes(lastGen.size)} · {lastGen.cost}
             </p>
           )}
           {error && <p className="mt-2 text-[12px] text-forge-err">{error}</p>}

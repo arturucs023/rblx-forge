@@ -1,6 +1,6 @@
 // Tests puros del modo Imágenes (sin red ni Tauri).
 import { describe, expect, it } from 'vitest';
-import { clampSteps, classifyToken, formatBytes, imageErrorMessage, normalizeSeed, pastedImageName, isImageChipName, tokenVerifyAdvice, validatePrompt } from './images';
+import { clampSteps, classifyToken, formatBytes, imageErrorMessage, normalizeSeed, pastedImageName, isImageChipName, schnellEstimate, tokenVerifyAdvice, validatePrompt, IMAGE_MODELS } from './images';
 
 describe('classifyToken', () => {
   it('orienta sin bloquear', () => {
@@ -61,6 +61,14 @@ describe('imageErrorMessage', () => {
     expect(pastedImageName(2)).toBe('[Image 2]');
     expect(isImageChipName('[Image 3].png')).toBe(true);
     expect(isImageChipName('foto.png')).toBe(false);
+  });
+  it('catálogo con coste aprox por imagen', () => {
+    expect(IMAGE_MODELS.length).toBe(3);
+    expect(IMAGE_MODELS[0].supportsSteps).toBe(true);
+    expect(IMAGE_MODELS[1].supportsSteps).toBe(false);
+    expect(schnellEstimate(4)).toBeCloseTo(57.6, 1);
+    expect(schnellEstimate(8)).toBeCloseTo(96, 0);
+    expect(IMAGE_MODELS.every((m) => m.costHint.includes('≈'))).toBe(true);
   });
 });
 

@@ -148,6 +148,114 @@ export function CloudflareSettings() {
       <p className="mt-1 text-[11px] text-forge-faint">
         El token se guarda en local (carpeta de datos de la app) y solo se usa contra api.cloudflare.com.
       </p>
+      <GoogleSettings />
+    </div>
+  );
+}
+
+export const KEY_GOOGLE = 'google.apiKey';
+
+export async function getGoogleKey(): Promise<string> {
+  try {
+    return await getSetting(KEY_GOOGLE);
+  } catch {
+    return '';
+  }
+}
+
+function GoogleSettings() {
+  const [key, setKey] = useState('');
+  const [show, setShow] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [check, setCheck] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    getGoogleKey().then(setKey).catch(() => {});
+  }, []);
+
+  const save = async () => {
+    setErr(null);
+    setMsg(null);
+    if (!key.trim()) {
+      setErr('Falta la API key.');
+      return;
+    }
+    setBusy(true);
+    try {
+      await setSetting(KEY_GOOGLE, key);
+      setMsg(`Guardada a las ${new Date().toLocaleTimeString()} (verificado por relectura).`);
+    } catch (e) {
+      setErr(String(e).slice(0, 300));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const checkConnection = async () => {
+    setCheck(null);
+    if (!key.trim()) {
+      setCheck({ ok: false, text: 'Falta la API key.' });
+      return;
+    }
+    setChecking(true);
+    try {
+      const out = await invoke<{ reachable: boolean; valid: boolean; status?: string | null; detail: string }>(
+        'google_check_key',
+        { apiKey: key.trim() },
+      );
+      setCheck({ ok: out.valid, text: out.detail });
+    } catch (e) {
+      setCheck({ ok: false, text: String(e).slice(0, 400) });
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 border-t border-forge-border-soft pt-3">
+      <p className="mb-1 text-[12px] font-bold">Google Gemini (Nano Banana)</p>
+      <p className="mb-2 text-[11px] text-forge-muted">
+        Modelos <span className="mono">gemini-nano-banana-2.1</span> (≈$0,0336/imagen) y{' '}
+        <span className="mono">gemini-2.5-flash-image</span> (≈$0,039/imagen). De pago siempre:
+        sin capa gratuita para imágenes (requiere facturación en Google).
+        Crea la clave en Google AI Studio → API keys.
+      </p>
+      <label className="mb-2 block">
+        <span className="mb-0.5 block text-[12px] text-forge-muted">API key de Google</span>
+        <div className="flex gap-2">
+          <input
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            type={show ? 'text' : 'password'}
+            placeholder="••••••"
+            autoComplete="off"
+            spellCheck={false}
+            className="input mono min-w-0 flex-1 !text-[12px]"
+          />
+          <button onClick={() => setShow((v) => !v)} className="btn btn-ghost shrink-0">
+            {show ? 'Ocultar' : 'Mostrar'}
+          </button>
+        </div>
+      </label>
+      {err && <p className="mb-1 text-[12px] text-forge-err">{err}</p>}
+      {msg && <p className="mono mb-1 text-[11px] text-forge-ok">{msg}</p>}
+      <div className="flex flex-wrap items-center gap-2">
+        <button onClick={save} disabled={busy} className="btn btn-primary">
+          Guardar clave
+        </button>
+        <button onClick={checkConnection} disabled={checking || !key.trim()} className="btn btn-ghost disabled:opacity-40" title="Lista modelos (llamada gratuita)">
+          {checking ? 'Probando…' : 'Probar clave'}
+        </button>
+        <span className={`mono text-[11px] ${key.trim() ? 'text-forge-ok' : 'text-forge-faint'}`}>
+          {key.trim() ? 'Configurada' : 'Sin configurar'}
+        </span>
+      </div>
+      {check && (
+        <p className={`mt-1 text-[12px] ${check.ok ? 'text-forge-ok' : 'text-forge-err'}`}>{check.text}</p>
+      )}
     </div>
   );
 }
