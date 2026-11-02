@@ -1705,6 +1705,7 @@ pub fn run() {
             project_lint,
             workspace_stats,
             images::cf_images_generate,
+            images::cf_cloudflare_check,
             eval::eval_db_init,
             eval::eval_groups,
             eval::eval_scan,

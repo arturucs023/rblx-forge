@@ -38,6 +38,10 @@ describe('imageErrorMessage', () => {
     expect(imageErrorMessage('quota neurons')).toContain('cuota');
     expect(imageErrorMessage('Falta el API token')).toContain('Falta');
   });
+  it('los fallos de red muestran el detalle real, no un genérico', () => {
+    const raw = 'Conexión rechazada o bloqueada hacia api.cloudflare.com: Connection refused';
+    expect(imageErrorMessage(raw)).toBe(raw);
+  });
 });
 
 describe('formatBytes', () => {

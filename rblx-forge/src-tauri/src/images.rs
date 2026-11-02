@@ -114,6 +114,106 @@ pub fn parse_image_response(body: &str) -> Result<Vec<u8>, String> {
         .map_err(|e| format!("La imagen base64 no se pudo decodificar: {e}"))
 }
 
+/// Clasifica un fallo de transporte en un mensaje accionable (sin tecnicismos).
+fn transport_message(e: &ureq::Error) -> String {
+    match e {
+        ureq::Error::Transport(t) => {
+            let kind = format!("{:?}", t.kind()).to_lowercase();
+            if kind.contains("timeout") || kind.contains("timedout") {
+                format!("Se agotó el tiempo de espera conectando con Cloudflare (timeout): {e}")
+            } else if kind.contains("dns") {
+                format!("No se pudo resolver api.cloudflare.com (DNS): {e}")
+            } else if kind.contains("tls") || kind.contains("certificate") {
+                format!("Falló el canal seguro (TLS) con Cloudflare: {e}")
+            } else if kind.contains("connection") || kind.contains("connect") {
+                format!("Conexión rechazada o bloqueada hacia api.cloudflare.com (puede ser el firewall/antivirus de Windows bloqueando a la app): {e}")
+            } else {
+                format!("Fallo de red hacia api.cloudflare.com ({kind}): {e}")
+            }
+        }
+        _ => format!("No se pudo contactar con Cloudflare: {e}"),
+    }
+}
+
+/// Estado de la verificación del token (sin gastar Neurons).
+#[derive(serde::Serialize, Clone, Debug)]
+pub struct CloudflareCheck {
+    pub reachable: bool,
+    pub valid: bool,
+    pub status: Option<String>,
+    pub detail: String,
+}
+
+/// Prueba conexión + validez del token SIN generar nada (no gasta Neurons).
+/// Usa `GET /client/v4/user/tokens/verify` (contrato documentado).
+#[tauri::command]
+pub fn cf_cloudflare_check(api_token: String) -> Result<CloudflareCheck, String> {
+    if api_token.trim().is_empty() {
+        return Err("Falta el API token de Cloudflare (Configuración → Imágenes).".to_string());
+    }
+    let resp = ureq::get("https://api.cloudflare.com/client/v4/user/tokens/verify")
+        .set("Authorization", &format!("Bearer {}", api_token.trim()))
+        .timeout(std::time::Duration::from_secs(20))
+        .call()
+        .map_err(|e| match e {
+            ureq::Error::Status(code, r) => {
+                let body = r
+                    .into_string()
+                    .unwrap_or_default()
+                    .chars()
+                    .take(300)
+                    .collect::<String>();
+                format!("Cloudflare HTTP {code} al verificar el token: {body}")
+            }
+            other => transport_message(&other),
+        })?;
+    let body = resp
+        .into_string()
+        .map_err(|e| format!("No se pudo leer la respuesta: {e}"))?;
+    let v: serde_json::Value =
+        serde_json::from_str(&body).map_err(|e| format!("Respuesta no JSON: {e}"))?;
+    let success = v.get("success").and_then(|s| s.as_bool()).unwrap_or(false);
+    let status = v
+        .get("result")
+        .and_then(|r| r.get("status"))
+        .and_then(|s| s.as_str())
+        .map(|s| s.to_string());
+    if success {
+        let valid = status.as_deref() == Some("active");
+        let detail = match status.as_deref() {
+            Some("active") => "Token válido y activo. La red funciona.".to_string(),
+            Some(other) => format!("El token responde pero su estado es `{other}` (no sirve para generar)."),
+            None => "Respuesta sin estado de token (formato inesperado).".to_string(),
+        };
+        Ok(CloudflareCheck { reachable: true, valid, status, detail })
+    } else {
+        let msgs: Vec<String> = v
+            .get("errors")
+            .and_then(|e| e.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|e| {
+                        e.get("message")
+                            .and_then(|m| m.as_str())
+                            .map(|m| m.to_string())
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        Ok(CloudflareCheck {
+            reachable: true,
+            valid: false,
+            status,
+            detail: format!(
+                "El token no es válido: {}.",
+                if msgs.is_empty() { "sin detalle".to_string() } else { msgs.join(" | ") }
+            )
+            .chars()
+            .take(400)
+            .collect(),
+        })
+    }
+}
 /// Genera la imagen y la guarda en `save_dir/generated-images/`.
 /// El token viaja solo en memoria (parámetro, jamás a disco ni logs).
 #[tauri::command]
@@ -148,7 +248,20 @@ pub fn cf_images_generate(
         .set("Content-Type", "application/json")
         .timeout(std::time::Duration::from_secs(120))
         .send_json(payload)
-        .map_err(|e| format!("No se pudo contactar con Cloudflare: {e}"))?;
+        .map_err(|e| match e {
+            // ureq convierte los HTTP no-2xx en Error::Status: no es un fallo
+            // de red, es la API respondiendo (token, cuenta, cuota…).
+            ureq::Error::Status(code, r) => {
+                let body = r
+                    .into_string()
+                    .unwrap_or_default()
+                    .chars()
+                    .take(400)
+                    .collect::<String>();
+                format!("Cloudflare HTTP {code}: {body}")
+            }
+            other => transport_message(&other),
+        })?;
     let status = resp.status();
     let body = resp
         .into_string()

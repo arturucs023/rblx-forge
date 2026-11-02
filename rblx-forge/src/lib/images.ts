@@ -38,7 +38,8 @@ export function imageErrorMessage(err: unknown): string {
   if (/401|auth/i.test(s)) return 'Cloudflare rechazó la petición: revisa el API token (Configuración → Imágenes).';
   if (/404/i.test(s)) return 'Cuenta o ruta no encontrada: revisa el Account ID.';
   if (/8192|límite|limit|quota|neuron/i.test(s)) return 'Límite de Cloudflare alcanzado (cuota de Neurons): espera al reinicio diario.';
-  if (/contactar|network|fetch|timeout/i.test(s)) return 'Sin conexión con Cloudflare: comprueba tu red e inténtalo de nuevo.';
+  // Fallos de red/transporte o HTTP con detalle: mostrar el detalle real
+  // (clasificado en el backend), no un genérico que oculte la causa.
   return s.slice(0, 400);
 }
 

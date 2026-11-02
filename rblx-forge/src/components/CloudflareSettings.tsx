@@ -3,6 +3,7 @@
 // (`cloudflare.apiToken`); no se registra en logs ni se envía a ningún sitio
 // salvo api.cloudflare.com. No lo compartas ni lo subas a git.
 import { useEffect, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { getSetting, setSetting } from '../lib/paths';
 
 export const KEY_CF_ACCOUNT = 'cloudflare.accountId';
@@ -30,6 +31,8 @@ export function CloudflareSettings() {
   const [token, setToken] = useState('');
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [check, setCheck] = useState<{ ok: boolean; text: string } | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -58,6 +61,26 @@ export function CloudflareSettings() {
       setErr(String(e).slice(0, 300));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const checkConnection = async () => {
+    setCheck(null);
+    if (!token.trim()) {
+      setCheck({ ok: false, text: 'Falta el API token.' });
+      return;
+    }
+    setChecking(true);
+    try {
+      const out = await invoke<{ reachable: boolean; valid: boolean; status?: string | null; detail: string }>(
+        'cf_cloudflare_check',
+        { apiToken: token.trim() },
+      );
+      setCheck({ ok: out.valid, text: out.detail });
+    } catch (e) {
+      setCheck({ ok: false, text: String(e).slice(0, 400) });
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -91,14 +114,20 @@ export function CloudflareSettings() {
       </label>
       {err && <p className="mb-1 text-[12px] text-forge-err">{err}</p>}
       {msg && <p className="mono mb-1 text-[11px] text-forge-ok">{msg}</p>}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button onClick={save} disabled={busy} className="btn btn-primary">
           Guardar credenciales
+        </button>
+        <button onClick={checkConnection} disabled={checking || !token.trim()} className="btn btn-ghost disabled:opacity-40" title="Verifica red + token sin gastar Neurons">
+          {checking ? 'Probando…' : 'Probar conexión'}
         </button>
         <span className={`mono text-[11px] ${token.trim() && account.trim() ? 'text-forge-ok' : 'text-forge-faint'}`}>
           {token.trim() && account.trim() ? 'Configurado' : 'Sin configurar'}
         </span>
       </div>
+      {check && (
+        <p className={`mt-1 text-[12px] ${check.ok ? 'text-forge-ok' : 'text-forge-err'}`}>{check.text}</p>
+      )}
       <p className="mt-1 text-[11px] text-forge-faint">
         El token se guarda en local (carpeta de datos de la app) y solo se usa contra api.cloudflare.com.
       </p>
