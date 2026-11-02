@@ -1,6 +1,6 @@
 // Tests puros del modo Imágenes (sin red ni Tauri).
 import { describe, expect, it } from 'vitest';
-import { clampSteps, classifyToken, formatBytes, dynamicCostHint, imageErrorMessage, normalizeSeed, pastedImageName, isImageChipName, schnellEstimate, tokenVerifyAdvice, validatePrompt, IMAGE_MODELS } from './images';
+import { clampSteps, classifyToken, formatBytes, addSpend, dynamicCostHint, formatSpend, googleImageCost, imageErrorMessage, normalizeSeed, pastedImageName, isImageChipName, schnellEstimate, tokenVerifyAdvice, validatePrompt, IMAGE_MODELS } from './images';
 
 describe('classifyToken', () => {
   it('orienta sin bloquear', () => {
@@ -83,6 +83,16 @@ describe('imageErrorMessage', () => {
     expect(dynamicCostHint(lucid, 20, null).replace(/[.,]/g, '')).toContain('5964');
     const sdxl = IMAGE_MODELS.find((m) => m.model.includes('stable-diffusion-xl-base'))!;
     expect(dynamicCostHint(sdxl, 20, null)).toBe(sdxl.costHint);
+  });
+  it('coste Google por tamaño y gasto acumulado', () => {
+    expect(googleImageCost('gemini-nano-banana-2.1', '1K')).toBe(0.0336);
+    expect(googleImageCost('gemini-nano-banana-2.1', '2K')).toBe(0.0504);
+    expect(googleImageCost('gemini-2.5-flash-image', '2K')).toBe(0.039);
+    expect(googleImageCost('otro', '1K')).toBeNull();
+    const s = addSpend({ neurons: 173, usd: 0 }, { usd: 0.0336 });
+    expect(s.neurons).toBe(173);
+    expect(s.usd).toBeCloseTo(0.0336, 4);
+    expect(formatSpend({ neurons: 0, usd: 0 })).toBe('nada todavía');
   });
 });
 

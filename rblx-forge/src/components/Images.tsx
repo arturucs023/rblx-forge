@@ -5,15 +5,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { useProjects } from '../stores/projects';
 import {
-  IMAGE_MODELS, PROVIDER_LABEL, calibratedSchnellEstimate, clampSteps, dynamicCostHint,
-  formatBytes, imageErrorMessage, normalizeSeed, validatePrompt,
-  type ImageModelOption,
+  IMAGE_MODELS, PROVIDER_LABEL, addSpend, calibratedSchnellEstimate, clampSteps, dynamicCostHint,
+  formatBytes, formatSpend, googleImageCost, imageErrorMessage, normalizeSeed, validatePrompt,
+  type ImageModelOption, type SpendTotal,
 } from '../lib/images';
+import { open } from '@tauri-apps/plugin-dialog';
 import { getSetting, setSetting } from '../lib/paths';
 import { getCloudflareAccount, getCloudflareToken, getGoogleKey } from './CloudflareSettings';
 
 const KEY_MEASURED_SCHNELL = 'images.measured.schnell';
+const KEY_SPEND = 'images.spend';
 const FLUX_ID = '@cf/black-forest-labs/flux-1-schnell';
+const RATIOS = ['1:1', '16:9', '9:16', '4:3', '3:4'];
+const SIZES = ['1K', '2K'];
 
 interface GenEntry {
   name: string;
@@ -49,15 +53,32 @@ export function Images() {
   const [lastGen, setLastGen] = useState<LastGen | null>(null);
   const [measured, setMeasured] = useState<number | null>(null);
   const [calInput, setCalInput] = useState('');
+  /** Referencias de estilo (Nano Banana): rutas absolutas, máx. 4. */
+  const [refs, setRefs] = useState<string[]>([]);
+  const [ratio, setRatio] = useState('1:1');
+  const [imgSize, setImgSize] = useState('1K');
+  const [spend, setSpend] = useState<SpendTotal>({ neurons: 0, usd: 0 });
+  const [zipMsg, setZipMsg] = useState<string | null>(null);
 
   const model = IMAGE_MODELS.find((m) => m.model === modelId) ?? IMAGE_MODELS[0];
   const isCf = model.provider === 'cloudflare';
+  const isGoogle = !isCf;
 
   useEffect(() => {
     getSetting(KEY_MEASURED_SCHNELL)
       .then((v) => {
         const n = Number(v);
         if (Number.isFinite(n) && n > 0) setMeasured(n);
+      })
+      .catch(() => {});
+    getSetting(KEY_SPEND)
+      .then((v) => {
+        try {
+          const o = JSON.parse(v) as Partial<SpendTotal>;
+          if (o && (typeof o.neurons === 'number' || typeof o.usd === 'number')) {
+            setSpend({ neurons: Math.max(0, o.neurons ?? 0), usd: Math.max(0, o.usd ?? 0) });
+          }
+        } catch { /* sin gasto previo */ }
       })
       .catch(() => {});
   }, []);
@@ -118,6 +139,61 @@ export function Images() {
     }
   };
 
+  const recordSpend = async (add: { neurons?: number; usd?: number }) => {
+    const next = addSpend(spend, add);
+    setSpend(next);
+    try {
+      await setSetting(KEY_SPEND, JSON.stringify(next));
+    } catch { /* best-effort */ }
+  };
+
+  const resetSpend = async () => {
+    setSpend({ neurons: 0, usd: 0 });
+    try {
+      await setSetting(KEY_SPEND, JSON.stringify({ neurons: 0, usd: 0 }));
+    } catch { /* best-effort */ }
+  };
+
+  /** Referencias de estilo (hasta 4): elige imágenes del disco. */
+  const pickRefs = async () => {
+    setError(null);
+    try {
+      const sel = await open({
+        multiple: true,
+        filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }],
+        title: 'Referencias de estilo (máx. 4)',
+      });
+      if (!sel) return;
+      const paths = (Array.isArray(sel) ? sel : [sel]).filter((p): p is string => typeof p === 'string');
+      setRefs((prev) => {
+        const merged = [...prev];
+        for (const p of paths) {
+          if (merged.length >= 4) break;
+          if (!merged.includes(p)) merged.push(p);
+        }
+        return merged;
+      });
+    } catch (e) {
+      setError(`No se pudo abrir el selector: ${String(e).slice(0, 120)}`);
+    }
+  };
+
+  /** Exporta la galería a un ZIP (bulk export). */
+  const exportZip = async () => {
+    if (!project || !files.length) return;
+    setError(null);
+    setZipMsg(null);
+    try {
+      const zip = await invoke<string>('images_export_zip', {
+        saveDir: project.path,
+        files: files.map((f) => f.rel),
+      });
+      setZipMsg(`ZIP creado: ${zip.split(/[\\/]/).pop()}`);
+    } catch (e) {
+      setError(`No se pudo crear el ZIP: ${String(e).slice(0, 200)}`);
+    }
+  };
+
   const generate = async () => {
     setError(null);
     if (!project) {
@@ -143,7 +219,7 @@ export function Images() {
       }
       if (isCf) {
         const [accountId, apiToken] = await Promise.all([getCloudflareAccount(), getCloudflareToken()]);
-        const usedSteps = clampSteps(steps);
+        const usedSteps = clampSteps(steps, model.maxSteps, model.defaultSteps);
         const usedSeed = normalizeSeed(seed);
         const out = await invoke<{ file: string; size: number; usage?: string | null; elapsed_ms?: number }>('cf_images_generate', {
           accountId,
@@ -155,15 +231,19 @@ export function Images() {
           negativePrompt: model.supportsNegative && negative.trim() ? negative.trim() : null,
           saveDir: project.path,
         });
+        const estNeurons = model.model === FLUX_ID ? Math.round(calibratedSchnellEstimate(usedSteps, measured)) : null;
         const cost = out.usage
           ? `coste reportado: ${out.usage}`
-          : `≈${Math.round(calibratedSchnellEstimate(usedSteps, measured))} Neurons${measured != null ? ' (tu medición)' : ' (fórmula oficial; calibra con tu panel)'}`;
+          : estNeurons != null
+            ? `≈${estNeurons} Neurons${measured != null ? ' (tu medición)' : ' (fórmula oficial; calibra con tu panel)'}`
+            : `${model.costHint} (la API no lo desglosa)`;
         setLastGen({
           secs: out.elapsed_ms != null ? (out.elapsed_ms / 1000).toFixed(1) : '—',
           label: `${model.label} · ${usedSteps} pasos · semilla ${usedSeed != null ? String(usedSeed) : 'aleatoria'}`,
           size: out.size,
           cost,
         });
+        if (estNeurons != null) void recordSpend({ neurons: estNeurons });
         setSelected(out.file);
       } else {
         const apiKey = await getGoogleKey();
@@ -172,13 +252,18 @@ export function Images() {
           model: model.model,
           prompt: prompt.trim(),
           saveDir: project.path,
+          aspectRatio: ratio,
+          imageSize: imgSize,
+          referencePaths: refs.length ? refs : null,
         });
+        const usd = googleImageCost(model.model, imgSize) ?? 0;
         setLastGen({
           secs: out.elapsed_ms != null ? (out.elapsed_ms / 1000).toFixed(1) : '—',
-          label: model.label,
+          label: `${model.label} · ${ratio} · ${imgSize}${refs.length ? ` · ${refs.length} ref` : ''}`,
           size: out.size,
-          cost: out.usage ?? model.costHint.replace('≈', '≈') + ' (de pago, sin capa gratis)',
+          cost: out.usage ?? (usd ? `≈$${usd.toFixed(4)}/imagen (de pago)` : 'coste no publicado'),
         });
+        if (usd) void recordSpend({ usd });
         setSelected(out.file);
       }
       setPrompt('');
@@ -348,7 +433,37 @@ export function Images() {
               </label>
             )}
             {!isCf && (
-              <span className="text-[11px] text-forge-faint">Google fija resolución y pasos (1K por defecto).</span>
+              <>
+                <label className="flex items-center gap-2 text-[12px] text-forge-muted">
+                  Formato
+                  <select
+                    value={ratio}
+                    onChange={(e) => setRatio(e.target.value)}
+                    disabled={busy}
+                    className="rounded border border-forge-border bg-forge-bg px-1.5 py-1 text-[12px] disabled:opacity-50"
+                    title="Aspect ratio de la imagen"
+                  >
+                    {RATIOS.map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </label>
+                <label className="flex items-center gap-2 text-[12px] text-forge-muted">
+                  Tamaño
+                  <select
+                    value={imgSize}
+                    onChange={(e) => setImgSize(e.target.value)}
+                    disabled={busy}
+                    className="rounded border border-forge-border bg-forge-bg px-1.5 py-1 text-[12px] disabled:opacity-50"
+                    title={model.model === 'gemini-nano-banana-2.1' ? '2K disponible solo en 2.1' : 'Este modelo solo tiene documentado 1K'}
+                  >
+                    {SIZES.map((s) => (
+                      <option key={s} value={s} disabled={s === '2K' && model.model !== 'gemini-nano-banana-2.1'}>{s}</option>
+                    ))}
+                  </select>
+                </label>
+                <button onClick={pickRefs} disabled={busy || refs.length >= 4} className="btn btn-ghost !py-1 !text-[12px] disabled:opacity-40" title="Hasta 4 imágenes de estilo (Nano Banana las usa como referencia)">
+                  + Estilo ({refs.length}/4)
+                </button>
+              </>
             )}
             <button onClick={generate} disabled={busy || !prompt.trim()} className="btn btn-primary ml-auto disabled:opacity-40">
               {busy ? 'Generando…' : 'Generar imagen'}
@@ -380,6 +495,23 @@ export function Images() {
             </div>
           )}
           {busy && <p className="mt-2 animate-pulse text-[12px] text-forge-accent">El modelo está dibujando (puede tardar un minuto)…</p>}
+          {isGoogle && refs.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {refs.map((r) => (
+                <span key={r} title={r} className="flex max-w-[220px] items-center gap-1 rounded-md border border-forge-border bg-forge-panel px-1.5 py-0.5 text-[11px] text-forge-muted">
+                  <img src={convertFileSrc(r)} alt="referencia" className="h-8 w-8 rounded object-cover" />
+                  <span className="mono truncate">{r.split(/[\\/]/).pop()}</span>
+                  <button onClick={() => setRefs((prev) => prev.filter((x) => x !== r))} className="shrink-0 text-forge-faint hover:text-forge-err" title="Quitar referencia">×</button>
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="mono mt-2 text-[11px] text-forge-muted">
+            Gasto aprox. acumulado: {formatSpend(spend)}
+            {(spend.neurons > 0 || spend.usd > 0) && (
+              <button onClick={resetSpend} className="ml-2 underline" title="Pone el contador a cero">reiniciar</button>
+            )}
+          </p>
           {lastGen && !busy && (
             <p className="mono mt-2 text-[11px] text-forge-muted">
               Última ({lastGen.label}): {lastGen.secs} s · {formatBytes(lastGen.size)} · {lastGen.cost}
@@ -390,10 +522,14 @@ export function Images() {
 
         <div className="mb-2 flex items-center gap-2">
           <p className="text-[12px] font-bold">Galería ({files.length})</p>
-          <button onClick={() => list()} className="btn btn-ghost ml-auto !py-0.5 !text-[11px]">
+          <button onClick={exportZip} disabled={!files.length} className="btn btn-ghost ml-auto !py-0.5 !text-[11px] disabled:opacity-40" title="Descarga todas las imágenes en un ZIP">
+            Exportar ZIP
+          </button>
+          <button onClick={() => list()} className="btn btn-ghost !py-0.5 !text-[11px]">
             Actualizar
           </button>
         </div>
+        {zipMsg && <p className="mono mb-2 text-[11px] text-forge-ok">{zipMsg}</p>}
         {files.length === 0 ? (
           <p className="rounded-xl border border-dashed border-forge-border bg-forge-panel p-6 text-center text-[12px] text-forge-muted">
             Aún no hay imágenes. Describe algo arriba y pulsa «Generar imagen».

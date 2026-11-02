@@ -72,12 +72,7 @@ pub fn cf_schnell_estimate_neurons(steps: u8) -> f64 {
 /// Coste aprox. por imagen de Google (pricing oficial ai.google.dev):
 /// 2.1 → $0,0336 (1K); 2.5 → $0,039. Sin capa gratuita para imágenes.
 pub fn google_cost_per_image(model: &str) -> Option<f64> {
-    match model {
-        m if m == GOOGLE_MODEL_21 => Some(0.0336),
-        m if m == GOOGLE_MODEL_25 => Some(0.039),
-        m if m == GOOGLE_MODEL_LITE => Some(0.0336),
-        _ => None,
-    }
+    google_cost_for(model, "1K")
 }
 
 pub fn validate_google_model(model: &str) -> Result<String, String> {
@@ -87,6 +82,74 @@ pub fn validate_google_model(model: &str) -> Result<String, String> {
     } else {
         Err("Modelo de Google no soportado (usa Nano Banana 2.1, 2.5 o Lite).".to_string())
     }
+}
+
+/// Aspect ratios documentados para Nano Banana (response_format).
+pub fn validate_aspect_ratio(v: Option<String>) -> Result<String, String> {
+    let r = v.unwrap_or_else(|| "1:1".to_string());
+    let r = r.trim().to_string();
+    match r.as_str() {
+        "1:1" | "16:9" | "9:16" | "4:3" | "3:4" => Ok(r),
+        _ => Err("Aspecto no soportado (1:1, 16:9, 9:16, 4:3, 3:4).".to_string()),
+    }
+}
+
+/// Tamaños documentados. 2K solo está documentado para Nano Banana 2.1.
+pub fn validate_image_size(model: &str, v: Option<String>) -> Result<String, String> {
+    let s = v.unwrap_or_else(|| "1K".to_string());
+    let s = s.trim().to_uppercase();
+    match s.as_str() {
+        "1K" => Ok("1K".to_string()),
+        "2K" if model == GOOGLE_MODEL_21 => Ok("2K".to_string()),
+        "2K" => Err("El tamaño 2K solo está documentado para Nano Banana 2.1.".to_string()),
+        _ => Err("Tamaño no soportado (1K, 2K).".to_string()),
+    }
+}
+
+/// Coste por imagen según modelo y tamaño (pricing oficial ai.google.dev).
+/// 2.1: 1120 tokens/1K ($0,0336), 1680/2K ($0,0504). 2.5: 1290 tokens ($0,039).
+/// Lite: 1120 tokens/1K ($0,0336).
+pub fn google_cost_for(model: &str, size: &str) -> Option<f64> {
+    match (model, size) {
+        (m, "1K") if m == GOOGLE_MODEL_21 => Some(0.0336),
+        (m, "2K") if m == GOOGLE_MODEL_21 => Some(0.0504),
+        (m, _) if m == GOOGLE_MODEL_25 => Some(0.039),
+        (m, _) if m == GOOGLE_MODEL_LITE => Some(0.0336),
+        _ => None,
+    }
+}
+
+pub const GOOGLE_MAX_REFS: usize = 4;
+pub const GOOGLE_MAX_REF_BYTES: usize = 10 * 1024 * 1024;
+
+fn mime_of(path: &std::path::Path) -> Option<&'static str> {
+    match path.extension().and_then(|e| e.to_str()).map(|e| e.to_lowercase()).as_deref() {
+        Some("png") => Some("image/png"),
+        Some("jpg") | Some("jpeg") => Some("image/jpeg"),
+        Some("webp") => Some("image/webp"),
+        Some("gif") => Some("image/gif"),
+        _ => None,
+    }
+}
+
+/// Lee imágenes de referencia del disco (máx. 4, 10 MB cada una) para
+/// guiar el estilo (Nano Banana admite hasta 14; la app limita a 4).
+pub fn load_reference_images(paths: &[String]) -> Result<Vec<(String, String)>, String> {
+    if paths.len() > GOOGLE_MAX_REFS {
+        return Err(format!("Máximo {GOOGLE_MAX_REFS} imágenes de referencia (límite de la app)."));
+    }
+    let mut out = Vec::new();
+    for p in paths {
+        let path = std::path::Path::new(p);
+        let mime = mime_of(path).ok_or_else(|| format!("Referencia no válida (png/jpg/webp/gif): {p}"))?;
+        let bytes = std::fs::read(path).map_err(|e| format!("No se pudo leer la referencia {p}: {e}"))?;
+        if bytes.len() > GOOGLE_MAX_REF_BYTES {
+            return Err(format!("La referencia supera los 10 MB: {p}"));
+        }
+        use base64::Engine as _;
+        out.push((mime.to_string(), base64::engine::general_purpose::STANDARD.encode(&bytes)));
+    }
+    Ok(out)
 }
 
 pub fn validate_google_prompt(prompt: &str) -> Result<String, String> {
@@ -447,9 +510,9 @@ pub fn cf_cloudflare_check(api_token: String) -> Result<CloudflareCheck, String>
     }
 }
 /// Genera con Google (Nano Banana) vía Interactions API y guarda en
-/// `save_dir/generated-images/`. La clave viaja solo en memoria.
-/// Coste: de pago SIEMPRE (sin capa gratuita para imágenes): 2.1 ≈ $0,0336,
-/// 2.5 ≈ $0,039 por imagen 1K (pricing oficial ai.google.dev).
+/// `save_dir/generated-images/`.
+/// La clave viaja solo en memoria (parámetro, jamás a disco ni logs).
+/// Coste: de pago SIEMPRE (sin capa gratuita para imágenes).
 #[tauri::command]
 pub fn google_images_generate(
     _app: AppHandle,
@@ -457,17 +520,30 @@ pub fn google_images_generate(
     model: String,
     prompt: String,
     save_dir: String,
+    aspect_ratio: Option<String>,
+    image_size: Option<String>,
+    reference_paths: Option<Vec<String>>,
 ) -> Result<GeneratedImage, String> {
     if api_key.trim().is_empty() {
         return Err("Falta la API key de Google (Configuración → Imágenes).".to_string());
     }
     let model = validate_google_model(&model)?;
     let prompt = validate_google_prompt(&prompt)?;
+    let aspect_ratio = validate_aspect_ratio(aspect_ratio)?;
+    let image_size = validate_image_size(&model, image_size)?;
+
+    let mut input = vec![serde_json::json!({ "type": "text", "text": prompt })];
+    if let Some(paths) = reference_paths {
+        for (mime, data) in load_reference_images(&paths)? {
+            input.push(serde_json::json!({ "type": "image", "mime_type": mime, "data": data }));
+        }
+    }
 
     let t0 = std::time::Instant::now();
     let payload = serde_json::json!({
         "model": model,
-        "input": [{ "type": "text", "text": prompt }],
+        "input": input,
+        "response_format": { "type": "image", "aspect_ratio": aspect_ratio, "image_size": image_size },
     });
     let resp = ureq::post("https://generativelanguage.googleapis.com/v1beta/interactions")
         .set("x-goog-api-key", api_key.trim())
@@ -509,7 +585,7 @@ pub fn google_images_generate(
     Ok(GeneratedImage {
         file: file.to_string_lossy().to_string(),
         size: bytes.len() as u64,
-        usage: google_cost_per_image(&model).map(|c| format!("≈ ${c:.4} por imagen (pricing oficial)")),
+        usage: google_cost_for(&model, &image_size).map(|c| format!("≈ ${c:.4} por imagen {image_size} (pricing oficial)")),
         elapsed_ms,
     })
 }
@@ -649,6 +725,61 @@ pub fn cf_images_generate(
     })
 }
 
+/// Nombre seguro dentro del ZIP (solo el nombre del archivo, sin rutas).
+pub fn zip_entry_name(rel: &str) -> Option<String> {
+    let name = rel.replace('\\', "/").rsplit('/').next()?.trim().to_string();
+    if name.is_empty() || name == "." || name == ".." {
+        return None;
+    }
+    if name.len() > 128 {
+        return None;
+    }
+    Some(name)
+}
+
+/// Exporta imágenes de `generated-images/` a un ZIP (bulk export estilo
+/// ForgeGUI). Solo admite archivos DENTRO de esa carpeta (canoniza y verifica
+/// el prefijo): nada fuera del proyecto entra al ZIP.
+#[tauri::command]
+pub fn images_export_zip(save_dir: String, files: Vec<String>) -> Result<String, String> {
+    if files.is_empty() {
+        return Err("No hay imágenes que exportar.".to_string());
+    }
+    if files.len() > 200 {
+        return Err("Demasiadas imágenes (máx. 200 por ZIP).".to_string());
+    }
+    let base = std::path::Path::new(&save_dir)
+        .join("generated-images")
+        .canonicalize()
+        .map_err(|_| "No existe la galería (genera alguna imagen primero).".to_string())?;
+    let mut names: Vec<String> = Vec::new();
+    for rel in &files {
+        let entry = zip_entry_name(rel).ok_or_else(|| format!("Nombre no válido: {rel}"))?;
+        let abs = base.join(&entry).canonicalize().map_err(|_| format!("No existe: {entry}"))?;
+        if !abs.starts_with(&base) {
+            return Err(format!("Fuera de la galería: {entry}"));
+        }
+        names.push(entry);
+    }
+    let stamp = chrono_stamp();
+    let zip_path = base.join(format!("pack-{stamp}.zip"));
+    // Windows trae `tar.exe` (bsdtar) con soporte ZIP: sin dependencias nuevas.
+    let mut cmd = std::process::Command::new("tar.exe");
+    cmd.arg("-a").arg("-c").arg("-f").arg(&zip_path);
+    for n in &names {
+        cmd.arg(n);
+    }
+    let out = cmd
+        .current_dir(&base)
+        .output()
+        .map_err(|e| format!("No se pudo crear el ZIP (¿tar.exe disponible?): {e}"))?;
+    if !out.status.success() {
+        let err = String::from_utf8_lossy(&out.stderr).chars().take(300).collect::<String>();
+        return Err(format!("tar falló: {err}"));
+    }
+    Ok(zip_path.to_string_lossy().to_string())
+}
+
 fn chrono_stamp() -> String {
     // Sin dependencia chrono: segundos desde epoch + pid para unicidad.
     let secs = std::time::SystemTime::now()
@@ -771,5 +902,27 @@ mod images_tests {
         let err = r#"{"error":{"message":"API key not valid"}}"#;
         assert!(parse_google_image_response(err).unwrap_err().contains("Google"));
         assert!(parse_google_image_response("{}").is_err());
+    }
+
+    #[test]
+    fn validaciones_google_nuevas() {
+        assert_eq!(google_cost_for(GOOGLE_MODEL_21, "1K"), Some(0.0336));
+        assert_eq!(google_cost_for(GOOGLE_MODEL_21, "2K"), Some(0.0504));
+        assert_eq!(google_cost_for(GOOGLE_MODEL_25, "2K"), Some(0.039));
+        assert!(validate_aspect_ratio(Some("16:9".to_string())).is_ok());
+        assert!(validate_aspect_ratio(Some("3:2".to_string())).is_err());
+        assert_eq!(validate_image_size(GOOGLE_MODEL_21, Some("2K".to_string())).unwrap(), "2K");
+        assert!(validate_image_size(GOOGLE_MODEL_25, Some("2K".to_string())).is_err());
+    }
+
+    #[test]
+    fn zip_solo_nombres_seguros() {
+        assert_eq!(zip_entry_name("flux-1.jpg").as_deref(), Some("flux-1.jpg"));
+        // Las rutas con .. se reducen a su basename (luego se verifica que
+        // quede dentro de la galería con starts_with).
+        assert_eq!(zip_entry_name("sub/dir/a.png").as_deref(), Some("a.png"));
+        assert_eq!(zip_entry_name("../evil.jpg").as_deref(), Some("evil.jpg"));
+        assert!(zip_entry_name("..").is_none());
+        assert!(zip_entry_name("").is_none());
     }
 }

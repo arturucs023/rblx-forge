@@ -1709,6 +1709,7 @@ pub fn run() {
             images::images_save_upload,
             images::google_images_generate,
             images::google_check_key,
+            images::images_export_zip,
             eval::eval_db_init,
             eval::eval_groups,
             eval::eval_scan,

@@ -29,13 +29,16 @@ Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)
   (schnell calibrado con medición real: 173 Neurons a 4 pasos; Lucid ≈5.700 N;
   Phoenix ≈2.400 N; SDXL sin tarifa publicada) + Nano Banana 2.1 (≈$0,0336),
   2.5 (≈$0,039) y Lite (≈$0,0336); pasos/semilla/negativo solo donde el modelo
-  los admite. Clave de Google en Configuración con «Probar clave». Google es
+  los admite. Google: formato, tamaño (1K/2K en 2.1) y hasta 4 imágenes de
+  referencia de estilo. Galería con export ZIP y gasto acumulado estimado.
+  Clave de Google en Configuración con «Probar clave». Google es
   de pago siempre, sin capa gratuita para imágenes.
 - Asistente: cada chat se elimina de verdad (servidor + copia guardada).
 - Eliminados los módulos Recursos, Referencias y Testing con todos sus archivos
   y docs asociadas.
-- `npm run test` 68/68, `cargo test` 43/43, `npm run build` OK. Generación real
-  pendiente de credenciales del usuario (contrato verificado en docs).
+- `npm run test` 75/75, `cargo test` 50/50, `npm run build` OK. Generación
+  Google extremo a extremo: pendiente de clave del usuario (contrato de la
+  Interactions API verificado en docs oficiales).
 
 ## 2026-11-02 — Asistente con skills propias + selector por proveedor + uso GO (IMPLEMENTADO, verificado)
 

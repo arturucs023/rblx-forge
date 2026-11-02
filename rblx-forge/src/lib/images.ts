@@ -153,3 +153,31 @@ export function formatBytes(n: number): string {
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / (1024 * 1024)).toFixed(2)} MB`;
 }
+
+/** Coste Google según modelo y tamaño (pricing oficial ai.google.dev).
+ * 2.1: 1K $0,0336 / 2K $0,0504. 2.5: $0,039. Lite: $0,0336. */
+export function googleImageCost(model: string, size: string): number | null {
+  if (model === 'gemini-nano-banana-2.1') return size === '2K' ? 0.0504 : 0.0336;
+  if (model === 'gemini-2.5-flash-image') return 0.039;
+  if (model === 'gemini-3.1-flash-lite-image') return 0.0336;
+  return null;
+}
+
+/** Gasto acumulado local (estimado): Neurons de Cloudflare + USD de Google. */
+export interface SpendTotal { neurons: number; usd: number }
+
+export function addSpend(prev: SpendTotal, add: Partial<SpendTotal>): SpendTotal {
+  const n = typeof add.neurons === 'number' && Number.isFinite(add.neurons) && add.neurons > 0 ? add.neurons : 0;
+  const u = typeof add.usd === 'number' && Number.isFinite(add.usd) && add.usd > 0 ? add.usd : 0;
+  return {
+    neurons: Math.round((prev.neurons + n) * 10) / 10,
+    usd: Math.round((prev.usd + u) * 10000) / 10000,
+  };
+}
+
+export function formatSpend(s: SpendTotal): string {
+  const parts: string[] = [];
+  if (s.neurons > 0) parts.push(`≈${Math.round(s.neurons).toLocaleString('es-ES')} Neurons`);
+  if (s.usd > 0) parts.push(`≈$${s.usd.toFixed(4)}`);
+  return parts.length ? parts.join(' + ') : 'nada todavía';
+}
