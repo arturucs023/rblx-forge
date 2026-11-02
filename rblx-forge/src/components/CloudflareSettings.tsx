@@ -95,6 +95,7 @@ export function CloudflareSettings() {
         Cuenta gratuita de Cloudflare + token con permisos Workers AI (10.000 Neurons/día gratis).
         Cómo conseguirlo: panel de Cloudflare → Workers AI → «Usar API REST» → crear token, pulsar
         «Copiar API token» en el diálogo (se muestra UNA sola vez) y copiar el Account ID.
+        Tutorial con capturas: <span className="mono">docs/CLOUDFLARE_TOKEN.md</span>.
       </p>
       <label className="mb-2 block">
         <span className="mb-0.5 block text-[12px] text-forge-muted">Account ID</span>
