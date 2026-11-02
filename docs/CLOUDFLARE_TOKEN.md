@@ -41,11 +41,19 @@ Importante:
 - Guarda el token en un sitio seguro. Si lo pegas en un chat o una captura,
   elimínalo en el panel y crea otro.
 
-## 7. Pégalo en RBLX Forge
+## 7. Copia tu Account ID del apartado «Get Account ID»
+
+Vuelve a la página del paso 4 y baja hasta **Get Account ID** («Use this
+account ID to make API calls to the Workers AI REST API»). Pulsa el botón de
+copiar junto al campo Account ID y guárdalo con el token.
+
+![Apartado Get Account ID con el botón de copiar](../imagesMarkdown/get-api-token.png)
+
+## 8. Pégalo todo en RBLX Forge
 
 1. Abre la app → Configuración → Imágenes.
-2. Pega el **Account ID** (el de la página del paso 4, junto al botón de copiar)
-   y el **API token** completo.
+2. Pega el **Account ID** que copiaste en el paso 7 y el **API token** completo
+   del paso 6.
 3. Pulsa «Guardar credenciales» y luego **«Probar conexión»** (no gasta Neurons).
 4. Si dice «Token válido y activo», ya puedes generar en el módulo Imágenes.
 
