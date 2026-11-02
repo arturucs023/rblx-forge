@@ -65,6 +65,7 @@ interface SessionsState {
   createSession: (title?: string, directory?: string) => Promise<void>;
   selectSession: (id: string) => Promise<void>;
   closeSession: (id: string) => Promise<void>;
+  deleteSession: (id: string) => Promise<void>;
   sendPrompt: (text: string, files?: PromptFileAttachment[]) => Promise<void>;
   interruptActive: () => Promise<void>;
   loadArchived: (dir: string) => Promise<void>;
@@ -394,6 +395,35 @@ export const useSessions = create<SessionsState>((set, get) => ({
         sessions: st.sessions.filter((s) => s.id !== id),
         activeId: st.activeId === id ? null : st.activeId,
       }));
+    } catch (e) {
+      set({ error: String(e) });
+    }
+  },
+
+  deleteSession: async (id) => {
+    const c = get().client;
+    // Borrado total: servidor + lista + copia guardada en el equipo.
+    // (Cerrar solo archiva; eliminar no deja rastro en ningún sitio.)
+    try {
+      if (c) await c.deleteSession(id).catch(() => {});
+      const dir = get().cwd;
+      const next = get().archived.filter((x) => x.id !== id);
+      const msgs = { ...get().messages };
+      delete msgs[id];
+      set((st) => ({
+        sessions: st.sessions.filter((s) => s.id !== id),
+        activeId: st.activeId === id ? null : st.activeId,
+        archived: next,
+        archivedId: st.archivedId === id ? null : st.archivedId,
+        messages: msgs,
+        forms: st.activeId === id ? [] : st.forms,
+        permissions: st.activeId === id ? [] : st.permissions,
+      }));
+      if (dir) {
+        try {
+          await invoke('settings_set', { key: `chat.${dirHash(dir)}`, value: { chats: next } });
+        } catch { /* best-effort */ }
+      }
     } catch (e) {
       set({ error: String(e) });
     }

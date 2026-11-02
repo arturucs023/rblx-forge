@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { useProjects } from '../stores/projects';
 import {
-  IMAGE_MODELS, PROVIDER_LABEL, calibratedSchnellEstimate, clampSteps,
+  IMAGE_MODELS, PROVIDER_LABEL, calibratedSchnellEstimate, clampSteps, dynamicCostHint,
   formatBytes, imageErrorMessage, normalizeSeed, validatePrompt,
   type ImageModelOption,
 } from '../lib/images';
@@ -29,13 +29,7 @@ interface LastGen {
 }
 
 function costHint(m: ImageModelOption, steps: number, measured: number | null): string {
-  if (m.model === FLUX_ID) {
-    const est = Math.round(calibratedSchnellEstimate(steps, measured));
-    return measured != null
-      ? `≈${est} Neurons/imagen (tu medición)`
-      : `≈${est} Neurons/imagen (fórmula oficial)`;
-  }
-  return m.costHint;
+  return dynamicCostHint(m, steps, measured);
 }
 
 export function Images() {
@@ -44,6 +38,7 @@ export function Images() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
   const [prompt, setPrompt] = useState('');
+  const [negative, setNegative] = useState('');
   const [steps, setSteps] = useState(4);
   const [seed, setSeed] = useState('');
   const [busy, setBusy] = useState(false);
@@ -153,9 +148,11 @@ export function Images() {
         const out = await invoke<{ file: string; size: number; usage?: string | null; elapsed_ms?: number }>('cf_images_generate', {
           accountId,
           apiToken,
+          model: model.model,
           prompt: prompt.trim(),
           steps: usedSteps,
           seed: usedSeed ?? null,
+          negativePrompt: model.supportsNegative && negative.trim() ? negative.trim() : null,
           saveDir: project.path,
         });
         const cost = out.usage
@@ -266,7 +263,7 @@ export function Images() {
                 <span className="shrink-0 text-[11px] text-forge-faint">{pickerOpen ? '▴' : '▾'}</span>
               </button>
               {pickerOpen && (
-                <div className="anim-enter absolute bottom-full left-0 z-50 mb-1 flex max-h-[60vh] w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-forge-border bg-forge-panel shadow-2xl">
+                <div className="anim-enter absolute left-0 top-full z-50 mt-1 flex max-h-[60vh] w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-forge-border bg-forge-panel shadow-2xl">
                   <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
                     {providers.map((p) => (
                       <div key={p} className="mb-1 rounded-lg border border-forge-border-soft">
@@ -281,6 +278,7 @@ export function Images() {
                                 key={m.model}
                                 onClick={() => {
                                   setModelId(m.model);
+                                  setSteps(m.defaultSteps);
                                   setPickerOpen(false);
                                 }}
                                 title={`${m.model} · ${m.costHint}`}
@@ -308,47 +306,60 @@ export function Images() {
                 </div>
               )}
             </div>
-            {isCf ? (
-              <>
-                <label className="flex items-center gap-2 text-[12px] text-forge-muted">
-                  Pasos
-                  <input
-                    type="range"
-                    min={1}
-                    max={8}
-                    value={steps}
-                    onChange={(e) => setSteps(clampSteps(Number(e.target.value)))}
-                    disabled={busy}
-                    className="w-28"
-                    title="Más pasos = más calidad, espera y Neurons (máx. 8)"
-                  />
-                  <span className="mono font-bold text-forge-text">{steps}</span>
-                </label>
-                <label className="flex items-center gap-2 text-[12px] text-forge-muted">
-                  Semilla
-                  <input
-                    value={seed}
-                    onChange={(e) => setSeed(e.target.value)}
-                    placeholder="aleatoria"
-                    inputMode="numeric"
-                    disabled={busy}
-                    className="input mono w-28 !py-1 !text-[12px] disabled:opacity-50"
-                  />
-                </label>
-              </>
-            ) : (
+            {isCf && model.supportsSteps && (
+              <label className="flex items-center gap-2 text-[12px] text-forge-muted">
+                Pasos
+                <input
+                  type="range"
+                  min={1}
+                  max={model.maxSteps}
+                  value={steps}
+                  onChange={(e) => setSteps(clampSteps(Number(e.target.value), model.maxSteps, model.defaultSteps))}
+                  disabled={busy}
+                  className="w-28"
+                  title={`Más pasos = más calidad, espera y coste (máx. ${model.maxSteps})`}
+                />
+                <span className="mono font-bold text-forge-text">{steps}</span>
+              </label>
+            )}
+            {isCf && model.supportsSeed && (
+              <label className="flex items-center gap-2 text-[12px] text-forge-muted">
+                Semilla
+                <input
+                  value={seed}
+                  onChange={(e) => setSeed(e.target.value)}
+                  placeholder="aleatoria"
+                  inputMode="numeric"
+                  disabled={busy}
+                  className="input mono w-28 !py-1 !text-[12px] disabled:opacity-50"
+                />
+              </label>
+            )}
+            {isCf && model.supportsNegative && (
+              <label className="flex min-w-0 flex-1 items-center gap-2 text-[12px] text-forge-muted">
+                Evitar
+                <input
+                  value={negative}
+                  onChange={(e) => setNegative(e.target.value)}
+                  placeholder="lo que NO quieres ver…"
+                  disabled={busy}
+                  className="input min-w-0 flex-1 !py-1 !text-[12px] disabled:opacity-50"
+                />
+              </label>
+            )}
+            {!isCf && (
               <span className="text-[11px] text-forge-faint">Google fija resolución y pasos (1K por defecto).</span>
             )}
             <button onClick={generate} disabled={busy || !prompt.trim()} className="btn btn-primary ml-auto disabled:opacity-40">
               {busy ? 'Generando…' : 'Generar imagen'}
             </button>
           </div>
-          {isCf && (
+          {isCf && model.model === FLUX_ID && (
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-forge-muted">
               {measured != null ? (
                 <span>
                   Calibrado con tu medición: <span className="mono font-bold text-forge-text">{measured} Neurons</span> a 4 pasos.
-                  (<button onClick={() => { setMeasured(null); setCalInput(''); }} className="underline" title="Borra la calibración y vuelve a la fórmula oficial">quitar</button>)
+                  (<button onClick={() => { setMeasured(null); setCalInput(''); setSetting(KEY_MEASURED_SCHNELL, '0').catch(() => {}); }} className="underline" title="Borra la calibración y vuelve a la fórmula oficial">quitar</button>)
                 </span>
               ) : (
                 <>

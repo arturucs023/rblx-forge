@@ -1,6 +1,6 @@
 // Tests puros del modo Imágenes (sin red ni Tauri).
 import { describe, expect, it } from 'vitest';
-import { clampSteps, classifyToken, formatBytes, imageErrorMessage, normalizeSeed, pastedImageName, isImageChipName, schnellEstimate, tokenVerifyAdvice, validatePrompt, IMAGE_MODELS } from './images';
+import { clampSteps, classifyToken, formatBytes, dynamicCostHint, imageErrorMessage, normalizeSeed, pastedImageName, isImageChipName, schnellEstimate, tokenVerifyAdvice, validatePrompt, IMAGE_MODELS } from './images';
 
 describe('classifyToken', () => {
   it('orienta sin bloquear', () => {
@@ -19,6 +19,8 @@ describe('clampSteps', () => {
     expect(clampSteps(0)).toBe(1);
     expect(clampSteps(99)).toBe(8);
     expect(clampSteps(6.7)).toBe(6);
+    expect(clampSteps(99, 50, 25)).toBe(50);
+    expect(clampSteps(undefined, 50, 25)).toBe(25);
   });
 });
 
@@ -63,12 +65,24 @@ describe('imageErrorMessage', () => {
     expect(isImageChipName('foto.png')).toBe(false);
   });
   it('catálogo con coste aprox por imagen', () => {
-    expect(IMAGE_MODELS.length).toBe(3);
+    // 6 Cloudflare text-to-image (contrato JSON verificado) + 3 Google.
+    expect(IMAGE_MODELS.length).toBe(9);
+    expect(IMAGE_MODELS.filter((m) => m.provider === 'cloudflare').length).toBe(6);
+    expect(IMAGE_MODELS.filter((m) => m.provider === 'google').length).toBe(3);
     expect(IMAGE_MODELS[0].supportsSteps).toBe(true);
-    expect(IMAGE_MODELS[1].supportsSteps).toBe(false);
+    expect(IMAGE_MODELS.find((m) => m.model === 'gemini-nano-banana-2.1')!.supportsSteps).toBe(false);
     expect(schnellEstimate(4)).toBeCloseTo(57.6, 1);
     expect(schnellEstimate(8)).toBeCloseTo(96, 0);
-    expect(IMAGE_MODELS.every((m) => m.costHint.includes('≈'))).toBe(true);
+    expect(IMAGE_MODELS.every((m) => m.costHint.includes('≈') || m.costHint.includes('no publicado'))).toBe(true);
+  });
+  it('hint dinámico con pasos y calibración', () => {
+    const schnell = IMAGE_MODELS.find((m) => m.model.includes('flux-1-schnell'))!;
+    const lucid = IMAGE_MODELS.find((m) => m.model.includes('lucid-origin'))!;
+    expect(dynamicCostHint(schnell, 4, null)).toContain('58');
+    expect(dynamicCostHint(schnell, 4, 173)).toContain('173');
+    expect(dynamicCostHint(lucid, 20, null).replace(/[.,]/g, '')).toContain('5964');
+    const sdxl = IMAGE_MODELS.find((m) => m.model.includes('stable-diffusion-xl-base'))!;
+    expect(dynamicCostHint(sdxl, 20, null)).toBe(sdxl.costHint);
   });
 });
 

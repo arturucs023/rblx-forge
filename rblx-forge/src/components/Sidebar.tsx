@@ -3,11 +3,8 @@ export type ModuleId =
   | 'proyectos'
   | 'editor'
   | 'viewport'
-  | 'recursos'
-  | 'referencias'
   | 'imagenes'
   | 'asistente'
-  | 'testing'
   | 'evaluacion'
   | 'orquestador'
   | 'configuracion';
@@ -25,11 +22,8 @@ const ICONS: Record<ModuleId, string> = {
   proyectos: 'M2.5 2.5h11v11h-11zM2.5 5.5h11M5.5 2.5v11',
   editor: 'M11.5 2.5l2 2L5 13l-2.5.5L3 11z',
   viewport: 'M2.5 2.5h11v11h-11zM2.5 10.5l3.5-3.5 2.5 2.5 2-2 3 3',
-  recursos: 'M8 2.5l5.5 3v5L8 13.5 2.5 10.5v-5zM2.5 5.5L8 8.5l5.5-3M8 8.5v5',
   imagenes: 'M2.5 2.5h11v11h-11zM2.5 11l3-3 2.5 2.5 2-2 3 3M6 6.5a1.2 1.2 0 1 0 0-.01',
-  referencias: 'M3 3h7l3 3v7H3zM10 3v3h3M6 8h4M6 10.5h4',
   asistente: 'M8 1.8l1.7 3.6 3.9.5-2.9 2.7.7 3.9L8 10.7l-3.4 1.8.7-3.9-2.9-2.7 3.9-.5z',
-  testing: 'M8 1.8v3M4.2 3.2l1.5 2.6M3 8h12M5 13.5l-1 1.5M11 13.5l1 1.5M8 8v5.5',
   evaluacion: 'M3 3h7l3 3v7H3zM6 8l1.2 1.2L10 6.5M6 11.5h4',
   orquestador: 'M8 2v12M4 6l4-4 4 4M4 10l4 4 4-4',
   configuracion: 'M8 5.5A2.5 2.5 0 1 0 8 10.5 2.5 2.5 0 1 0 8 5.5M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M12.4 3.6l-1.2 1.2M4.8 11.2l-1.2 1.2',
@@ -37,9 +31,9 @@ const ICONS: Record<ModuleId, string> = {
 
 const SECTIONS: { title: string; items: ModuleId[] }[] = [
   { title: 'Principal', items: ['inicio', 'proyectos', 'editor', 'viewport'] },
-  { title: 'Contenido', items: ['recursos', 'referencias', 'imagenes'] },
+  { title: 'Contenido', items: ['imagenes'] },
   { title: 'Inteligencia', items: ['asistente'] },
-  { title: 'Calidad', items: ['testing', 'evaluacion', 'orquestador'] },
+  { title: 'Calidad', items: ['evaluacion', 'orquestador'] },
   { title: 'Sistema', items: ['configuracion'] },
 ];
 
@@ -48,11 +42,8 @@ const LABELS: Record<ModuleId, string> = {
   proyectos: 'Proyectos',
   editor: 'Editor',
   viewport: 'Viewport',
-  recursos: 'Recursos',
-  referencias: 'Referencias',
   imagenes: 'Imágenes',
   asistente: 'Asistente IA',
-  testing: 'Testing',
   evaluacion: 'Evaluación',
   orquestador: 'Orquestador',
   configuracion: 'Configuración',

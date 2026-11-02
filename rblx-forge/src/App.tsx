@@ -12,8 +12,6 @@ import { Projects } from './components/Projects';
 import { Explorer } from './components/Explorer';
 import { LuauEditor } from './components/Editor';
 import { Toolchain } from './components/Toolchain';
-import { Library } from './components/Library';
-import { Testing } from './components/Testing';
 import { Evaluation } from './components/Evaluation/Evaluation';
 import { Orchestrator } from './components/Orchestrator/Orchestrator';
 import { Viewport } from './components/Viewport';
@@ -59,14 +57,8 @@ function Central({ module, go }: { module: ModuleId; go: (m: ModuleId) => void }
       return <ProjectWorkspace />;
     case 'editor':
       return <LuauEditor />;
-    case 'recursos':
-      return <Library />;
-    case 'referencias':
-      return <Library />;
     case 'imagenes':
       return <Images />;
-    case 'testing':
-      return <Testing />;
     case 'evaluacion':
       return <Evaluation />;
     case 'orquestador':

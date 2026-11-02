@@ -65,6 +65,6 @@
 - Pegado de imágenes y coste (`images_save_upload`, `extract_usage_note`,
   chips `[Image N]`): `vitest` 72/72, `cargo test` 45/45, `npm run build` OK.
 - Selector multi-modelo + Google (Interactions API, `google_check_key`,
-  calibración con medición real 173 N): `vitest` 73/73, `cargo test` 47/47,
+  calibración con medición real 173 N): `vitest` 74/74, `cargo test` 48/48,
   `npm run build` OK. Generación Google extremo a extremo: PENDIENTE de clave
   del usuario (contrato de la Interactions API verificado en docs oficiales).

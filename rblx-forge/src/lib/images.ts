@@ -1,15 +1,16 @@
 // Helpers puros del modo Imágenes (sin Tauri ni red).
-// Modelo: FLUX.1 schnell vía Cloudflare Workers AI.
-// Contrato: prompt 1..=2048 chars, steps 1..=8 (defecto 4), seed opcional.
-// Respuesta: {result:{image: base64}, success, errors[]}.
+// Cloudflare: prompt 1..=2048 (límite de la app), pasos/seed según modelo.
+// Google (Nano Banana): prompt hasta 8000 (límite de la app).
+// Respuesta CF: {result:{image: base64}, success, errors[]}.
 export const FLUX_MODEL = '@cf/black-forest-labs/flux-1-schnell';
 export const FLUX_DEFAULT_STEPS = 4;
 export const FLUX_MAX_STEPS = 8;
 export const FLUX_MAX_PROMPT_CHARS = 2048;
 
-export function clampSteps(steps: number | null | undefined): number {
-  if (typeof steps !== 'number' || !Number.isFinite(steps)) return FLUX_DEFAULT_STEPS;
-  return Math.min(FLUX_MAX_STEPS, Math.max(1, Math.floor(steps)));
+/** Pasos recortados al rango del modelo elegido. */
+export function clampSteps(steps: number | null | undefined, max = 8, def = 4): number {
+  if (typeof steps !== 'number' || !Number.isFinite(steps)) return def;
+  return Math.min(max, Math.max(1, Math.floor(steps)));
 }
 
 export function validatePrompt(prompt: string): string | null {
@@ -78,34 +79,41 @@ export interface ImageModelOption {
   costHint: string;
   supportsSteps: boolean;
   supportsSeed: boolean;
+  supportsNegative: boolean;
+  maxSteps: number;
+  defaultSteps: number;
+  /** Si true, el hint se recalcula con los pasos (coste variable). */
+  variableCost?: boolean;
 }
 
 export const IMAGE_MODELS: ImageModelOption[] = [
-  {
-    provider: 'cloudflare',
-    model: '@cf/black-forest-labs/flux-1-schnell',
-    label: 'FLUX.1 schnell',
-    costHint: '≈58 Neurons/imagen a 4 pasos',
-    supportsSteps: true,
-    supportsSeed: true,
-  },
-  {
-    provider: 'google',
-    model: 'gemini-nano-banana-2.1',
-    label: 'Nano Banana 2.1',
-    costHint: '≈$0,0336/imagen (de pago)',
-    supportsSteps: false,
-    supportsSeed: false,
-  },
-  {
-    provider: 'google',
-    model: 'gemini-2.5-flash-image',
-    label: 'Nano Banana (2.5)',
-    costHint: '≈$0,039/imagen (de pago)',
-    supportsSteps: false,
-    supportsSeed: false,
-  },
+  { provider: 'cloudflare', model: '@cf/black-forest-labs/flux-1-schnell', label: 'FLUX.1 schnell', costHint: '≈58 Neurons/imagen a 4 pasos', supportsSteps: true, supportsSeed: true, supportsNegative: false, maxSteps: 8, defaultSteps: 4, variableCost: true },
+  { provider: 'cloudflare', model: '@cf/stabilityai/stable-diffusion-xl-base-1.0', label: 'SDXL Base 1.0', costHint: 'Coste no publicado por Cloudflare', supportsSteps: true, supportsSeed: true, supportsNegative: true, maxSteps: 20, defaultSteps: 20 },
+  { provider: 'cloudflare', model: '@cf/bytedance/stable-diffusion-xl-lightning', label: 'SDXL Lightning', costHint: 'Coste no publicado por Cloudflare', supportsSteps: true, supportsSeed: true, supportsNegative: true, maxSteps: 20, defaultSteps: 20 },
+  { provider: 'cloudflare', model: '@cf/lykon/dreamshaper-8-lcm', label: 'Dreamshaper 8 LCM', costHint: 'Coste no publicado por Cloudflare', supportsSteps: true, supportsSeed: true, supportsNegative: true, maxSteps: 20, defaultSteps: 20 },
+  { provider: 'cloudflare', model: '@cf/leonardo/lucid-origin', label: 'Lucid Origin', costHint: '≈5.700 Neurons/imagen (1120²)', supportsSteps: true, supportsSeed: true, supportsNegative: false, maxSteps: 40, defaultSteps: 20, variableCost: true },
+  { provider: 'cloudflare', model: '@cf/leonardo/phoenix-1.0', label: 'Phoenix 1.0', costHint: '≈2.400 Neurons/imagen (1024²)', supportsSteps: true, supportsSeed: true, supportsNegative: true, maxSteps: 50, defaultSteps: 25, variableCost: true },
+  { provider: 'google', model: 'gemini-nano-banana-2.1', label: 'Nano Banana 2.1', costHint: '≈$0,0336/imagen (de pago)', supportsSteps: false, supportsSeed: false, supportsNegative: false, maxSteps: 1, defaultSteps: 1 },
+  { provider: 'google', model: 'gemini-2.5-flash-image', label: 'Nano Banana (2.5)', costHint: '≈$0,039/imagen (de pago)', supportsSteps: false, supportsSeed: false, supportsNegative: false, maxSteps: 1, defaultSteps: 1 },
+  { provider: 'google', model: 'gemini-3.1-flash-lite-image', label: 'Nano Banana Lite', costHint: '≈$0,0336/imagen (de pago)', supportsSteps: false, supportsSeed: false, supportsNegative: false, maxSteps: 1, defaultSteps: 1 },
 ];
+
+/** Hint dinámico: los de coste variable recalculan con los pasos elegidos. */
+export function dynamicCostHint(m: ImageModelOption, steps: number, measuredSchnell: number | null): string {
+  if (m.model === '@cf/black-forest-labs/flux-1-schnell') {
+    const est = Math.round(calibratedSchnellEstimate(steps, measuredSchnell));
+    return `≈${est.toLocaleString('es-ES')} Neurons/imagen${measuredSchnell != null ? ' (tu medición)' : ''}`;
+  }
+  if (m.model === '@cf/leonardo/lucid-origin') {
+    const s = Math.min(40, Math.max(1, Math.floor(steps)));
+    return `≈${Math.round(9 * 636 + s * 12).toLocaleString('es-ES')} Neurons/imagen (1120²)`;
+  }
+  if (m.model === '@cf/leonardo/phoenix-1.0') {
+    const s = Math.min(50, Math.max(1, Math.floor(steps)));
+    return `≈${Math.round(4 * 530 + s * 10).toLocaleString('es-ES')} Neurons/imagen (1024²)`;
+  }
+  return m.costHint;
+}
 
 export const PROVIDER_LABEL: Record<ImageProvider, string> = {
   cloudflare: 'Cloudflare Workers AI',

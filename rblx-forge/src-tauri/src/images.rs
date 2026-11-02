@@ -9,10 +9,51 @@
 // y sniff de formato son puros y testeados.
 use tauri::AppHandle;
 
-pub const FLUX_MODEL: &str = "@cf/black-forest-labs/flux-1-schnell";
-pub const FLUX_DEFAULT_STEPS: u8 = 4;
-pub const FLUX_MAX_STEPS: u8 = 8;
-pub const FLUX_MAX_PROMPT_CHARS: usize = 2048;
+/// Especificación por modelo de imagen de Cloudflare (esquemas de entrada
+/// verificados en docs oficiales; URLs `.../models/<slug>/schema-input.json`).
+/// Modelos multipart-only (flux-2-dev, flux-2-klein-4b/9b) o con máscara
+/// obligatoria (sd-v1-5-inpainting): NO soportados (se documenta el motivo).
+pub struct CfImageSpec {
+    pub id: &'static str,
+    pub label: &'static str,
+    pub max_steps: u8,
+    pub default_steps: u8,
+    /// Nombre del campo de pasos en el payload (`steps` o `num_steps`).
+    pub steps_field: &'static str,
+    pub supports_negative: bool,
+    /// Estimación de Neurons/imagen con `steps` (None = sin tarifa publicada).
+    pub estimate: fn(u8) -> Option<f64>,
+    /// De dónde sale la estimación (visible en UI, sin letra pequeña).
+    pub estimate_note: &'static str,
+}
+
+fn est_schnell(steps: u8) -> Option<f64> {
+    Some(4.0 * 4.80 + steps as f64 * 9.60)
+}
+fn est_lucid(steps: u8) -> Option<f64> {
+    // 1120² por defecto → ceil(1120/512)² = 9 tiles × 636 + pasos × 12.
+    Some(9.0 * 636.0 + steps as f64 * 12.0)
+}
+fn est_phoenix(steps: u8) -> Option<f64> {
+    // 1024² por defecto → 4 tiles × 530 + pasos × 10.
+    Some(4.0 * 530.0 + steps as f64 * 10.0)
+}
+fn est_none(_steps: u8) -> Option<f64> {
+    None
+}
+
+pub const CF_IMAGE_MODELS: &[CfImageSpec] = &[
+    CfImageSpec { id: "@cf/black-forest-labs/flux-1-schnell", label: "FLUX.1 schnell", max_steps: 8, default_steps: 4, steps_field: "steps", supports_negative: false, estimate: est_schnell, estimate_note: "4 tiles 512² × 4,80 + pasos × 9,60 (suponiendo salida 1024²)" },
+    CfImageSpec { id: "@cf/stabilityai/stable-diffusion-xl-base-1.0", label: "SDXL Base 1.0", max_steps: 20, default_steps: 20, steps_field: "num_steps", supports_negative: true, estimate: est_none, estimate_note: "Cloudflare no publica tarifa por imagen" },
+    CfImageSpec { id: "@cf/bytedance/stable-diffusion-xl-lightning", label: "SDXL Lightning", max_steps: 20, default_steps: 20, steps_field: "num_steps", supports_negative: true, estimate: est_none, estimate_note: "Cloudflare no publica tarifa por imagen" },
+    CfImageSpec { id: "@cf/lykon/dreamshaper-8-lcm", label: "Dreamshaper 8 LCM", max_steps: 20, default_steps: 20, steps_field: "num_steps", supports_negative: true, estimate: est_none, estimate_note: "Cloudflare no publica tarifa por imagen" },
+    CfImageSpec { id: "@cf/leonardo/lucid-origin", label: "Lucid Origin", max_steps: 40, default_steps: 20, steps_field: "num_steps", supports_negative: false, estimate: est_lucid, estimate_note: "9 tiles × 636 + pasos × 12 (suponiendo 1120²)" },
+    CfImageSpec { id: "@cf/leonardo/phoenix-1.0", label: "Phoenix 1.0", max_steps: 50, default_steps: 25, steps_field: "num_steps", supports_negative: true, estimate: est_phoenix, estimate_note: "4 tiles × 530 + pasos × 10 (suponiendo 1024²)" },
+];
+
+pub fn cf_spec_for(model: &str) -> Option<&'static CfImageSpec> {
+    CF_IMAGE_MODELS.iter().find(|s| s.id == model.trim())
+}
 
 /// Modelos de imagen soportados (contratos verificados en docs oficiales).
 /// Cloudflare: precios en Neurons (pricing 2026-10-20). Google: $/imagen.
@@ -34,16 +75,17 @@ pub fn google_cost_per_image(model: &str) -> Option<f64> {
     match model {
         m if m == GOOGLE_MODEL_21 => Some(0.0336),
         m if m == GOOGLE_MODEL_25 => Some(0.039),
+        m if m == GOOGLE_MODEL_LITE => Some(0.0336),
         _ => None,
     }
 }
 
 pub fn validate_google_model(model: &str) -> Result<String, String> {
     let m = model.trim().to_string();
-    if m == GOOGLE_MODEL_21 || m == GOOGLE_MODEL_25 {
+    if m == GOOGLE_MODEL_21 || m == GOOGLE_MODEL_25 || m == GOOGLE_MODEL_LITE {
         Ok(m)
     } else {
-        Err("Modelo de Google no soportado (usa Nano Banana 2.1 o 2.5).".to_string())
+        Err("Modelo de Google no soportado (usa Nano Banana 2.1, 2.5 o Lite).".to_string())
     }
 }
 
@@ -206,26 +248,30 @@ pub fn images_save_upload(base64_data: String, ext: String) -> Result<String, St
     Ok(file.to_string_lossy().to_string())
 }
 
-/// Steps: defecto 4, recorte honesto a 1..=8 (documentado por Cloudflare).
-pub fn clamp_steps(steps: Option<i64>) -> u8 {
+/// Tope de prompt para Cloudflare (límite de la app, documentado en UI).
+pub const CF_MAX_PROMPT_CHARS: usize = 2048;
+pub const GOOGLE_MODEL_LITE: &str = "gemini-3.1-flash-lite-image";
+
+/// Steps recortados al rango del modelo (rangos de los esquemas oficiales).
+pub fn clamp_steps(steps: Option<i64>, max_steps: u8, default_steps: u8) -> u8 {
     match steps {
-        None => FLUX_DEFAULT_STEPS,
+        None => default_steps,
         Some(s) if s < 1 => 1,
-        Some(s) if s > FLUX_MAX_STEPS as i64 => FLUX_MAX_STEPS,
+        Some(s) if s > max_steps as i64 => max_steps,
         Some(s) => s as u8,
     }
 }
 
-/// Prompt válido: 1..=2048 caracteres tras recortar (límite del modelo).
+/// Prompt válido: 1..=CF_MAX_PROMPT_CHARS tras recortar (límite de la app).
 pub fn validate_prompt(prompt: &str) -> Result<String, String> {
     let p = prompt.trim().to_string();
     if p.is_empty() {
         return Err("El prompt está vacío: describe la imagen que quieres generar.".to_string());
     }
-    if p.chars().count() > FLUX_MAX_PROMPT_CHARS {
+    if p.chars().count() > CF_MAX_PROMPT_CHARS {
         return Err(format!(
-            "El prompt supera los {} caracteres del modelo (tiene {}).",
-            FLUX_MAX_PROMPT_CHARS,
+            "El prompt supera los {} caracteres (límite de la app, tiene {}).",
+            CF_MAX_PROMPT_CHARS,
             p.chars().count()
         ));
     }
@@ -508,16 +554,19 @@ pub fn google_check_key(api_key: String) -> Result<CloudflareCheck, String> {
     })
 }
 
-/// Genera la imagen y la guarda en `save_dir/generated-images/`.
+/// Genera con cualquier modelo de imagen de Cloudflare soportado (ver
+/// CF_IMAGE_MODELS) y guarda en `save_dir/generated-images/`.
 /// El token viaja solo en memoria (parámetro, jamás a disco ni logs).
 #[tauri::command]
 pub fn cf_images_generate(
     _app: AppHandle,
     account_id: String,
     api_token: String,
+    model: String,
     prompt: String,
     steps: Option<i64>,
     seed: Option<i64>,
+    negative_prompt: Option<String>,
     save_dir: String,
 ) -> Result<GeneratedImage, String> {
     let account_id = account_id.trim().to_string();
@@ -527,15 +576,26 @@ pub fn cf_images_generate(
     if api_token.trim().is_empty() {
         return Err("Falta el API token de Cloudflare (Configuración → Imágenes).".to_string());
     }
+    let spec = cf_spec_for(&model).ok_or_else(|| {
+        "Modelo de Cloudflare no soportado (la app solo lista los text-to-image con contrato JSON verificado).".to_string()
+    })?;
     let prompt = validate_prompt(&prompt)?;
-    let steps = clamp_steps(steps);
+    let steps = clamp_steps(steps, spec.max_steps, spec.default_steps);
 
     let url = format!(
-        "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{FLUX_MODEL}"
+        "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model}",
+        model = spec.id
     );
-    let mut payload = serde_json::json!({ "prompt": prompt, "steps": steps });
+    let mut payload = serde_json::json!({ "prompt": prompt, spec.steps_field: steps });
     if let Some(s) = seed {
         payload["seed"] = serde_json::json!(s);
+    }
+    if spec.supports_negative {
+        if let Some(np) = negative_prompt {
+            if !np.trim().is_empty() {
+                payload["negative_prompt"] = serde_json::json!(np.trim());
+            }
+        }
     }
     let t0 = std::time::Instant::now();
     let resp = ureq::post(&url)
@@ -577,7 +637,8 @@ pub fn cf_images_generate(
     let dir = std::path::Path::new(&save_dir).join("generated-images");
     std::fs::create_dir_all(&dir).map_err(|e| format!("No se pudo crear la carpeta: {e}"))?;
     let stamp = chrono_stamp();
-    let file = dir.join(format!("flux-{stamp}.{ext}"));
+    let prefix = spec.id.rsplit('/').next().unwrap_or("img");
+    let file = dir.join(format!("{prefix}-{stamp}.{ext}"));
     std::fs::write(&file, &bytes).map_err(|e| format!("No se pudo guardar la imagen: {e}"))?;
     let size = bytes.len() as u64;
     Ok(GeneratedImage {
@@ -603,11 +664,13 @@ mod images_tests {
 
     #[test]
     fn steps_por_defecto_y_recorte() {
-        assert_eq!(clamp_steps(None), 4);
-        assert_eq!(clamp_steps(Some(0)), 1);
-        assert_eq!(clamp_steps(Some(-5)), 1);
-        assert_eq!(clamp_steps(Some(8)), 8);
-        assert_eq!(clamp_steps(Some(99)), 8);
+        assert_eq!(clamp_steps(None, 8, 4), 4);
+        assert_eq!(clamp_steps(Some(0), 8, 4), 1);
+        assert_eq!(clamp_steps(Some(-5), 8, 4), 1);
+        assert_eq!(clamp_steps(Some(8), 8, 4), 8);
+        assert_eq!(clamp_steps(Some(99), 8, 4), 8);
+        assert_eq!(clamp_steps(None, 50, 25), 25);
+        assert_eq!(clamp_steps(Some(99), 50, 25), 50);
     }
 
     #[test]
@@ -668,10 +731,33 @@ mod images_tests {
         assert_eq!(google_cost_per_image(GOOGLE_MODEL_21), Some(0.0336));
         assert_eq!(google_cost_per_image(GOOGLE_MODEL_25), Some(0.039));
         assert!(google_cost_per_image("otro").is_none());
-        assert!(validate_google_model(GOOGLE_MODEL_21).is_ok());
+        assert_eq!(validate_google_model(GOOGLE_MODEL_21).is_ok(), true);
+        assert_eq!(validate_google_model(GOOGLE_MODEL_LITE).is_ok(), true);
         assert!(validate_google_model("gpt-x").is_err());
+        assert_eq!(google_cost_per_image(GOOGLE_MODEL_LITE), Some(0.0336));
         assert!(validate_google_prompt("  ").is_err());
         assert!(validate_google_prompt("un dragón").is_ok());
+    }
+
+    #[test]
+    fn catalogo_cf_cubre_todo_text_to_image() {
+        // Los 6 text-to-image con contrato JSON verificado (los multipart-only
+        // —flux-2-dev, klein— y el inpainting con máscara quedan fuera).
+        assert_eq!(CF_IMAGE_MODELS.len(), 6);
+        for id in [
+            "@cf/black-forest-labs/flux-1-schnell",
+            "@cf/stabilityai/stable-diffusion-xl-base-1.0",
+            "@cf/bytedance/stable-diffusion-xl-lightning",
+            "@cf/lykon/dreamshaper-8-lcm",
+            "@cf/leonardo/lucid-origin",
+            "@cf/leonardo/phoenix-1.0",
+        ] {
+            assert!(cf_spec_for(id).is_some(), "falta {id}");
+        }
+        assert!(cf_spec_for("@cf/otro/inventado").is_none());
+        let sdxl = cf_spec_for("@cf/stabilityai/stable-diffusion-xl-base-1.0").unwrap();
+        assert_eq!(sdxl.max_steps, 20);
+        assert!(sdxl.supports_negative);
     }
 
     #[test]

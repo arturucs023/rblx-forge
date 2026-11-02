@@ -25,11 +25,15 @@ Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)
 - Referencias: conteos por categoría, filtro de favoritas y «Adjuntar imagen»
   (archivo real al Asistente) además de «Enviar ruta».
 - Imágenes: selector de modelo por proveedor (como el del Asistente) con coste
-  aprox. por imagen — FLUX.1 schnell (calibrado con medición real: 173 Neurons
-  a 4 pasos; la fórmula oficial subestima), Nano Banana 2.1 (≈$0,0336) y Nano
-  Banana 2.5 (≈$0,039); pasos/semilla solo para Cloudflare. Clave de Google en
-  Configuración con «Probar clave» (lista modelos, gratis). Google es de pago
-  siempre, sin capa gratuita para imágenes.
+  aprox. por imagen — los 6 text-to-image de Cloudflare con contrato verificado
+  (schnell calibrado con medición real: 173 Neurons a 4 pasos; Lucid ≈5.700 N;
+  Phoenix ≈2.400 N; SDXL sin tarifa publicada) + Nano Banana 2.1 (≈$0,0336),
+  2.5 (≈$0,039) y Lite (≈$0,0336); pasos/semilla/negativo solo donde el modelo
+  los admite. Clave de Google en Configuración con «Probar clave». Google es
+  de pago siempre, sin capa gratuita para imágenes.
+- Asistente: cada chat se elimina de verdad (servidor + copia guardada).
+- Eliminados los módulos Recursos, Referencias y Testing con todos sus archivos
+  y docs asociadas.
 - `npm run test` 68/68, `cargo test` 43/43, `npm run build` OK. Generación real
   pendiente de credenciales del usuario (contrato verificado en docs).
 

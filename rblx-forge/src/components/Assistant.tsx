@@ -85,6 +85,7 @@ export function Assistant() {
           onSelect={(id) => st.selectSession(id)}
           onNew={() => st.createSession()}
           onClose={(id) => st.closeSession(id)}
+          onDelete={(id) => st.deleteSession(id)}
           onDeleteArchived={(id) => st.deleteArchived(id)}
           onViewArchived={(id) => st.viewArchived(id)}
           onContinue={() => st.continueArchived()}

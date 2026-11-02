@@ -10,7 +10,7 @@ function fmtWhen(updatedAt?: string | null, fallbackTs?: number): string {
   return new Date(t).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
-export function SessionList({ sessions, archived, activeId, busy, onSelect, onNew, onClose, onDeleteArchived, onViewArchived, onContinue }: {
+export function SessionList({ sessions, archived, activeId, busy, onSelect, onNew, onClose, onDelete, onDeleteArchived, onViewArchived, onContinue }: {
   sessions: SessionSummary[];
   archived: ArchivedChat[];
   activeId: string | null;
@@ -18,6 +18,7 @@ export function SessionList({ sessions, archived, activeId, busy, onSelect, onNe
   onSelect: (id: string) => void;
   onNew: () => void;
   onClose: (id: string) => void;
+  onDelete: (id: string) => void;
   onDeleteArchived: (id: string) => void;
   onViewArchived: (id: string) => void;
   onContinue: () => void;
@@ -73,11 +74,20 @@ export function SessionList({ sessions, archived, activeId, busy, onSelect, onNe
             <div className="mono mt-0.5 truncate text-[10px] text-forge-faint">
               {fmtWhen(s.updatedAt)}{s.updatedAt ? ' · ' : ''}{s.id.slice(0, 13)}…
             </div>
-            {s.id === activeId && (
-              <button onClick={() => onClose(s.id)} className="mt-1 text-[11px] text-forge-faint hover:text-forge-err">
-                Cerrar sesión
+            <div className="mt-1 flex gap-2">
+              {s.id === activeId ? (
+                <button onClick={() => onClose(s.id)} className="text-[11px] text-forge-faint hover:text-forge-text" title="Cierra la sesión pero la guarda en este equipo">
+                  Cerrar
+                </button>
+              ) : (
+                <button onClick={() => onSelect(s.id)} className="text-[11px] text-forge-faint hover:text-forge-text">
+                  Abrir
+                </button>
+              )}
+              <button onClick={() => onDelete(s.id)} className="ml-auto text-[11px] text-forge-faint opacity-0 transition-opacity hover:text-forge-err group-hover:opacity-100" title="Eliminar conversación (servidor + guardada)">
+                Eliminar
               </button>
-            )}
+            </div>
           </div>
         ))}
         {saved.length > 0 && (

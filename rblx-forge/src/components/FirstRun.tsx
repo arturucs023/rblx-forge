@@ -40,7 +40,7 @@ export function FirstRun({ onGo }: { onGo: (m: ModuleId) => void }) {
       done: !!ws && !!parent,
       title: 'Configura tus dos carpetas',
       hint: !ws
-        ? 'Falta la carpeta del entorno (skills, referencias, herramientas).'
+        ? 'Falta la carpeta del entorno (skills y herramientas).'
         : !parent
           ? 'Falta la carpeta donde se crean los juegos.'
           : `Entorno ✓ · Juegos ✓`,

@@ -218,9 +218,10 @@ function GoogleSettings() {
     <div className="mt-4 border-t border-forge-border-soft pt-3">
       <p className="mb-1 text-[12px] font-bold">Google Gemini (Nano Banana)</p>
       <p className="mb-2 text-[11px] text-forge-muted">
-        Modelos <span className="mono">gemini-nano-banana-2.1</span> (≈$0,0336/imagen) y{' '}
-        <span className="mono">gemini-2.5-flash-image</span> (≈$0,039/imagen). De pago siempre:
-        sin capa gratuita para imágenes (requiere facturación en Google).
+        Nano Banana 2.1 (≈$0,0336/imagen: $1,50/1M entrada, $30/1M salida) ·
+        Nano Banana 2.5 (≈$0,039/imagen: $0,30/1M entrada, $30/1M salida) ·
+        Nano Banana Lite (≈$0,0336/imagen: $0,25/1M entrada, $30/1M salida).
+        De pago siempre: sin capa gratuita para imágenes.
         Crea la clave en Google AI Studio → API keys.
       </p>
       <label className="mb-2 block">

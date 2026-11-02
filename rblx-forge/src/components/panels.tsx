@@ -104,7 +104,7 @@ export function HomeModule({ onGo }: { onGo: (m: ModuleId) => void }) {
       {noWorkspace && (
         <div className="card anim-enter mt-3 border-forge-warn/40 p-3">
           <p className="text-[13px] font-bold">Configura tu workspace</p>
-          <p className="mt-1 text-[12px] text-forge-muted">Indica la carpeta del proyecto Roblox para activar el conteo de skills, la biblioteca de referencias y las herramientas vendoreadas.</p>
+          <p className="mt-1 text-[12px] text-forge-muted">Indica la carpeta del proyecto Roblox para activar el conteo de skills y las herramientas vendoreadas.</p>
           <button onClick={() => onGo('configuracion')} className="btn btn-primary mt-2">Ir a Configuración →</button>
         </div>
       )}
