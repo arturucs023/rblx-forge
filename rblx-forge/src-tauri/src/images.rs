@@ -18,6 +18,66 @@ pub const FLUX_MAX_PROMPT_CHARS: usize = 2048;
 pub struct GeneratedImage {
     pub file: String,
     pub size: u64,
+    /// Nota de coste/uso tal cual la reporte la API (si la reporta).
+    pub usage: Option<String>,
+    /// Duración de la llamada en ms (medida en el backend).
+    pub elapsed_ms: u64,
+}
+
+/// Nota de coste/uso oportunista: Cloudflare no documenta campos de coste
+/// para este modelo; si la respuesta incluye `usage`/`cost`/`meta` se muestra
+/// tal cual, sin inventar nada.
+pub fn extract_usage_note(v: &serde_json::Value) -> Option<String> {
+    for key in ["usage", "cost", "meta"] {
+        if let Some(u) = v.get(key) {
+            if u.is_null() {
+                continue;
+            }
+            let s = serde_json::to_string(u).unwrap_or_default();
+            if !s.is_empty() && s != "null" && s != "{}" {
+                return Some(s.chars().take(300).collect());
+            }
+        }
+    }
+    None
+}
+
+/// Extensión permitida para pegados del portapapeles (allowlist estricta).
+pub fn validate_upload_ext(ext: &str) -> Result<String, String> {
+    let e = ext.trim().trim_start_matches('.').to_lowercase();
+    match e.as_str() {
+        "png" | "jpg" | "jpeg" | "webp" | "gif" => Ok(if e == "jpeg" { "jpg".to_string() } else { e }),
+        _ => Err("Formato de imagen no soportado (png/jpg/webp/gif).".to_string()),
+    }
+}
+
+pub const CLIP_MAX_BYTES: usize = 15 * 1024 * 1024;
+
+/// Guarda una imagen del portapapeles (base64) en el temporal de la app y
+/// devuelve su ruta absoluta. Límite 15 MB.
+#[tauri::command]
+pub fn images_save_upload(base64_data: String, ext: String) -> Result<String, String> {
+    let ext = validate_upload_ext(&ext)?;
+    let clean = match base64_data.find(";base64,") {
+        Some(i) => &base64_data[i + 8..],
+        None => base64_data.as_str(),
+    };
+    use base64::Engine as _;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(clean.trim())
+        .map_err(|_| "La imagen pegada no se pudo decodificar.".to_string())?;
+    if bytes.is_empty() {
+        return Err("La imagen pegada está vacía.".to_string());
+    }
+    if bytes.len() > CLIP_MAX_BYTES {
+        return Err("La imagen supera los 15 MB.".to_string());
+    }
+    let dir = std::env::temp_dir().join("rblx-forge-clip");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("No se pudo crear el temporal: {e}"))?;
+    let stamp = chrono_stamp();
+    let file = dir.join(format!("paste-{stamp}.{ext}"));
+    std::fs::write(&file, &bytes).map_err(|e| format!("No se pudo guardar la imagen pegada: {e}"))?;
+    Ok(file.to_string_lossy().to_string())
 }
 
 /// Steps: defecto 4, recorte honesto a 1..=8 (documentado por Cloudflare).
@@ -243,6 +303,7 @@ pub fn cf_images_generate(
     if let Some(s) = seed {
         payload["seed"] = serde_json::json!(s);
     }
+    let t0 = std::time::Instant::now();
     let resp = ureq::post(&url)
         .set("Authorization", &format!("Bearer {}", api_token.trim()))
         .set("Content-Type", "application/json")
@@ -273,6 +334,11 @@ pub fn cf_images_generate(
     if bytes.is_empty() {
         return Err("Cloudflare devolvió una imagen vacía.".to_string());
     }
+    let elapsed_ms = t0.elapsed().as_millis() as u64;
+    // Nota de coste: solo lo que la propia API incluya en la respuesta.
+    let usage = serde_json::from_str::<serde_json::Value>(&body)
+        .ok()
+        .and_then(|v| extract_usage_note(&v));
     let ext = sniff_extension(&bytes);
     let dir = std::path::Path::new(&save_dir).join("generated-images");
     std::fs::create_dir_all(&dir).map_err(|e| format!("No se pudo crear la carpeta: {e}"))?;
@@ -283,6 +349,8 @@ pub fn cf_images_generate(
     Ok(GeneratedImage {
         file: file.to_string_lossy().to_string(),
         size,
+        usage,
+        elapsed_ms,
     })
 }
 
@@ -338,5 +406,23 @@ mod images_tests {
         let fail = r#"{"result":null,"success":false,"errors":[{"message":"auth error 401"}],"messages":[]}"#;
         assert!(parse_image_response(fail).unwrap_err().contains("auth"));
         assert!(parse_image_response("no json").is_err());
+    }
+
+    #[test]
+    fn extract_usage_note_solo_si_existe() {
+        assert!(extract_usage_note(&serde_json::json!({"result": {"image": "x"}})).is_none());
+        let v = serde_json::json!({"result": {"image": "x"}, "usage": {"neurons": 120}});
+        assert_eq!(
+            extract_usage_note(&v).as_deref(),
+            Some("{\"neurons\":120}")
+        );
+    }
+
+    #[test]
+    fn upload_solo_formatos_permitidos() {
+        assert_eq!(validate_upload_ext("png").as_deref(), Ok("png"));
+        assert_eq!(validate_upload_ext(".JPEG").as_deref(), Ok("jpg"));
+        assert!(validate_upload_ext("svg").is_err());
+        assert!(validate_upload_ext("").is_err());
     }
 }

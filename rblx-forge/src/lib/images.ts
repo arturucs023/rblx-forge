@@ -61,6 +61,16 @@ export function tokenVerifyAdvice(detail: string): string | null {
   return null;
 }
 
+/** Etiqueta estilo OpenCode para la N-ésima imagen del mensaje. */
+export function pastedImageName(n: number): string {
+  return `[Image ${Math.max(1, Math.floor(n))}]`;
+}
+
+/** ¿Es un chip de imagen pegada/adjunta (se muestra sin 📎)? */
+export function isImageChipName(name: string): boolean {
+  return /^\[Image \d+\]/i.test(name.trim());
+}
+
 export function formatBytes(n: number): string {
   if (!Number.isFinite(n) || n < 0) return 'n/d';
   if (n < 1024) return `${n} B`;

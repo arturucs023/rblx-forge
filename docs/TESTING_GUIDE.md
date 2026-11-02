@@ -60,5 +60,7 @@
   (`cargo test` 43/43). Contrato REST verificado en docs oficiales
   (envelope `{result:{image},success,errors}`, steps máx 8, 10k Neurons/día
   gratis). `vitest` 68/68 (15 ficheros, incluye `images.test.ts`).
-- Generación extremo a extremo: PENDIENTE de credenciales reales del usuario
-  ( Account ID + token en Configuración → Imágenes).
+- Generación extremo a extremo: VERIFICADA por el usuario con credenciales
+  propias (el 401 inicial era token mal copiado; el diagnóstico lo identificó).
+- Pegado de imágenes y coste (`images_save_upload`, `extract_usage_note`,
+  chips `[Image N]`): `vitest` 72/72, `cargo test` 45/45, `npm run build` OK.

@@ -1,6 +1,6 @@
 // Tests puros del modo Imágenes (sin red ni Tauri).
 import { describe, expect, it } from 'vitest';
-import { clampSteps, classifyToken, formatBytes, imageErrorMessage, normalizeSeed, tokenVerifyAdvice, validatePrompt } from './images';
+import { clampSteps, classifyToken, formatBytes, imageErrorMessage, normalizeSeed, pastedImageName, isImageChipName, tokenVerifyAdvice, validatePrompt } from './images';
 
 describe('classifyToken', () => {
   it('orienta sin bloquear', () => {
@@ -55,6 +55,12 @@ describe('imageErrorMessage', () => {
     const advice = tokenVerifyAdvice('{"code":1000,"message":"Invalid API Token"}');
     expect(advice).toContain('una sola vez');
     expect(tokenVerifyAdvice('Token válido y activo')).toBeNull();
+  });
+  it('etiquetas [Image N] y detección de chip', () => {
+    expect(pastedImageName(1)).toBe('[Image 1]');
+    expect(pastedImageName(2)).toBe('[Image 2]');
+    expect(isImageChipName('[Image 3].png')).toBe(true);
+    expect(isImageChipName('foto.png')).toBe(false);
   });
 });
 

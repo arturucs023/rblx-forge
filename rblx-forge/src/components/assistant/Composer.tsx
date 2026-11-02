@@ -2,9 +2,11 @@
 // adjuntos reales (file://, verificados 200 contra el servidor), selector de
 // modelo, enviar/detener. Sin botones decorativos: todo funciona.
 import { useEffect, useRef, useState, type ClipboardEvent } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { ModelSelect } from './ModelSelect';
 import type { ModelValue } from '../ModelPicker';
+import { isImageChipName, pastedImageName } from '../../lib/images';
 
 export interface OutgoingFiles {
   uri: string;
@@ -47,7 +49,28 @@ export function Composer({
    *  `[Pasted ~N lines]` y el texto real vive aquí hasta el envío. */
   const [snippets, setSnippets] = useState<Array<{ marker: string; text: string; expanded: boolean }>>([]);
   const snipSeq = useRef(0);
+  /** Contador de imágenes del mensaje ([Image 1], [Image 2]… estilo OpenCode). */
+  const imgSeq = useRef(0);
   const taRef = useRef<HTMLTextAreaElement>(null);
+
+  // Adjuntos desde otros módulos (galería de Imágenes, Referencias):
+  // detail {uri: 'file:///...', name}. Persisten hasta enviar.
+  useEffect(() => {
+    const onAttach = (ev: Event) => {
+      const d = (ev as CustomEvent<{ uri?: string; name?: string }>).detail;
+      const uri: string | undefined = d?.uri;
+      if (!uri) return;
+      const name: string = d.name || fileNameOf(uri);
+      setAttachError(null);
+      setFiles((prev) => {
+        if (prev.some((f) => f.uri === uri) || prev.length >= 10) return prev;
+        const next: OutgoingFiles[] = [...prev, { uri, name }];
+        return next;
+      });
+    };
+    document.addEventListener('forge:attach-image', onAttach);
+    return () => document.removeEventListener('forge:attach-image', onAttach);
+  }, []);
 
   // Si el usuario borra el marcador a mano, el chip huérfano desaparece.
   useEffect(() => {
@@ -80,9 +103,62 @@ export function Composer({
 
   const canSend = !disabled && !busy && !streaming && (!!draft.trim() || files.length > 0);
 
+  /** Base64 por trozos (evita el límite de pila de btoa con blobs grandes). */
+  function blobToBase64(blob: Blob): Promise<string> {
+    return blob.arrayBuffer().then((buf) => {
+      const bytes = new Uint8Array(buf);
+      let s = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) {
+        s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      }
+      return btoa(s);
+    });
+  }
+
+  function extOf(mime: string): string {
+    if (mime.includes('jpeg') || mime.includes('jpg')) return 'jpg';
+    if (mime.includes('webp')) return 'webp';
+    if (mime.includes('gif')) return 'gif';
+    return 'png';
+  }
+
+  /** Pegar imágenes (Ctrl+V) → chips [Image 1], [Image 2]… como OpenCode.
+   *  El binario se guarda en el temporal vía backend y viaja como file://. */
+  const pasteImages = async (files_: File[]): Promise<boolean> => {
+    if (!files_.length) return false;
+    setAttachError(null);
+    for (const f of files_.slice(0, 5)) {
+      try {
+        const b64 = await blobToBase64(f);
+        const abs = await invoke<string>('images_save_upload', { base64Data: b64, ext: extOf(f.type) });
+        imgSeq.current += 1;
+        const label = pastedImageName(imgSeq.current);
+        setFiles((prev) => {
+          if (prev.length >= 10) return prev;
+          return [...prev, { uri: 'file:///' + abs.replace(/\\/g, '/'), name: `${label}.${extOf(f.type)}` }];
+        });
+      } catch (e) {
+        setAttachError(`No se pudo adjuntar la imagen: ${String(e).slice(0, 160)}`);
+      }
+    }
+    return true;
+  };
+
   /** Pegar 5+ líneas colapsa a `[Pasted ~N lines]` (como OpenCode). */
   const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
     if (disabled || busy) return;
+    const items = Array.from(e.clipboardData?.items ?? []);
+    const imgFiles = items
+      .filter((i) => i.type.startsWith('image/'))
+      .map((i) => i.getAsFile())
+      .filter((f): f is File => !!f);
+    const dtFiles = Array.from(e.clipboardData?.files ?? []).filter((f) => f.type.startsWith('image/'));
+    const all = [...imgFiles, ...dtFiles.filter((f) => !imgFiles.includes(f))];
+    if (all.length) {
+      e.preventDefault();
+      void pasteImages(all);
+      return;
+    }
     const clip = e.clipboardData?.getData('text') ?? '';
     if (!clip) return;
     const lines = clip.split('\n').length;
@@ -120,6 +196,7 @@ export function Composer({
     setDraft('');
     setFiles([]);
     setSnippets([]);
+    imgSeq.current = 0;
     onSend(text, out);
   };
 
@@ -129,7 +206,7 @@ export function Composer({
         <div className="mb-1.5 flex flex-wrap gap-1">
           {files.map((f) => (
             <span key={f.uri} title={f.uri} className="mono flex max-w-full items-center gap-1 rounded-md border border-forge-border bg-forge-panel px-1.5 py-0.5 text-[11px] text-forge-muted">
-              <span className="truncate">📎 {f.name}</span>
+              <span className="truncate">{isImageChipName(f.name) ? f.name.replace(/\.(png|jpg|webp|gif)$/i, '') : `📎 ${f.name}`}</span>
               <button onClick={() => setFiles((prev) => prev.filter((x) => x.uri !== f.uri))} className="text-forge-faint hover:text-forge-err" title="Quitar adjunto">×</button>
             </span>
           ))}

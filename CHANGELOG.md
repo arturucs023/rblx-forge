@@ -16,6 +16,14 @@ Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)
 - Diagnóstico Cloudflare: botón «Probar conexión» (`cf_cloudflare_check` con
   `GET user/tokens/verify`, sin gastar Neurons) + errores de red con la causa
   real (timeout/DNS/TLS/bloqueo) en vez de un genérico.
+- Imágenes: cada generación muestra tiempo, pasos, semilla, tamaño y el coste
+  que reporte la API (`usage`, si lo incluye; si no, se dice). Galería con
+  vista ampliada, botón Copiar (portapapeles) y «Al asistente».
+- Asistente: Ctrl+V con imágenes las adjunta como chips `[Image 1]`,
+  `[Image 2]`… (se guardan en el temporal vía `images_save_upload` y viajan
+  como `file://`); también llegan adjuntos desde Imágenes y Referencias.
+- Referencias: conteos por categoría, filtro de favoritas y «Adjuntar imagen»
+  (archivo real al Asistente) además de «Enviar ruta».
 - `npm run test` 68/68, `cargo test` 43/43, `npm run build` OK. Generación real
   pendiente de credenciales del usuario (contrato verificado en docs).
 

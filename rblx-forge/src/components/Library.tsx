@@ -28,6 +28,7 @@ export function Library() {
   const [sel, setSel] = useState<RefItem | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
   const [favs, setFavs] = useState<string[]>([]);
+  const [onlyFavs, setOnlyFavs] = useState(false);
 
   useEffect(() => {
     getRefsDir().then(setBase).catch(() => {});
@@ -70,9 +71,21 @@ export function Library() {
     document.dispatchEvent(new CustomEvent('forge:go-assistant'));
   };
 
+  /** Adjunta el archivo real al Asistente (llega como [Image N]; con un modelo
+   *  con visión, el modelo sí la ve). */
+  const attachToAssistant = (r: RefItem) => {
+    const abs = `${base}\\${r.file}`;
+    document.dispatchEvent(new CustomEvent('forge:attach-image', {
+      detail: { uri: 'file:///' + abs.replace(/\\/g, '/'), name: r.file.split('/').pop() || r.file },
+    }));
+    document.dispatchEvent(new CustomEvent('forge:go-assistant'));
+  };
+
   const filtered = REFERENCES.filter(
-    (r) => (cat === 'todas' || r.category === cat) && (!q || (r.description + r.tags.join(' ') + r.file).toLowerCase().includes(q.toLowerCase())),
+    (r) => (cat === 'todas' || r.category === cat) && (!q || (r.description + r.tags.join(' ') + r.file).toLowerCase().includes(q.toLowerCase())) && (!onlyFavs || favs.includes(r.file)),
   );
+
+  const countOf = (c: string) => REFERENCES.filter((r) => r.category === c).length;
 
   if (!base) {
     return (
@@ -92,8 +105,15 @@ export function Library() {
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar…" className="rounded border border-forge-border bg-forge-bg px-2 py-1 outline-none placeholder:text-forge-muted" />
           <select value={cat} onChange={(e) => setCat(e.target.value)} className="rounded border border-forge-border bg-forge-bg px-2 py-1">
             <option value="todas">Todas ({REFERENCES.length})</option>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            {CATEGORIES.map((c) => <option key={c} value={c}>{c} ({countOf(c)})</option>)}
           </select>
+          <button
+            onClick={() => setOnlyFavs((v) => !v)}
+            title="Mostrar solo favoritas"
+            className={`rounded border px-2 py-1 ${onlyFavs ? 'border-forge-accent-dim text-forge-accent' : 'border-forge-border text-forge-muted'}`}
+          >
+            ★ {favs.length}
+          </button>
           <span className="mono ml-auto truncate text-[10px] text-forge-muted" title={base}>{base}</span>
         </div>
         {missing.length > 0 && (
@@ -129,9 +149,10 @@ export function Library() {
             <p><span className="text-forge-muted">Licencia:</span> {sel.license}</p>
             <p><span className="text-forge-muted">Etiquetas:</span> {sel.tags.join(', ')}</p>
             <p className="mt-1"><button className="text-forge-accent underline" onClick={() => openUrl(sel.source)}>Fuente original ↗</button></p>
-            <div className="mt-2 flex gap-1">
+            <div className="mt-2 flex flex-wrap gap-1">
               <button onClick={() => toggleFav(sel.file)} className="rounded border border-forge-border px-2 py-0.5">{favs.includes(sel.file) ? '★ Favorita' : '☆ Favorita'}</button>
-              <button onClick={() => sendToAssistant(sel)} className="rounded border border-forge-accent-dim px-2 py-0.5 text-forge-accent" title="Copia la ruta al Asistente (referencia por ruta, no análisis)">Usar en Asistente →</button>
+              <button onClick={() => attachToAssistant(sel)} className="rounded border border-forge-accent-dim px-2 py-0.5 text-forge-accent" title="Adjunta la imagen real al Asistente (chip [Image N])">Adjuntar imagen →</button>
+              <button onClick={() => sendToAssistant(sel)} className="rounded border border-forge-border px-2 py-0.5 text-forge-muted" title="Copia la ruta y metadatos como texto al Asistente">Enviar ruta →</button>
             </div>
             <p className="mt-2 text-[11px] text-forge-muted">Forge no afirma que OpenCode haya analizado la imagen: solo envía su ruta y metadatos. El análisis visual real depende del modelo activo.</p>
           </div>

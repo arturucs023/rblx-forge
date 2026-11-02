@@ -20,8 +20,13 @@ export function Images() {
   const [seed, setSeed] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
   const [files, setFiles] = useState<GenEntry[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
+  /** Resumen de la última generación: tiempo, pasos, semilla y coste reportado. */
+  const [lastGen, setLastGen] = useState<{
+    secs: string; steps: number; seed: string; size: number; usage: string | null;
+  } | null>(null);
 
   const list = useCallback(async () => {
     if (!project) {
@@ -61,13 +66,22 @@ export function Images() {
     setBusy(true);
     try {
       const [accountId, apiToken] = await Promise.all([getCloudflareAccount(), getCloudflareToken()]);
-      const out = await invoke<{ file: string; size: number }>('cf_images_generate', {
+      const usedSteps = clampSteps(steps);
+      const usedSeed = normalizeSeed(seed);
+      const out = await invoke<{ file: string; size: number; usage?: string | null; elapsed_ms?: number }>('cf_images_generate', {
         accountId,
         apiToken,
         prompt: prompt.trim(),
-        steps: clampSteps(steps),
-        seed: normalizeSeed(seed) ?? null,
+        steps: usedSteps,
+        seed: usedSeed ?? null,
         saveDir: project.path,
+      });
+      setLastGen({
+        secs: out.elapsed_ms != null ? (out.elapsed_ms / 1000).toFixed(1) : '—',
+        steps: usedSteps,
+        seed: usedSeed != null ? String(usedSeed) : 'aleatoria',
+        size: out.size,
+        usage: out.usage ?? null,
       });
       setPrompt('');
       await list();
@@ -77,6 +91,28 @@ export function Images() {
     } finally {
       setBusy(false);
     }
+  };
+
+  /** Copia la imagen al portapapeles del sistema (luego Ctrl+V donde quieras,
+   *  incluido el Asistente, que la recibe como [Image N]). */
+  const copyImage = async (abs: string) => {
+    setError(null);
+    try {
+      const res = await fetch(convertFileSrc(abs));
+      const blob = await res.blob();
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type || 'image/png']: blob })]);
+      setCopied(abs);
+      setTimeout(() => setCopied((c) => (c === abs ? null : c)), 2000);
+    } catch {
+      setError('No se pudo copiar: el portapapeles del sistema no está disponible aquí. Usa «Al asistente».');
+    }
+  };
+
+  /** Adjunta la imagen al Asistente (llega como chip [Image N] al enviar). */
+  const sendToAssistant = (abs: string, name: string) => {
+    const uri = 'file:///' + abs.replace(/\\/g, '/');
+    document.dispatchEvent(new CustomEvent('forge:attach-image', { detail: { uri, name } }));
+    document.dispatchEvent(new CustomEvent('forge:go-assistant'));
   };
 
   if (!project) {
@@ -143,6 +179,12 @@ export function Images() {
             </button>
           </div>
           {busy && <p className="mt-2 animate-pulse text-[12px] text-forge-accent">El modelo está dibujando (puede tardar un minuto)…</p>}
+          {lastGen && !busy && (
+            <p className="mono mt-2 text-[11px] text-forge-muted">
+              Última: {lastGen.secs} s · {lastGen.steps} pasos · semilla {lastGen.seed} · {formatBytes(lastGen.size)}
+              {lastGen.usage ? ` · coste reportado: ${lastGen.usage}` : ' · la API no desglosa el coste (se descuenta de tus 10.000 Neurons/día)'}
+            </p>
+          )}
           {error && <p className="mt-2 text-[12px] text-forge-err">{error}</p>}
         </div>
 
@@ -181,9 +223,23 @@ export function Images() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setSelected(null)}>
           <div className="max-h-full max-w-3xl overflow-auto rounded-xl bg-forge-panel p-3" onClick={(e) => e.stopPropagation()}>
             <img src={convertFileSrc(selected)} alt={selEntry?.name ?? 'imagen generada'} className="max-h-[70vh] w-auto rounded-lg" />
-            <div className="mono mt-2 flex items-center gap-2 text-[11px] text-forge-muted">
-              <span className="truncate">{selEntry?.name ?? selected}</span>
-              {selEntry && <span className="ml-auto shrink-0">{formatBytes(selEntry.size)}</span>}
+            <div className="mono mt-2 flex flex-wrap items-center gap-2 text-[11px] text-forge-muted">
+              <span className="min-w-0 flex-1 truncate">{selEntry?.name ?? selected}</span>
+              {selEntry && <span className="shrink-0">{formatBytes(selEntry.size)}</span>}
+              <button
+                onClick={() => selEntry && copyImage(`${project.path}/${selEntry.rel}`)}
+                className="btn btn-ghost shrink-0 !py-0.5 !text-[11px]"
+                title="Copia al portapapeles: luego Ctrl+V en el Asistente (llega como [Image N]) o en otra app"
+              >
+                {copied === (selEntry && `${project.path}/${selEntry.rel}`) ? '¡Copiada!' : 'Copiar'}
+              </button>
+              <button
+                onClick={() => selEntry && sendToAssistant(`${project.path}/${selEntry.rel}`, selEntry.name)}
+                className="btn btn-ghost shrink-0 !py-0.5 !text-[11px]"
+                title="Adjunta esta imagen al Asistente"
+              >
+                Al asistente →
+              </button>
               <button onClick={() => setSelected(null)} className="btn btn-ghost shrink-0 !py-0.5 !text-[11px]">
                 Cerrar
               </button>

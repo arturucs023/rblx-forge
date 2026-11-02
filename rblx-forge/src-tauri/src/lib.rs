@@ -1706,6 +1706,7 @@ pub fn run() {
             workspace_stats,
             images::cf_images_generate,
             images::cf_cloudflare_check,
+            images::images_save_upload,
             eval::eval_db_init,
             eval::eval_groups,
             eval::eval_scan,
