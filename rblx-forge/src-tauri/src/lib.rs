@@ -13,6 +13,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 mod projects;
 mod terminal;
 mod watcher;
+mod images;
 mod eval;
 mod orch;
 use projects::*;
@@ -1703,6 +1704,7 @@ pub fn run() {
             tool_run,
             project_lint,
             workspace_stats,
+            images::cf_images_generate,
             eval::eval_db_init,
             eval::eval_groups,
             eval::eval_scan,

@@ -23,7 +23,10 @@ máquina: Rust 1.96 MSVC, link.exe (VS BuildTools 18), WebView2 156, Node 22.
 
 ForgeGUI = interfaz + proyectos + UX. OpenCode = inteligencia + agentes +
 herramientas + ejecución. Roblox Studio MCP = mundo real. Rojo = sincronización.
-Ninguna IA fuera de OpenCode: prohibidas API keys de proveedores en la app.
+Ninguna IA fuera de OpenCode salvo el modo Imágenes: Cloudflare Workers AI
+(FLUX.1 schnell) con token aportado por el usuario en Configuración, usado solo
+contra `api.cloudflare.com` y jamás registrado en logs. Ninguna otra API key
+de proveedores en la app.
 
 ## Capas y procesos
 

@@ -98,13 +98,24 @@ export function LuauEditor() {
 
   const onMount: OnMount = (editor, monaco) => {
     monacoRef.current = editor;
-    monaco.editor.defineTheme('forge-dark', {
-      base: 'vs-dark',
+    // Tema claro Atlassian (DESIGN.md: surface #FFFFFF, text-code-*).
+    monaco.editor.defineTheme('forge-light', {
+      base: 'vs',
       inherit: true,
-      rules: [],
-      colors: { 'editor.background': '#0b0e14' },
+      rules: [
+        { token: 'comment', foreground: '505258', fontStyle: 'italic' },
+        { token: 'keyword', foreground: 'AE2E24' },
+        { token: 'string', foreground: '4C6B1F' },
+        { token: 'number', foreground: '7F5F01' },
+      ],
+      colors: {
+        'editor.background': '#FFFFFF',
+        'editor.lineHighlightBackground': '#F8F8F8',
+        'editorCursor.foreground': '#1868DB',
+        'editor.selectionBackground': '#CFE1FD',
+      },
     });
-    monaco.editor.setTheme('forge-dark');
+    monaco.editor.setTheme('forge-light');
   };
 
   return (

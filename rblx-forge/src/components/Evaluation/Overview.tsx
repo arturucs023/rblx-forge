@@ -97,7 +97,7 @@ export function Overview() {
           <div className="mt-2">
             <p className="section-label mb-1">Evolución de score (últimas {scored.length} puntuadas)</p>
             <svg viewBox={`0 0 ${scored.length * 24 + 8} 60`} className="h-16 w-full rounded bg-forge-bg">
-              <line x1="0" y1="55" x2={scored.length * 24 + 8} y2="55" stroke="#2c3a52" />
+              <line x1="0" y1="55" x2={scored.length * 24 + 8} y2="55" stroke="#7d818a" />
               {scored.map((r, i) => {
                 const h = Math.max(2, ((r.score ?? 0) / 100) * 50);
                 return <rect key={r.id} x={4 + i * 24} y={55 - h} width="14" height={h} rx="2" fill="var(--color-forge-accent)"><title>{`${r.benchmark_id}: ${r.score}`}</title></rect>;

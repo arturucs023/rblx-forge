@@ -7,6 +7,7 @@ import {
 import { Sidebar, type ModuleId } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
 import { Assistant } from './components/Assistant';
+import { Images } from './components/Images';
 import { Projects } from './components/Projects';
 import { Explorer } from './components/Explorer';
 import { LuauEditor } from './components/Editor';
@@ -17,6 +18,7 @@ import { Evaluation } from './components/Evaluation/Evaluation';
 import { Orchestrator } from './components/Orchestrator/Orchestrator';
 import { Viewport } from './components/Viewport';
 import { GoUsage } from './components/GoUsage';
+import { CloudflareSettings } from './components/CloudflareSettings';
 import { ModuleBoundary } from './components/ErrorBoundary';
 import { useProjects } from './stores/projects';
 import { HomeModule, RightPanel, BottomPanel } from './components/panels';
@@ -61,6 +63,8 @@ function Central({ module, go }: { module: ModuleId; go: (m: ModuleId) => void }
       return <Library />;
     case 'referencias':
       return <Library />;
+    case 'imagenes':
+      return <Images />;
     case 'testing':
       return <Testing />;
     case 'evaluacion':
@@ -74,6 +78,7 @@ function Central({ module, go }: { module: ModuleId; go: (m: ModuleId) => void }
         <div className="h-full overflow-auto">
           <Toolchain />
           <WorkspaceSettings />
+          <CloudflareSettings />
           <GoUsage />
           <div className="max-w-3xl p-3 text-[12px] text-forge-muted">
             Tema, idioma, editor, terminal y comportamiento de confirmaciones: pendiente (FASE 8).

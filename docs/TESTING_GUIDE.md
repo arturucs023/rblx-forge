@@ -51,3 +51,14 @@
   UI en Configuración con auto-refresh silencioso cada 5 s.
 - Visual en app (desplegable hacia arriba, acordeón por proveedor, flyout de
   variantes al hover, pill 📚): pendiente de revisión manual en la app.
+
+## Verificación tema DESIGN.md + modo Imágenes (2026-11-02)
+
+- `src/index.css`: `@theme` con valores literales del manifiesto
+  (`docs/APP_THEME.md` documenta la tabla); `tsc + vite` OK.
+- `src-tauri/src/images.rs`: validación/parseo/sniff puros con 4 tests
+  (`cargo test` 43/43). Contrato REST verificado en docs oficiales
+  (envelope `{result:{image},success,errors}`, steps máx 8, 10k Neurons/día
+  gratis). `vitest` 68/68 (15 ficheros, incluye `images.test.ts`).
+- Generación extremo a extremo: PENDIENTE de credenciales reales del usuario
+  ( Account ID + token en Configuración → Imágenes).

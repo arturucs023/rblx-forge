@@ -10,7 +10,7 @@ export function Terminal({ cwd }: { cwd: string | null }) {
 
   useEffect(() => {
     const term = new XTerm({
-      theme: { background: '#0b0e14', foreground: '#e6e9ef', cursor: '#e8b33d', selectionBackground: '#1e2532' },
+      theme: { background: '#ffffff', foreground: '#292a2e', cursor: '#1868db', selectionBackground: '#cfe1fd' },
       fontFamily: '"Cascadia Code", Consolas, monospace',
       fontSize: 12,
       cursorBlink: true,

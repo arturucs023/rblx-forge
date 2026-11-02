@@ -53,7 +53,7 @@ export const MessageItem = memo(function MessageItem({ m, isLast, onContinue, st
       <div className="anim-enter mb-2.5 ml-auto max-w-3xl">
         {files.length > 0 && <AttachList files={files} />}
         {text ? (
-          <pre className="whitespace-pre-wrap rounded-2xl rounded-br-md bg-forge-accent px-3.5 py-2 text-[12.5px] font-medium leading-relaxed text-[#141414]">{text}</pre>
+          <pre className="whitespace-pre-wrap rounded-2xl rounded-br-md bg-forge-accent px-3.5 py-2 text-[12.5px] font-medium leading-relaxed text-white">{text}</pre>
         ) : null}
       </div>
     );

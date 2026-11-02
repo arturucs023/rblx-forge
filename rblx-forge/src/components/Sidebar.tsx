@@ -5,6 +5,7 @@ export type ModuleId =
   | 'viewport'
   | 'recursos'
   | 'referencias'
+  | 'imagenes'
   | 'asistente'
   | 'testing'
   | 'evaluacion'
@@ -25,6 +26,7 @@ const ICONS: Record<ModuleId, string> = {
   editor: 'M11.5 2.5l2 2L5 13l-2.5.5L3 11z',
   viewport: 'M2.5 2.5h11v11h-11zM2.5 10.5l3.5-3.5 2.5 2.5 2-2 3 3',
   recursos: 'M8 2.5l5.5 3v5L8 13.5 2.5 10.5v-5zM2.5 5.5L8 8.5l5.5-3M8 8.5v5',
+  imagenes: 'M2.5 2.5h11v11h-11zM2.5 11l3-3 2.5 2.5 2-2 3 3M6 6.5a1.2 1.2 0 1 0 0-.01',
   referencias: 'M3 3h7l3 3v7H3zM10 3v3h3M6 8h4M6 10.5h4',
   asistente: 'M8 1.8l1.7 3.6 3.9.5-2.9 2.7.7 3.9L8 10.7l-3.4 1.8.7-3.9-2.9-2.7 3.9-.5z',
   testing: 'M8 1.8v3M4.2 3.2l1.5 2.6M3 8h12M5 13.5l-1 1.5M11 13.5l1 1.5M8 8v5.5',
@@ -35,7 +37,7 @@ const ICONS: Record<ModuleId, string> = {
 
 const SECTIONS: { title: string; items: ModuleId[] }[] = [
   { title: 'Principal', items: ['inicio', 'proyectos', 'editor', 'viewport'] },
-  { title: 'Contenido', items: ['recursos', 'referencias'] },
+  { title: 'Contenido', items: ['recursos', 'referencias', 'imagenes'] },
   { title: 'Inteligencia', items: ['asistente'] },
   { title: 'Calidad', items: ['testing', 'evaluacion', 'orquestador'] },
   { title: 'Sistema', items: ['configuracion'] },
@@ -48,6 +50,7 @@ const LABELS: Record<ModuleId, string> = {
   viewport: 'Viewport',
   recursos: 'Recursos',
   referencias: 'Referencias',
+  imagenes: 'Imágenes',
   asistente: 'Asistente IA',
   testing: 'Testing',
   evaluacion: 'Evaluación',
@@ -75,7 +78,7 @@ export function Sidebar({ active, onSelect }: { active: ModuleId; onSelect: (m: 
                   key={id}
                   onClick={() => onSelect(id)}
                   className={`relative mb-0.5 flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-left text-[13px] transition-colors ${
-                    isActive ? 'bg-forge-panel3 text-forge-text' : 'text-forge-muted hover:bg-forge-panel2 hover:text-forge-text'
+                    isActive ? 'bg-forge-accent-soft font-semibold text-forge-accent' : 'text-forge-muted hover:bg-forge-panel2 hover:text-forge-text'
                   }`}
                 >
                   {isActive && <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r bg-forge-accent" />}
@@ -90,7 +93,7 @@ export function Sidebar({ active, onSelect }: { active: ModuleId; onSelect: (m: 
       <div className="border-t border-forge-border-soft px-3 py-2 text-[10px] leading-4 text-forge-faint">
         Motor IA · OpenCode
         <br />
-        Sin proveedores externos.
+        Imágenes · Cloudflare
       </div>
     </nav>
   );

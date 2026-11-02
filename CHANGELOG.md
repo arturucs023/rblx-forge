@@ -2,6 +2,20 @@
 
 Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)`.
 
+## 2026-11-02 — Tema DESIGN.md + modo Imágenes Cloudflare (IMPLEMENTADO, verificado sin Studio)
+
+- Tema claro Atlassian según `DESIGN.md` (light, rev 0.0.7): tokens literales
+  en `src/index.css` (nombres `forge-*` conservados, valores del manifiesto;
+  tabla en `docs/APP_THEME.md`), recetas button/input/card/pill, foco 2px
+  `#4688EC`, etiquetas sin mayúsculas, Monaco `forge-light` + terminal claros.
+- Modo «Imágenes» (módulo nuevo): FLUX.1 schnell vía Cloudflare Workers AI
+  (`cf_images_generate`: prompt 1–2048, steps 1–8 def. 4, seed opcional;
+  guarda en `generated-images/` del proyecto con extensión por bytes mágicos).
+  Credenciales en Configuración (cuenta gratuita + token Workers AI).
+  Principio de arquitectura actualizado con la excepción.
+- `npm run test` 68/68, `cargo test` 43/43, `npm run build` OK. Generación real
+  pendiente de credenciales del usuario (contrato verificado en docs).
+
 ## 2026-11-02 — Asistente con skills propias + selector por proveedor + uso GO (IMPLEMENTADO, verificado)
 
 - Asistente: al iniciar cada chat inyecta el catálogo EXCLUSIVO de las 148
