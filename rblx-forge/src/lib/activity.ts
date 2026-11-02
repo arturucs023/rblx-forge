@@ -76,6 +76,9 @@ export function eventToFeed(e: { type: string; properties?: Record<string, unkno
     }
     case 'session.text.started':
       return [mk('mensaje', 'Respuesta en curso…')];
+    case 'session.text.delta':
+      return []; // fragmentos de streaming: inundan el feed y el texto final
+    // ya llega al chat por polling; el indicador «Recibiendo respuesta» sigue.
     case 'session.text.ended':
       return [mk('mensaje', 'Respuesta recibida', typeof d.text === 'string' ? d.text.slice(0, 200) : undefined)];
     case 'session.tool.input.started':

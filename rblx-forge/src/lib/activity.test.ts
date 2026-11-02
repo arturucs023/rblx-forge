@@ -30,6 +30,9 @@ describe('eventToFeed', () => {
     expect(eventToFeed({ type: 'project.updated' }, null, 1)).toEqual([]);
     expect(eventToFeed({ type: 'session.algo-nuevo', data: {} }, null, 1)[0].kind).toBe('sistema');
   });
+  it('los deltas de streaming no inundan el feed', () => {
+    expect(eventToFeed({ type: 'session.text.delta', data: {} }, null, 1)).toEqual([]);
+  });
 });
 
 describe('trackToolCall', () => {

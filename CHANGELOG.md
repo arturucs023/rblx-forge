@@ -34,6 +34,7 @@ Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)
   Clave de Google en Configuración con «Probar clave». Google es
   de pago siempre, sin capa gratuita para imágenes.
 - Asistente: cada chat se elimina de verdad (servidor + copia guardada).
+- Actividad: `session.text.delta` ya no inunda el feed (el texto llega al chat por polling).
 - Eliminados los módulos Recursos, Referencias y Testing con todos sus archivos
   y docs asociadas.
 - `npm run test` 75/75, `cargo test` 50/50, `npm run build` OK. Generación
