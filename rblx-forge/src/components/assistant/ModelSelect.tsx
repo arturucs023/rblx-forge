@@ -85,8 +85,6 @@ export function ModelSelect({
     setOpen(false);
   };
 
-  const activeFlyout = pinnedKey ?? hoverKey;
-
   return (
     <div ref={rootRef} className="relative">
       <button
@@ -145,11 +143,10 @@ export function ModelSelect({
                         const sel = !!value && value.id === m.id && value.providerID === m.providerID;
                         const free = isFreeModel(m);
                         const variants = getVariants(m);
-                        const showFlyout = activeFlyout === key && variants.length > 0;
+                        const showVariants = (hoverKey === key || pinnedKey === key) && variants.length > 0;
                         return (
                           <div
                             key={key}
-                            className="relative overflow-visible"
                             onMouseEnter={() => setHoverKey(key)}
                             onMouseLeave={() => setHoverKey((prev) => (prev === key ? null : prev))}
                           >
@@ -174,24 +171,18 @@ export function ModelSelect({
                                 <button
                                   onClick={() => setPinnedKey((prev) => (prev === key ? null : key))}
                                   title={pinnedKey === key ? 'Ocultar variantes' : 'Ver variantes (o pasa el ratón por encima)'}
-                                  className={`shrink-0 rounded-md px-1.5 py-0.5 text-[13px] transition-colors ${showFlyout ? 'bg-forge-accent-soft text-forge-accent' : 'text-forge-faint hover:bg-forge-panel3 hover:text-forge-text'}`}
+                                  className={`shrink-0 rounded-md px-1.5 py-0.5 text-[13px] transition-colors ${showVariants ? 'bg-forge-accent-soft text-forge-accent' : 'text-forge-faint hover:bg-forge-panel3 hover:text-forge-text'}`}
                                 >
                                   ›
                                 </button>
                               )}
                             </div>
-                            {showFlyout && (
-                              <div
-                                className="absolute left-full top-0 z-[60] ml-1 w-44 rounded-xl border border-forge-border bg-forge-panel2 p-1.5 shadow-2xl"
-                                onMouseEnter={() => setHoverKey(key)}
-                              >
-                                <p className="mono px-1 pb-1 text-[10px] uppercase tracking-wide text-forge-faint">
-                                  Variante · {m.id.slice(0, 18)}
-                                </p>
+                            {showVariants && (
+                              <div className="ml-7 flex flex-wrap gap-1 pb-1.5 pr-1 pt-0.5">
                                 <button
                                   onClick={() => pickVariant(m, undefined)}
-                                  className={`block w-full rounded-lg px-2 py-1 text-left text-[12px] transition-colors ${!value || value.id !== m.id || !value.variant ? '' : ''} ${sel && !value?.variant ? 'bg-forge-accent-soft font-bold' : 'hover:bg-forge-panel3'}`}
                                   title="La variante por defecto que defina el proveedor"
+                                  className={`btn !px-2 !py-0.5 !text-[11px] ${sel && !value?.variant ? 'btn-primary' : 'btn-ghost'}`}
                                 >
                                   Por defecto
                                 </button>
@@ -201,7 +192,8 @@ export function ModelSelect({
                                     <button
                                       key={v}
                                       onClick={() => pickVariant(m, v)}
-                                      className={`block w-full rounded-lg px-2 py-1 text-left text-[12px] transition-colors ${active ? 'bg-forge-accent-soft font-bold text-forge-accent' : 'hover:bg-forge-panel3'}`}
+                                      title={`Elegir ${m.id} con variante ${v}`}
+                                      className={`btn !px-2 !py-0.5 !text-[11px] ${active ? 'btn-primary' : 'btn-ghost'}`}
                                     >
                                       {active ? '✓ ' : ''}{v}
                                     </button>
