@@ -13,6 +13,9 @@ Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)
   guarda en `generated-images/` del proyecto con extensión por bytes mágicos).
   Credenciales en Configuración (cuenta gratuita + token Workers AI).
   Principio de arquitectura actualizado con la excepción.
+- Diagnóstico Cloudflare: botón «Probar conexión» (`cf_cloudflare_check` con
+  `GET user/tokens/verify`, sin gastar Neurons) + errores de red con la causa
+  real (timeout/DNS/TLS/bloqueo) en vez de un genérico.
 - `npm run test` 68/68, `cargo test` 43/43, `npm run build` OK. Generación real
   pendiente de credenciales del usuario (contrato verificado en docs).
 
