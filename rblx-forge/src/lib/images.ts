@@ -53,6 +53,14 @@ export function classifyToken(raw: string): 'empty' | 'maybe-account-id' | 'shor
   return 'maybe-token';
 }
 
+/** Consejo accionable cuando la verificación dice token inválido (código 1000). */
+export function tokenVerifyAdvice(detail: string): string | null {
+  if (/1000|Invalid API Token/i.test(detail)) {
+    return 'Ese valor no coincide con ningún token vivo: recópialo entero del diálogo de creación (se muestra una sola vez) o crea uno nuevo; si lo pegaste en un chat o captura, elimínalo en el panel y genera otro.';
+  }
+  return null;
+}
+
 export function formatBytes(n: number): string {
   if (!Number.isFinite(n) || n < 0) return 'n/d';
   if (n < 1024) return `${n} B`;

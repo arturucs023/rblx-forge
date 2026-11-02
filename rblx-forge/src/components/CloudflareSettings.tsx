@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { getSetting, setSetting } from '../lib/paths';
-import { classifyToken } from '../lib/images';
+import { classifyToken, tokenVerifyAdvice } from '../lib/images';
 
 export const KEY_CF_ACCOUNT = 'cloudflare.accountId';
 export const KEY_CF_TOKEN = 'cloudflare.apiToken';
@@ -79,7 +79,9 @@ export function CloudflareSettings() {
       );
       setCheck({ ok: out.valid, text: out.detail });
     } catch (e) {
-      setCheck({ ok: false, text: String(e).slice(0, 400) });
+      const raw = String(e).slice(0, 400);
+      const advice = tokenVerifyAdvice(raw);
+      setCheck({ ok: false, text: advice ? `${raw}\n${advice}` : raw });
     } finally {
       setChecking(false);
     }

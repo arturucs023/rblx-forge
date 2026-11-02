@@ -1,6 +1,6 @@
 // Tests puros del modo Imágenes (sin red ni Tauri).
 import { describe, expect, it } from 'vitest';
-import { clampSteps, classifyToken, formatBytes, imageErrorMessage, normalizeSeed, validatePrompt } from './images';
+import { clampSteps, classifyToken, formatBytes, imageErrorMessage, normalizeSeed, tokenVerifyAdvice, validatePrompt } from './images';
 
 describe('classifyToken', () => {
   it('orienta sin bloquear', () => {
@@ -50,6 +50,11 @@ describe('imageErrorMessage', () => {
   it('los fallos de red muestran el detalle real, no un genérico', () => {
     const raw = 'Conexión rechazada o bloqueada hacia api.cloudflare.com: Connection refused';
     expect(imageErrorMessage(raw)).toBe(raw);
+  });
+  it('token inválido da consejo accionable', () => {
+    const advice = tokenVerifyAdvice('{"code":1000,"message":"Invalid API Token"}');
+    expect(advice).toContain('una sola vez');
+    expect(tokenVerifyAdvice('Token válido y activo')).toBeNull();
   });
 });
 
