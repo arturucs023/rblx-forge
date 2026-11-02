@@ -243,6 +243,11 @@ export function createClient(opts: ClientOptions) {
       const q = directory ? '?location%5Bdirectory%5D=' + encodeURIComponent(directory) : '';
       return req<Array<{ name: string; status?: { status?: string } }>>(clean, pw, '/api/mcp' + q);
     },
+    /** Uso del plan Go + budgets de Console (null = no firmado). */
+    getUsageLimits: (directory?: string) => {
+      const q = directory ? '?location%5Bdirectory%5D=' + encodeURIComponent(directory) : '';
+      return req<UsageLimitsInfo | null>(clean, pw, '/api/experimental/usage/limits' + q);
+    },
     /** Forms de la sesión (el modelo propone opciones, el usuario elige). */
     listForms: (id: string) =>
       req<FormDetail[]>(clean, pw, `/api/session/${encodeURIComponent(id)}/form`),
@@ -317,6 +322,33 @@ export function createClient(opts: ClientOptions) {
 export interface PromptFileAttachment {
   uri: string;
   name?: string;
+}
+
+/** Uso del plan OpenCode Go (contrato real OpenAPI 2.2.4:
+ *  `GET /api/experimental/usage/limits` → `{data: UsageLimits.Info | null}`.
+ *  `null` = workspace no firmado en OpenCode Console. `Money.USD` es número. */
+export interface UsageMeter {
+  percent: number;
+  limited: boolean;
+  resetsAt: number;
+}
+
+export interface UsageLimitsInfo {
+  workspace: { id: string; name?: string; usageURL: string };
+  go?: { rolling: UsageMeter; weekly: UsageMeter; monthly: UsageMeter };
+  budgets: Array<{
+    id: string;
+    limit: number;
+    spent: number;
+    scope: string;
+    per: string;
+    coverage: string;
+    models: Array<{ providerID: string; modelID: string; name: string; spent?: number }>;
+    vendors: string[];
+    picked: boolean;
+    shared: boolean;
+    resetsAt: number;
+  }>;
 }
 
 export type OpenCodeClient = ReturnType<typeof createClient>;

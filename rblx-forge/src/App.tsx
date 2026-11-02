@@ -16,6 +16,7 @@ import { Testing } from './components/Testing';
 import { Evaluation } from './components/Evaluation/Evaluation';
 import { Orchestrator } from './components/Orchestrator/Orchestrator';
 import { Viewport } from './components/Viewport';
+import { GoUsage } from './components/GoUsage';
 import { ModuleBoundary } from './components/ErrorBoundary';
 import { useProjects } from './stores/projects';
 import { HomeModule, RightPanel, BottomPanel } from './components/panels';
@@ -73,6 +74,7 @@ function Central({ module, go }: { module: ModuleId; go: (m: ModuleId) => void }
         <div className="h-full overflow-auto">
           <Toolchain />
           <WorkspaceSettings />
+          <GoUsage />
           <div className="max-w-3xl p-3 text-[12px] text-forge-muted">
             Tema, idioma, editor, terminal y comportamiento de confirmaciones: pendiente (FASE 8).
             Rutas de herramientas: ajuste `toolchain.*` (persistente, sin secretos).

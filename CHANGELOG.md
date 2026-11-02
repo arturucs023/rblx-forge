@@ -2,6 +2,21 @@
 
 Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)`.
 
+## 2026-11-02 — Asistente con skills propias + selector por proveedor + uso GO (IMPLEMENTADO, verificado)
+
+- Asistente: al iniciar cada chat inyecta el catálogo EXCLUSIVO de las 148
+  skills propias (61 en `.agents/skills` + 87 en `.opencode/skills`,
+  id:descripción ≈32k chars) y adjunta extractos de las mencionadas
+  (tope 3/entrega, `skills[]` validados, fallback sin-skills si el servidor
+  rechaza). Nunca skills ajenas/externas. Indicador 📚 en cabecera.
+- Selector de modelo: se abre HACIA ARRIBA (ya no obliga a bajar la app),
+  proveedores como desplegables (acordeón con conteos y gratis), y variantes
+  al pasar el ratón sobre › (flyout, fijable por clic para táctil).
+- Configuración: apartado «Uso del plan (OpenCode Go)» con rolling/semanal/
+  mensual + budgets (`GET /api/experimental/usage/limits`, verificado 200 con
+  `null` sin firmar), auto-actualizado cada 5 s en silencio.
+- `npm run test` 63/63 (14 ficheros), `npm run build` OK (tsc + vite).
+
 ## 2026-11-02 — Rediseño del Asistente (IMPLEMENTADO, verificado sin Studio)
 
 - Chat con Markdown real (GFM: tablas, listas, citas, enlaces), resaltado de

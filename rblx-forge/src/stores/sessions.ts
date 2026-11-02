@@ -2,6 +2,11 @@ import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { createClient, type OpenCodeClient, type PermissionRequest, type SessionMessage, type SessionSummary, type ModelInfo, type FormDetail, type PromptFileAttachment } from '../lib/opencode';
 import { userText as userTextOf, assistantTexts as assistantTextsOf } from '../lib/chat/text';
+import {
+  buildCatalogText, buildFirstMessage, buildFollowupMessage, getOwnSkillsCatalog,
+  getSkillsWorkspace, loadSkillExcerpts, matchSkillIds, validateSkillIds,
+  SKILLS_MAX_EXCERPTS,
+} from '../lib/chat/skills';
 import { eventToFeed, trackToolCall, type FeedItem, type TrackedCall } from '../lib/activity';
 import { useApp } from './app';
 
@@ -42,6 +47,9 @@ interface SessionsState {
   streaming: boolean;
   error: string | null;
   sseOff: (() => void) | null;
+  /** Catálogo propio inyectado: total de skills y adjuntadas del último envío. */
+  skillsTotal: number | null;
+  skillsAttached: string[];
 
   setCwd: (dir: string | null) => void;
   pushFeed: (items: FeedItem[]) => void;
@@ -205,6 +213,8 @@ export const useSessions = create<SessionsState>((set, get) => ({
   streaming: false,
   error: null,
   sseOff: null,
+  skillsTotal: null,
+  skillsAttached: [],
 
   connect: (base, password) => {
     get().sseOff?.();
@@ -269,7 +279,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
   },
 
   setCwd: (dir) => {
-    set({ cwd: dir, activeId: null, messages: {}, permissions: [], feed: [], calls: {}, usage: null, archived: [], archivedId: null, forms: [] });
+    set({ cwd: dir, activeId: null, messages: {}, permissions: [], feed: [], calls: {}, usage: null, archived: [], archivedId: null, forms: [], skillsAttached: [] });
     if (dir) {
       get().loadSessions(dir).catch(() => {});
       get().loadArchived(dir).catch(() => {});
@@ -350,7 +360,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
     set({ busy: true, error: null });
     try {
       const s = await c.createSession({ title, directory: dir });
-      set((st) => ({ sessions: [s, ...st.sessions], activeId: s.id, archivedId: null, forms: [], busy: false }));
+      set((st) => ({ sessions: [s, ...st.sessions], activeId: s.id, archivedId: null, forms: [], busy: false, skillsAttached: [] }));
       await get().selectSession(s.id);
     } catch (e) {
       set({ busy: false, error: String(e) });
@@ -360,7 +370,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
   selectSession: async (id) => {
     const c = get().client;
     if (!c) return;
-    set({ activeId: id, archivedId: null });
+    set({ activeId: id, archivedId: null, skillsAttached: [] });
     try {
       const msgs = await c.listMessages(id);
       set((st) => ({ messages: { ...st.messages, [id]: msgs }, error: null }));
@@ -397,7 +407,64 @@ export const useSessions = create<SessionsState>((set, get) => ({
     const label = text.trim() ? text.slice(0, 120) : `${files?.length ?? 0} adjunto(s)`;
     useApp.getState().pushActivity('info', 'sesion', `▶ ${label}${files?.length ? ` [${files.map((f) => f.name).join(', ')}]` : ''}`);
     try {
-      await c.sendPrompt(id, text, files?.length ? files : undefined);
+      // Catálogo EXCLUSIVO de skills propias (best-effort: jamás bloquea el chat).
+      // Primer mensaje de cada sesión: preámbulo + catálogo completo id:desc.
+      // Todos los mensajes: extractos de las mencionadas + skills[] validados.
+      let toSend = text;
+      let skillsParam: string[] | undefined;
+      try {
+        const catalog = await getOwnSkillsCatalog();
+        const total = catalog.length;
+        if (total > 0) set({ skillsTotal: total });
+        else if (get().skillsTotal === null) set({ skillsTotal: 0 });
+        const mentioned = catalog.length ? matchSkillIds(text, catalog, SKILLS_MAX_EXCERPTS) : [];
+        const valid = catalog.length ? validateSkillIds(mentioned, catalog) : [];
+        let excerpts = '';
+        let attached: string[] = [];
+        if (valid.length) {
+          const ws = await getSkillsWorkspace();
+          if (ws) {
+            const r = await loadSkillExcerpts(valid, ws, catalog);
+            excerpts = r.block;
+            attached = r.attached.length ? r.attached : valid;
+          } else {
+            attached = valid;
+          }
+        }
+        set({ skillsAttached: attached });
+        if (attached.length) skillsParam = attached;
+        const history = get().messages[id] ?? [];
+        const isFirst = history.length === 0;
+        if (isFirst && total > 0) {
+          toSend = buildFirstMessage(text, buildCatalogText(catalog), total, excerpts);
+        } else if (excerpts) {
+          toSend = buildFollowupMessage(text, excerpts, attached);
+        }
+        if (attached.length || (isFirst && total > 0)) {
+          useApp.getState().pushActivity(
+            'info', 'sesion',
+            `📚 ${total} skills propias activas${attached.length ? ` · adjuntas: ${attached.join(', ')}` : ''}`,
+          );
+        }
+      } catch {
+        /* sin catálogo: el chat sigue en texto plano */
+      }
+      const payloadFiles = files?.length ? files : undefined;
+      try {
+        if (skillsParam?.length) {
+          await c.sendPromptFull(id, { text: toSend, skills: skillsParam, files: payloadFiles });
+        } else {
+          await c.sendPrompt(id, toSend, payloadFiles);
+        }
+      } catch (e) {
+        // Fallback conocido (mismo patrón que el runner del orquestador):
+        // si el servidor rechaza /prompt con skills, reintentar sin skills.
+        if (skillsParam?.length && String(e).includes('/prompt')) {
+          await c.sendPrompt(id, toSend, payloadFiles);
+        } else {
+          throw e;
+        }
+      }
       // El stream llega por SSE; releer tras una ventana para consolidar.
       await new Promise((r) => setTimeout(r, 1500));
       const msgs = await c.listMessages(id);

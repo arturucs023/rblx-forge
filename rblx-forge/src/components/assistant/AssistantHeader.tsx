@@ -11,6 +11,8 @@ export function AssistantHeader() {
   const cwd = useSessions((s) => s.cwd);
   const activeId = useSessions((s) => s.activeId);
   const sessions = useSessions((s) => s.sessions);
+  const skillsTotal = useSessions((s) => s.skillsTotal);
+  const skillsAttached = useSessions((s) => s.skillsAttached);
   const active = sessions.find((s) => s.id === activeId);
   const connected = conn === 'conectado';
 
@@ -30,6 +32,14 @@ export function AssistantHeader() {
           <span className="text-forge-faint">Sin proyecto abierto · {cwd || 'sin directorio'}</span>
         )}
       </div>
+      {skillsTotal !== null && skillsTotal > 0 && (
+        <span
+          className="mono hidden shrink-0 truncate rounded-md border border-forge-border bg-forge-panel2 px-1.5 py-0.5 text-[10px] text-forge-muted md:block"
+          title={`Catálogo exclusivo de skills propias inyectado al iniciar cada chat (${skillsTotal} skills). Solo se usan estas; nunca ajenas.${skillsAttached.length ? ` Adjuntadas en el último envío: ${skillsAttached.join(', ')}` : ''}`}
+        >
+          📚 {skillsTotal} propias{skillsAttached.length ? ` · ${skillsAttached.length} adjunta${skillsAttached.length === 1 ? '' : 's'}` : ''}
+        </span>
+      )}
       {active && (
         <span className="mono hidden shrink-0 truncate text-[10px] text-forge-faint sm:block" title={active.id}>
           {active.title || active.id.slice(0, 8)}

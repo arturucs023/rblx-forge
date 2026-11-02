@@ -36,3 +36,18 @@
   del adjunto (palabra aleatoria verificada); forma de tool parts y tiempos
   `ran/completed` confirmados. Sin Studio: la comprobación visual en la app
   queda pendiente de revisión manual.
+
+## Verificación skills propias + selector + uso GO (2026-11-02)
+
+- `src/lib/chat/skills.ts` (+`skills.test.ts`): catálogo id:desc desde
+  `eval_list_skills` (solo registro propio), preámbulo de exclusividad,
+  matching por id/nombre, validación contra registro, topes
+  (catálogo 35k chars, 3 extractos de 6k con tope 18k). `sendPrompt` inyecta
+  el catálogo en el primer mensaje de cada sesión y adjunta extractos +
+  `skills[]` validados (fallback a texto plano si el servidor rechaza).
+- `vitest run` 14 ficheros / 63 tests OK; `npm run build` (tsc + vite) OK.
+- `GET /api/experimental/usage/limits` verificado 200 contra servidor propio
+  temporal (puerto 28991, sin tocar el 28894): `data:null` sin firmar.
+  UI en Configuración con auto-refresh silencioso cada 5 s.
+- Visual en app (desplegable hacia arriba, acordeón por proveedor, flyout de
+  variantes al hover, pill 📚): pendiente de revisión manual en la app.
