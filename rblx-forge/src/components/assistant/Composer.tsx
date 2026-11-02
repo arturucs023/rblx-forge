@@ -1,7 +1,7 @@
 // Composer: textarea auto-ajustable, Enter envía / Shift+Enter salta línea,
 // adjuntos reales (file://, verificados 200 contra el servidor), selector de
 // modelo, enviar/detener. Sin botones decorativos: todo funciona.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ClipboardEvent } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { ModelSelect } from './ModelSelect';
 import type { ModelValue } from '../ModelPicker';
@@ -43,7 +43,16 @@ export function Composer({
 }) {
   const [files, setFiles] = useState<OutgoingFiles[]>([]);
   const [attachError, setAttachError] = useState<string | null>(null);
+  /** Pegados largos colapsados estilo OpenCode: el draft lleva el marcador
+   *  `[Pasted ~N lines]` y el texto real vive aquí hasta el envío. */
+  const [snippets, setSnippets] = useState<Array<{ marker: string; text: string; expanded: boolean }>>([]);
+  const snipSeq = useRef(0);
   const taRef = useRef<HTMLTextAreaElement>(null);
+
+  // Si el usuario borra el marcador a mano, el chip huérfano desaparece.
+  useEffect(() => {
+    setSnippets((prev) => (prev.length && !prev.some((s) => draft.includes(s.marker)) ? [] : prev.filter((s) => draft.includes(s.marker))));
+  }, [draft]);
 
   // Auto-resize con tope.
   useEffect(() => {
@@ -71,12 +80,46 @@ export function Composer({
 
   const canSend = !disabled && !busy && !streaming && (!!draft.trim() || files.length > 0);
 
+  /** Pegar 5+ líneas colapsa a `[Pasted ~N lines]` (como OpenCode). */
+  const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    if (disabled || busy) return;
+    const clip = e.clipboardData?.getData('text') ?? '';
+    if (!clip) return;
+    const lines = clip.split('\n').length;
+    if (lines <= 4) return; // pegado corto: comportamiento normal
+    e.preventDefault();
+    snipSeq.current += 1;
+    const n = snippets.length + 1;
+    const marker = n === 1 && !draft.includes('[Pasted ~')
+      ? `[Pasted ~${lines} lines]`
+      : `[Pasted ~${lines} lines #${snipSeq.current}]`;
+    setSnippets((prev) => [...prev, { marker, text: clip, expanded: false }]);
+    const el = taRef.current;
+    const before = el ? draft.slice(0, el.selectionStart ?? draft.length) : draft;
+    const after = el ? draft.slice(el.selectionEnd ?? draft.length) : '';
+    const sep = before && !before.endsWith('\n') ? '\n' : '';
+    setDraft(`${before}${sep}${marker}\n${after}`);
+    requestAnimationFrame(() => {
+      const t = taRef.current;
+      if (t) {
+        const pos = (before + sep + marker + '\n').length;
+        t.focus();
+        t.setSelectionRange(pos, pos);
+      }
+    });
+  };
+
   const submit = () => {
     if (!canSend) return;
-    const text = draft.trim();
+    // Expandir marcadores al texto real antes de enviar.
+    let text = draft.trim();
+    for (const s of snippets) {
+      if (text.includes(s.marker)) text = text.split(s.marker).join(s.text);
+    }
     const out = files;
     setDraft('');
     setFiles([]);
+    setSnippets([]);
     onSend(text, out);
   };
 
@@ -92,6 +135,38 @@ export function Composer({
           ))}
         </div>
       )}
+      {snippets.length > 0 && (
+        <div className="mb-1.5 flex flex-col gap-1">
+          {snippets.map((s) => (
+            <div key={s.marker} className="rounded-md border border-forge-border bg-forge-panel px-1.5 py-0.5 text-[11px]">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setSnippets((prev) => prev.map((x) => (x.marker === s.marker ? { ...x, expanded: !x.expanded } : x)))}
+                  title="Ver/ocultar el texto pegado"
+                  className="mono truncate text-forge-accent hover:underline"
+                >
+                  {s.expanded ? '▾' : '▸'} {s.marker}
+                </button>
+                <button
+                  onClick={() => {
+                    setSnippets((prev) => prev.filter((x) => x.marker !== s.marker));
+                    setDraft(draft.split(s.marker).join('').replace(/\n{3,}/g, '\n\n'));
+                  }}
+                  className="ml-auto shrink-0 text-forge-faint hover:text-forge-err"
+                  title="Quitar pegado"
+                >
+                  ×
+                </button>
+              </div>
+              {s.expanded && (
+                <pre className="mono mt-1 max-h-32 overflow-y-auto whitespace-pre-wrap break-words rounded bg-forge-bg p-1.5 text-[11px] text-forge-muted" title={s.marker}>
+                  {s.text.slice(0, 4000)}{s.text.length > 4000 ? '\n…(vista truncada; se envía completo)' : ''}
+                </pre>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       {attachError && <p className="mb-1 text-[11px] text-forge-err">{attachError}</p>}
       <div className="rounded-xl border border-forge-border bg-forge-bg transition-colors focus-within:border-forge-accent-dim">
         <textarea
@@ -99,6 +174,7 @@ export function Composer({
           rows={1}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
+          onPaste={onPaste}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
               e.preventDefault();
