@@ -1,60 +1,60 @@
 ---
 name: roblox-character-controller
-description: Controladores de personaje (aceleración, salto, coyote-time, agua/escalada). Úsala cuando el movimiento se siente flotante, el salto no responde o el input no escala a mando/táctil.
+description: Character controllers (acceleration, jumping, coyote time, water/climbing). Use it when movement feels floaty, jumping feels unresponsive, or input doesn't scale to gamepad/touch.
 ---
 
-# Controladores y Movimiento del Personaje
+# Character Controllers and Movement
 
-## Objetivo
+## Objective
 
-Construir movimiento que se siente bien y es válido en red: aceleración/fricción con peso, salto con buffers (coyote-time + jump buffer), input unificado teclado/mando/táctil y transiciones agua/escalada sin exploits de vuelo.
+Build movement that feels good and is network-valid: acceleration/friction with weight, jump buffers (coyote time + jump buffer), unified keyboard/gamepad/touch input, and water/climbing transitions with no flight exploits.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre el controlador del jugador a pie: parámetros de `Humanoid`, modelo de input, salto, pendientes, agua y escalada básica.
+Covers the on-foot player controller: `Humanoid` parameters, input model, jumping, slopes, water, and basic climbing.
 
-**Qué NO hace:**
+**What it does NOT cover:**
 
-- NO cubre ciclo de vida respawn-safe: lo cubre `roblox-characters` (aquí se configuran `Humanoid` ya gestionados).
-- NO cubre clips de locomoción: lo cubre `roblox-locomotion-animation` (aquí el movimiento que esos clips deben acompañar).
-- NO cubre parkour avanzado (vault/wallrun/slide): lo cubre `roblox-parkour-traversal`.
-- NO cubre vehículos: ver `roblox-land-vehicles`, `roblox-air-vehicles`, `roblox-water-vehicles`.
-- NO cubre NPCs: lo cubre `roblox-npcs`.
-- NO cubre cámaras (solo expone velocidad/dirección para ellas): lo cubre `camera-systems`.
+- Does NOT cover respawn-safe lifecycle: covered by `roblox-characters` (here you configure already-managed `Humanoid`s).
+- Does NOT cover locomotion clips: covered by `roblox-locomotion-animation` (here the movement those clips must accompany).
+- Does NOT cover advanced parkour (vault/wallrun/slide): covered by `roblox-parkour-traversal`.
+- Does NOT cover vehicles: see `roblox-land-vehicles`, `roblox-air-vehicles`, `roblox-water-vehicles`.
+- Does NOT cover NPCs: covered by `roblox-npcs`.
+- Does NOT cover cameras (only exposes speed/direction for them): covered by `camera-systems`.
 
-## Casos de uso
+## Use cases
 
-1. Movimiento "flotante" o "sobre hielo" sin peso.
-2. Salto que no sale al pulsar en el borde (falta coyote-time).
-3. Controles que solo funcionan en PC y rompen en móvil/consola.
-4. Agua donde el jugador se hunde o vuela.
-5. Escalada que permite escalar cualquier pared infinita.
-6. Speedhacks: el servidor acepta cualquier velocidad del cliente.
+1. "Floaty" or "on ice" movement with no weight.
+2. Jumps that don't trigger when pressed at an edge (missing coyote time).
+3. Controls that only work on PC and break on mobile/console.
+4. Water where the player sinks or flies.
+5. Climbing that lets you scale any infinite wall.
+6. Speedhacks: the server accepts any client speed.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Fija la fantasía en números.** Walk, run, aceleración (studs/s²), fricción/deceleración, altura de salto, gravedad efectiva. Ejemplo inicial: walk 12, run 20, salto que supera 4 studs. Todo ajuste posterior parte de aquí.
-2. **Configura el `Humanoid` base.** Velocidades, altura de salto y límites de pendiente en un solo lugar documentado. Nada de números mágicos repartidos en 6 scripts.
-3. **Implementa aceleración, no teleport de velocidad.** La velocidad tiende al objetivo con rampa (acelera en ~0.15–0.25 s, frena en ~0.1–0.2 s). Cambio instantáneo = sin peso; rampa eterna = barro. Mide con cronómetro en pista recta.
-4. **Añade coyote-time + jump buffer.** Coyote: permite saltar hasta ~0.1 s después de salir del borde. Buffer: si pulsa salto ~0.12 s antes de tocar suelo, el salto sale al aterrizar. Ambos son perdón de input, no física nueva.
-5. **Unifica input con `ContextActionService`.** Una acción "Saltar", una "Esprintar", bindeadas a teclado + botones de mando + botones táctiles. Lee intención (`MoveDirection` del `Humanoid` / vector de input), no teclas sueltas. Usa `UserInputService` solo para casos (tipo de dispositivo, toque) que la acción no cubra.
-6. **Trata pendientes y escalones.** Define ángulo máximo caminable; por encima, el jugador resbala o se detiene (nunca escala paredes verticales gratis). Escalones bajos se suben suave; bordes altos requieren salto o parkour (ver `roblox-parkour-traversal`).
-7. **Implementa agua básica.** Dentro de volumen de agua: gravedad reducida, velocidad capada, salto = impulso de nado con cooldown, sin vuelo sostenido. Al salir, restaura parámetros en un solo punto de transición.
-8. **Implementa escalada básica acotada.** Solo superficies marcadas (etiqueta con `CollectionService`), velocidad de escalada fija, sin saltos infinitos encadenados. Toda superficie no marcada = no escalable.
-9. **Valida en servidor.** El servidor conoce posición, velocidad máxima y estado (suelo/agua/escalando); rechaza teleports, velocidades imposibles y "saltos" sin suelo reciente ni coyote. El cliente propone input, el servidor valida desplazamiento.
-10. **Calibra con pruebas ciegas.** Pista con: sprint recto, slalom, salto de precisión a plataforma, borde con coyote, agua y escalera marcada. Si 3 jugadores nuevos completan sin quejarse del control, está listo.
+1. **Lock the fantasy in numbers.** Walk, run, acceleration (studs/s²), friction/deceleration, jump height, effective gravity. Starting example: walk 12, run 20, jumps clearing 4 studs. Every later tweak starts here.
+2. **Configure the base `Humanoid`.** Speeds, jump height, and slope limits in one documented place. No magic numbers scattered across 6 scripts.
+3. **Implement acceleration, not velocity teleport.** Speed approaches target on a ramp (accelerate in ~0.15–0.25 s, brake in ~0.1–0.2 s). Instant change = no weight; eternal ramp = mud. Measure with a stopwatch on a straight track.
+4. **Add coyote time + jump buffer.** Coyote: allows jumping up to ~0.1 s after leaving an edge. Buffer: if jump is pressed ~0.12 s before landing, the jump fires on touchdown. Both are input forgiveness, not new physics.
+5. **Unify input with `ContextActionService`.** One "Jump" action, one "Sprint" action, bound to keyboard + gamepad buttons + touch buttons. Read intent (`Humanoid` `MoveDirection` / input vector), not loose keys. Use `UserInputService` only for what actions don't cover (device type, special touches).
+6. **Handle slopes and steps.** Define the max walkable angle; above it, the player slides or stops (never climbs vertical walls for free). Low steps climb smoothly; tall ledges need a jump or parkour (see `roblox-parkour-traversal`).
+7. **Implement basic water.** Inside a water volume: reduced gravity, capped speed, jump = swim stroke with cooldown, no sustained flight. On exit, restore parameters at a single transition point.
+8. **Implement bounded basic climbing.** Only marked surfaces (tagged with `CollectionService`), fixed climb speed, no chained infinite jumps. Every unmarked surface = not climbable.
+9. **Validate on the server.** The server knows position, max speed, and state (ground/air/swimming/climbing); it rejects teleports, impossible speeds, and "jumps" with no recent ground or coyote. The client proposes input, the server validates displacement.
+10. **Calibrate with blind tests.** Track with: straight sprint, slalom, precision jump to a platform, coyote edge, water, and marked ladder. If 3 new players complete it without complaining about controls, it ships.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- **`Humanoid` como contrato:** expone velocidad, dirección de movimiento (`MoveDirection`), estado (suelo/aire/nadando) y salto. El controlador escribe intención; el `Humanoid` resuelve; la animación lee el resultado.
-- **`HumanoidRootPart`:** pivote de desplazamiento y referencia de orientación. Gira el personaje hacia la dirección de movimiento con velocidad de giro limitada para evitar torsión (coordina con locomoción).
-- **Aceleración vs fricción:** acelerar = acercar velocidad actual a la deseada con tasa; fricción = acercar a cero cuando no hay input. Tasas distintas para suelo (altas) y aire (bajas: control aéreo parcial, no total).
-- **Coyote-time y buffer:** temporizadores de ~0.1 s que perdonan el input humano. No cambian la física, cambian la ventana de aceptación.
-- **`ContextActionService`:** capa de acciones (Saltar/Esprintar/Interactuar) con bindings por dispositivo. `UserInputService` complementa para detectar contexto (móvil vs PC) y toques especiales.
-- **`CollectionService`:** etiquetas para "escalable", "agua", "hielo", "no-escalable". El código pregunta por etiqueta, no por nombre de parte (robusto a renombrados).
-- **Agua/escalada y exploits:** cada transición de estado (suelo→agua→escalando) es un punto de validación de servidor; un cliente que declara "escalando" en pared no marcada = rechazo.
+- **`Humanoid` as contract:** exposes speed, move direction (`MoveDirection`), state (ground/air/swimming), and jump. The controller writes intent; the `Humanoid` resolves; animation reads the result.
+- **`HumanoidRootPart`:** movement pivot and facing reference. Rotate the character toward move direction with limited turn speed to avoid twisting (coordinate with locomotion).
+- **Acceleration vs friction:** accelerating = moving current speed toward target at a rate; friction = moving toward zero with no input. Different rates for ground (high) and air (low: partial air control, never total).
+- **Coyote time and buffer:** ~0.1 s timers that forgive human input. They don't change physics, they change the acceptance window.
+- **`ContextActionService`:** action layer (Jump/Sprint/Interact) with per-device bindings. `UserInputService` complements it for detecting context (mobile vs PC) and special touches.
+- **`CollectionService`:** tags for "climbable", "water", "ice", "non-climbable". Code asks by tag, never by part name (robust to renames).
+- **Water/climbing exploits:** every state transition (ground→water→climbing) is a server validation point; a client declaring "climbing" on an unmarked wall = rejection.
 
-Ejemplo ilustrativo (intención unificada, no código final):
+Illustrative example (unified intent, not final code):
 
 ```luau
 -- Ilustrativo: una acción "Esprintar" válida en PC, mando y táctil.
@@ -66,45 +66,45 @@ ContextActionService:BindAction("Esprintar", function(_, estado, _)
 end, Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonL3)
 ```
 
-## Buenas prácticas
+## Best practices
 
-- El cliente propone input, el servidor valida desplazamiento: velocidad, posición y transiciones de estado se comprueban en servidor con tolerancia de lag; lo imposible se corrige.
-- Un solo lugar para números de movimiento; ninguna constante duplicada.
-- Perdón de input (coyote + buffer) siempre; control aéreo parcial, nunca total ni nulo.
-- Etiquetas (`CollectionService`) para superficies especiales; jamás listas de nombres hardcodeados.
-- Transiciones agua/escalada atómicas: al entrar/salir se fijan todos los parámetros a la vez, sin estados mixtos.
-- Accesibilidad: permite re-bindear teclas y ofrece alternativa táctil a cada acción.
+- The client proposes input, the server validates displacement: speed, position, and state transitions are checked on the server with lag tolerance; the impossible gets corrected.
+- Single place for movement numbers; no duplicated constant.
+- Input forgiveness (coyote + buffer) always; partial air control, never total nor zero.
+- Tags (`CollectionService`) for special surfaces; never hardcoded name lists.
+- Water/climbing transitions are atomic: on enter/exit all parameters are set at once, no mixed states.
+- Accessibility: allow key rebinding and offer a touch alternative per action.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Velocidad instantánea:** sin rampa el personaje se siente poseído. Siempre acelera/decelera.
-2. **Sin coyote ni buffer:** el salto "falla" en bordes y frustra. Ambos con ~0.1 s cambian todo.
-3. **Input por teclas sueltas:** WASD hardcodeado que ignora mando/táctil. Usa acciones.
-4. **Control aéreo total:** cambiar de dirección 180° en el aire rompe credibilidad y permite exploits. Control parcial.
-5. **Escalada sin etiquetas:** cualquier pared es escalera y el parkour pierde sentido. Solo superficies marcadas.
-6. **Agua = vuelo:** nado sin coste vertical que permite cruzar el mapa por arriba. Capa velocidad vertical y exige salir a respirar según diseño.
-7. **Servidor que confía en el cliente:** aceptar posición/velocidad sin comprobar = speedhack y vuelo libres. Valida siempre.
+1. **Instant speed:** with no ramp the character feels possessed. Always accelerate/decelerate.
+2. **No coyote or buffer:** jumps "fail" at edges and frustrate. Both at ~0.1 s change everything.
+3. **Loose-key input:** hardcoded WASD ignoring gamepad/touch. Use actions.
+4. **Total air control:** reversing 180° mid-air breaks believability and enables exploits. Partial control.
+5. **Untagged climbing:** any wall is a ladder and parkour loses meaning. Marked surfaces only.
+6. **Water = flight:** cost-free vertical swimming that crosses the map overhead. Cap vertical speed and require surfacing to breathe per design.
+7. **Server trusting the client:** accepting position/speed unchecked = free speedhack and flight. Always validate.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Constantes en un solo lugar; walk/run/salto documentados y medidos en pista.
-- [ ] Coyote-time (~0.1 s) y jump buffer (~0.12 s) implementados y verificados en borde.
-- [ ] Una acción por intención con bindings PC/mando/táctil probados en 2 dispositivos.
-- [ ] Pendientes: ángulo máximo respetado, sin escalada gratuita de paredes.
-- [ ] Agua y escalada con transiciones atómicas y superficies etiquetadas.
-- [ ] Validación de servidor: teleports y velocidades imposibles rechazados en prueba de exploit.
-- [ ] 3 jugadores nuevos completan la pista de calibración sin quejas de control.
+- [ ] Constants in one place; walk/run/jump documented and measured on track.
+- [ ] Coyote time (~0.1 s) and jump buffer (~0.12 s) implemented and verified at an edge.
+- [ ] One action per intent with PC/gamepad/touch bindings tested on 2 devices.
+- [ ] Slopes: max angle respected, no free wall climbing.
+- [ ] Water and climbing with atomic transitions and tagged surfaces.
+- [ ] Server validation: teleports and impossible speeds rejected in exploit test.
+- [ ] 3 new players complete the calibration track with no control complaints.
 
-## Herramientas
+## Tools
 
-- Pista de calibración (recta, slalom, plataformas de precisión, borde, agua, escalera marcada).
-- Tabla de constantes de movimiento versionada.
-- Simulador de latencia + cliente de prueba de exploits (velocidad/teleport).
-- Mapa de acciones→bindings por dispositivo.
+- Calibration track (straight, slalom, precision platforms, edge, water, marked ladder).
+- Versioned movement-constants table.
+- Latency simulator + exploit-test client (speed/teleport).
+- Action→binding map per device.
 
-## Limitaciones
+## Limitations
 
-- No cubre parkour avanzado (ver `roblox-parkour-traversal`) ni vehículos.
-- No cubre predicción/rollback de red en detalle; solo validación de servidor.
-- No sustituye pruebas en dispositivos reales de gama baja.
-- APIs fuera de la lista estable: "(verificar en create.roblox.com/docs)".
+- Does not cover advanced parkour (see `roblox-parkour-traversal`) or vehicles.
+- Does not cover network prediction/rollback in detail; only server validation.
+- Does not replace testing on real low-end devices.
+- APIs outside the stable list: "(check create.roblox.com/docs)".

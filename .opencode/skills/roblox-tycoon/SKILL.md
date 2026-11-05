@@ -1,89 +1,89 @@
 ---
 name: roblox-tycoon
-description: Tycoons con droppers, conveyors, rebirths y plots guardados. Úsala cuando necesites diseñar producción, upgrades, PvP opcional y guardado de base.
+description: Tycoons with droppers, conveyors, rebirths, and saved plots. Use it when you need to design production, upgrades, optional PvP, and base saving.
 ---
 
 # Tycoons (Droppers, Conveyors, Plots)
 
-## Objetivo
-Diseñar un tycoon completo: comprar droppers, ver fluir la producción, ampliar plot, prestigiar y guardar todo sin rupturas ni lag.
+## Objective
+Design a complete tycoon: buy droppers, watch production flow, expand the plot, prestige, and save everything without breakage or lag.
 
-## Alcance y límites
-Versión profunda de género con bucles, progresión, mecánicas, UX, rendimiento y pitfalls.
-Diferenciación declarada: `roblox-genre-patterns` es catálogo de 1 línea; esta skill es la versión profunda de tycoon. `roblox-game-systems` es recetario fino; aquí se compone a escala. NO repite: construcción/colocación fina se compone con `roblox-building-placement`, economía con `roblox-economy-balancing`, quests/tutorial con `roblox-quest-progression-systems`, robo/PvP validado con `roblox-combat-systems` y social con `roblox-social-systems`.
+## Scope and limits
+Deep genre version with loops, progression, mechanics, UX, performance, and pitfalls.
+Declared differentiation: `roblox-genre-patterns` is a 1-line catalog; this skill is the deep tycoon version. `roblox-game-systems` is a thin recipe book; here it is composed at scale. Does NOT repeat: fine construction/placement composes with `roblox-building-placement`, economy with `roblox-economy-balancing`, quests/tutorial with `roblox-quest-progression-systems`, validated robbery/PvP with `roblox-combat-systems`, and social with `roblox-social-systems`.
 
-## Casos de uso
-- Tycoon clásico de fábrica con conveyors.
-- Tycoon de restaurante con mesas y cocineros.
-- Tycoon militar con muros y PvP opcional.
-- Tycoon cooperativo por equipos.
-- Tycoon de evento con 10 plots y final.
+## Use cases
+- Classic factory tycoon with conveyors.
+- Restaurant tycoon with tables and cooks.
+- Military tycoon with walls and optional PvP.
+- Cooperative team tycoon.
+- Event tycoon with 10 plots and a finale.
 
-## Bucle de juego o sistema (diseño)
-- Bucle 60 s: comprar dropper/upgrader → ver +$/s subir → comprar siguiente botón.
-- Bucle sesión: completar piso/zona, desbloquear conveyor 2, comprar defensas.
-- Bucle largo: rebirth (todo resetea, +15% producción, skin exclusiva) cada 3–6 h.
-Producción: dropper T1 1 cubo/2 s × $5, T2 1/s × $12, upgrader ×2–×3 en serie (cap ×20); ingreso objetivo $2k/min a 20 min, $50k/min a 2 h; rebirth requiere $1M + 15 droppers; si el tiempo a siguiente compra supera 8 min sin AFK útil, abarata 20%.
+## Game or system loop (design)
+- 60s loop: buy dropper/upgrader → watch +$/s rise → buy next button.
+- Session loop: complete floor/zone, unlock conveyor 2, buy defenses.
+- Long loop: rebirth (everything resets, +15% production, exclusive skin) every 3–6h.
+Production: T1 dropper 1 cube/2s × $5, T2 1/s × $12, upgrader ×2–×3 in series (cap ×20); target income $2k/min at 20 min, $50k/min at 2h; rebirth requires $1M + 15 droppers; if time-to-next-purchase exceeds 8 min without useful AFK, cheapen by 20%.
 
-## Proceso paso a paso
-1. Modela plot fijo con slots numerados y botones comprables (`ProximityPrompt` o pad táctil).
-2. Droppers spawnean cubos en servidor a tasa fija; upgraders multiplican `Attributes Valor`; collector suma al comprar contacto.
-3. Compra vía `RemoteFunction BuyButton(plotId, buttonId)`: valida dueño, fondos, prerrequisito y orden.
-4. Desbloqueo por fases: fase 1 visible, fase 2 tras comprar X, muros PvP opcionales con toggle.
-5. Rebirth: valida requisitos, resetea plot a plantilla, otorga token + mult, guarda en slot separado.
-6. Amigos: permiso de construir/recoger con 3 roles (visitante/ayudante/co-dueño) y log.
-7. Tutorial guiado de 5 compras (flecha + highlight) antes de modo libre.
-8. Limpieza: cubos con vida 20 s, pool fijo (ej. 60 cubos/plot), sin colisión compleja.
+## Step-by-step process
+1. Model a fixed plot with numbered slots and purchasable buttons (`ProximityPrompt` or touch pad).
+2. Droppers spawn cubes on the server at a fixed rate; upgraders multiply `Attributes` value; collector grants on touch contact.
+3. Purchase via `RemoteFunction BuyButton(plotId, buttonId)`: validates owner, funds, prerequisite, and order.
+4. Phase unlocks: phase 1 visible, phase 2 after buying X, optional PvP walls with toggle.
+5. Rebirth: validates requirements, resets plot to template, grants token + mult, saves in a separate slot.
+6. Friends: build/collect permission with 3 roles (visitor/helper/co-owner) and a log.
+7. Guided 5-purchase tutorial (arrow + highlight) before free mode.
+8. Cleanup: cubes with 20s lifetime, fixed pool (e.g. 60 cubes/plot), no complex collision.
 
-## Conocimientos técnicos
-### Qué valida el servidor
-- Dueño/permiso del plot y botón existente no comprado.
-- Fondos suficientes; precio desde catálogo servidor.
-- Rebirth con requisitos exactos; cooldown 60 s anti-doble.
-- Recogida de dinero solo por dueño/rol permitido en zona collector.
-### Persistencia
-- Guarda `botonesComprados[]`, dinero, rebirths, skin con `DataStoreService` (`tycoon_v2`); no guardes cubos sueltos.
-- Carga reconstruye por lotes (10 botones/frame) para evitar freeze de 150 piezas.
-- Autosave 120 s + `BindToClose`; migración de layout con mapa `oldId→newId`.
-### Errores/desconexiones
-- Compra en vuelo al irse: si se cobró, el botón queda comprado al rejoin.
-- Plot corrupto: carga botones válidos, reembolsa 50% de los inválidos + aviso.
-- Duplicación por doble clic: idempotencia con `buttonId` + mutex por plot.
+## Technical knowledge
+### What the server validates
+- Plot owner/permission and button existing and not yet bought.
+- Sufficient funds; price from the server catalog.
+- Rebirth with exact requirements; 60s anti-double cooldown.
+- Money collection only by owner/allowed role inside the collector zone.
+### Persistence
+- Save `purchasedButtons[]`, money, rebirths, skin with `DataStoreService` (`tycoon_v2`); never save loose cubes.
+- Loading rebuilds in batches (10 buttons/frame) to avoid a 150-part freeze.
+- Autosave every 120s + `BindToClose`; layout migration with an `oldId→newId` map.
+### Errors/disconnections
+- Purchase in flight when leaving: if charged, the button stays bought on rejoin.
+- Corrupt plot: load valid buttons, refund 50% of invalid ones + notice.
+- Double-click duplication: idempotency with `buttonId` + per-plot mutex.
 ### Anti-exploit
-- Cubos con valor solo en servidor; tocar cubo no da dinero desde cliente.
-- Anti-teleport a collector ajeno: valida dueño antes de acreditar.
-- Rate-limit compras 6/s; robo de caja con hold validado si hay PvP.
-- Detecta $/min ×5 sobre curva y congela cobros para revisión.
+- Cube value server-side only; touching a cube never grants money from the client.
+- Anti-teleport to someone else's collector: validate owner before granting.
+- Rate-limit purchases 6/s; robbery of cash box with validated hold if PvP.
+- Detect $/min ×5 over curve and freeze payouts for review.
 
-## Buenas prácticas
-- Botones con precio, efecto (+$/s) y prerrequisito visibles; sin sorpresas.
-- Conveyors cortos y rectos; evita curvas que atascan cubos.
-- Sonido de compra + salto de $/s visible; cada compra debe sentirse.
-- Plots idénticos en tamaño/forma para fairness; decoración libre aparte.
-- PvP opt-in por toggle, nunca por defecto en tycoon chill.
+## Best practices
+- Buttons with price, effect (+$/s), and prerequisite visible; no surprises.
+- Short, straight conveyors; avoid curves that jam cubes.
+- Purchase sound + visible $/s jump; every purchase should feel good.
+- Identical plots in size/shape for fairness; free-form decoration aside.
+- PvP opt-in via toggle, never by default in a chill tycoon.
 
-## Errores frecuentes
-1. Cubos con `Touched` cliente que acredita → dinero infinito; acreditar solo en servidor.
-2. 200 cubos con física → lag; pool + `CanCollide=false` + vida corta.
-3. Guardar cada compra → throttling; batch 120 s + eventos clave.
-4. Rebirth sin aviso → rage; confirmación con lo que se pierde y lo que se gana.
-5. Plots gratis sin límite → griefing; 1 plot/jugador + timeout AFK 20 min.
+## Common mistakes
+1. Cubes with client-side `Touched` granting → infinite money; grant on server only.
+2. 200 cubes with physics → lag; pool + `CanCollide=false` + short lifetime.
+3. Saving every purchase → throttling; batch every 120s + key events.
+4. Rebirth without warning → rage; confirmation with what is lost and gained.
+5. Free plots without limits → griefing; 1 plot/player + 20-min AFK timeout.
 
-## Criterios de calidad y terminado
-- [ ] Plot completo (40 botones) carga en <3.5 s en dispositivo medio.
-- [ ] Doble compra del mismo botón cobra 1 vez.
-- [ ] $/min medido coincide ±10% con diseño en 3 puntos (20 min, 1 h, 2 h).
-- [ ] Exploit de collector ajeno entrega $0 en 10 intentos.
-- [ ] Rebirth resetea y otorga mult exacto con auditoría.
-- [ ] 12 plots activos ≥45 FPS.
+## Quality and done criteria
+- [ ] Full plot (40 buttons) loads in <3.5s on a mid-range device.
+- [ ] Double-purchasing the same button charges once.
+- [ ] Measured $/min matches design ±10% at 3 points (20 min, 1h, 2h).
+- [ ] Someone else's collector exploit yields $0 in 10 attempts.
+- [ ] Rebirth resets and grants exact mult with audit.
+- [ ] 12 active plots keep ≥45 FPS.
 
-## Herramientas
-Servicios/clases: `RemoteEvent`, `RemoteFunction`, `Players`, `Attributes`, `CollectionService`, `ProximityPrompt`, `DataStoreService`, `Teams` (tycoon por equipos). Componer con `roblox-building-placement` y `roblox-economy-balancing`. Verificar en create.roblox.com/docs.
+## Tools
+Services/classes: `RemoteEvent`, `RemoteFunction`, `Players`, `Attributes`, `CollectionService`, `ProximityPrompt`, `DataStoreService`, `Teams` (team tycoon). Compose with `roblox-building-placement` and `roblox-economy-balancing`. Verify at create.roblox.com/docs.
 
-## Limitaciones
-- No cubre conveyors físicos complejos con atascos realistas al detalle.
-- No balancea economía cross-tycoon; componer con economía.
-- Editor libre de base queda fuera; aquí plots con slots.
+## Limitations
+- Does not cover complex physical conveyors with realistic jams in detail.
+- Does not balance cross-tycoon economy; compose with economy.
+- Free-form base editor is out of scope; plots with slots here.
 
 ```luau
 -- Ilustrativo: compra idempotente de botón.

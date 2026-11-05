@@ -1,99 +1,99 @@
 ---
 name: roblox-terrain-sculpting
-description: Esculpe terreno creíble con biomas, ríos y montañas por chunks. Úsala cuando necesites Terrain, transiciones de bioma, mapas extensos o relieve jugable.
+description: Sculpts believable terrain with biomes, rivers, and mountains in chunks. Use it when you need Terrain, biome transitions, large maps, or playable relief.
 ---
 
-# Escultura de terreno en Roblox
+# Terrain sculpting in Roblox
 
-## Objetivo
+## Objective
 
-Construir relieve jugable y legible: montañas que se pueden subir, ríos que se pueden cruzar, biomas con transiciones creíbles y mapas extensos divididos en chunks con coste controlado.
+Build playable, legible relief: mountains you can climb, rivers you can cross, biomes with believable transitions, and large maps split into chunks with controlled cost.
 
-## Alcance y límites
+## Scope and limits
 
-Hace: planificación de relieve, esculpido con editor de Terrain, biomas y transiciones, ríos/lagos/montañas, caminos y pendientes jugables, división en chunks para mapas extensos.
+Does: relief planning, sculpting with the Terrain editor, biomes and transitions, rivers/lakes/mountains, playable paths and slopes, splitting large maps into chunks.
 
-NO hace:
+Does NOT do:
 
-- Edificios sobre el terreno → `roblox-exterior-architecture`.
-- Ciudades y zonificación → `roblox-city-settlements`.
-- Vegetación y paisajismo → `roblox-vegetation-landscaping`.
-- Paleta de materiales global → `roblox-materials-surfaces`.
-- Atmósfera, niebla y clima → `roblox-lighting-atmosphere`.
-- Efectos ambientales (hojas, polvo) → `roblox-ambient-effects`.
+- Buildings on top of terrain → `roblox-exterior-architecture`.
+- Cities and zoning → `roblox-city-settlements`.
+- Vegetation and landscaping → `roblox-vegetation-landscaping`.
+- Global material palette → `roblox-materials-surfaces`.
+- Atmosphere, fog, and weather → `roblox-lighting-atmosphere`.
+- Ambient effects (leaves, dust) → `roblox-ambient-effects`.
 
-Diferenciación declarada: `roblox-world-building` (instalada) es generalista y fina (154 líneas sin auxiliares); esta skill es su versión profunda por especialidad (solo terreno). `roblox-visual-design` y `roblox-art-direction` dirigen (aprueban biomas y paleta); esta skill ejecuta (esculpe y transiciona).
+Declared differentiation: `roblox-world-building` (installed) is a generalist and thin (154 lines with no auxiliaries); this skill is its deep specialty version (terrain only). `roblox-visual-design` and `roblox-art-direction` direct (they approve biomes and palette); this skill executes (sculpts and blends).
 
-## Casos de uso
+## Use cases
 
-1. Isla inicial con playa, colina y río cruzable.
-2. Valle con 3 biomas (pradera/bosque/roca) y transiciones suaves.
-3. Cordillera de fondo que cierra el mapa sin coste jugable.
-4. Mapa extenso 800+ studs dividido en chunks con LOD visual.
-5. Terreno existente impracticable (pendientes imposibles, agua estancada).
+1. Starter island with beach, hill, and crossable river.
+2. Valley with 3 biomes (meadow/forest/rock) and smooth transitions.
+3. Background mountain range that closes the map with no gameplay cost.
+4. Large 800+ stud map split into chunks with visual LOD.
+5. Existing unplayable terrain (impossible slopes, stranded water).
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Dibuja mapa de alturas en 2D.** Bosqueja en papel o imagen: agua (azul), llano (verde), colina (amarillo), montaña (marrón). Fija punto más alto y más bajo antes de tocar el editor.
-2. **Bloquea masas con pincel grande.** Tamaño punto de partida grande (ej. 1/3 del mapa), fuerza baja. Solo 3 niveles: agua, llano, alto. Verifica: captura cenital legible en 3 manchas.
-3. **Pinta biomas en manchas, no en píxeles.** Cada bioma = elipse de 60+ studs con material Terrain dominante + 1 secundario. Regla: ningún cambio de material en franjas <10 studs (evita ruido).
-4. **Crea transiciones con banda intermedia.** Entre roca y hierba, banda de tierra/grava punto de partida 8–15 studs. Pinta con opacidad baja y 2–3 pasadas; verifica a ras de suelo, no solo cenital.
-5. **Esculpe ríos de arriba abajo.** Cauce punto de partida 6–10 studs ancho, profundidad 3–5 bajo la orilla, pendiente continua sin escalones. Test: recorre el río andando; si hay saltos, suaviza.
-6. **Montañas por capas.** Base ancha → hombros → cima. Pendiente jugable punto de partida ≤45° en rutas marcadas; pared >60° solo como fondo no escalable con barrera visual (rocas, niebla).
-7. **Caminos y pendientes jugables.** Camino punto de partida 6–8 studs, pendiente que el avatar sube sin saltar (prueba con avatar base, sin gear). Añade zigzag donde la pendiente falle.
-8. **Agua cerrada y legible.** Lagos con orilla completa (sin fugas visuales), profundidad legible por color. Verifica: el jugador distingue vadeable (<3 studs) de profundo a simple vista.
-9. **Divide mapa extenso en chunks.** Cuadrícula punto de partida 200×200 studs por chunk/carpeta (`CHUNK_A1`). Bordes con solape visual (colina o bosque) para ocultar cortes. Prueba cargar por chunks.
-10. **QA de recorrido y coste.** Corre, salta y nada 10 min; registra atascos, caídas y zonas feas. Mide tamaño de Terrain y reduce detalle en fondo no jugable primero.
+1. **Draw a 2D height map.** Sketch on paper or an image: water (blue), flat (green), hill (yellow), mountain (brown). Lock the highest and lowest points before touching the editor.
+2. **Block out masses with a large brush.** Starting-point size large (e.g. 1/3 of the map), low strength. Only 3 levels: water, flat, high. Check: top-down capture legible in 3 blobs.
+3. **Paint biomes in blobs, not pixels.** Each biome = an ellipse of 60+ studs with a dominant Terrain material + 1 secondary. Rule: no material change in strips <10 studs (avoids noise).
+4. **Create transitions with an intermediate band.** Between rock and grass, a dirt/gravel band with a starting point of 8–15 studs. Paint with low opacity and 2–3 passes; verify at ground level, not just top-down.
+5. **Sculpt rivers from top to bottom.** Channel with a starting point of 6–10 studs wide, 3–5 deep below the bank, continuous slope with no steps. Test: walk the river; if there are jumps, smooth them.
+6. **Mountains in layers.** Wide base → shoulders → summit. Playable slope with a starting point of ≤45° on marked routes; walls >60° only as non-climbable backdrop with a visual barrier (rocks, fog).
+7. **Playable paths and slopes.** Path with a starting point of 6–8 studs, a slope the avatar climbs without jumping (test with a base avatar, no gear). Add switchbacks where the slope fails.
+8. **Enclosed, legible water.** Lakes with a full shoreline (no visual leaks), depth legible by color. Verify: the player can tell wadeable (<3 studs) from deep at a glance.
+9. **Split large maps into chunks.** Grid with a starting point of 200×200 studs per chunk/folder (`CHUNK_A1`). Edges with visual overlap (hill or forest) to hide seams. Test loading chunk by chunk.
+10. **Traversal and cost QA.** Run, jump, and swim for 10 min; log snags, falls, and ugly spots. Measure Terrain size and reduce detail in non-playable backdrop first.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Terrain editor: pinceles de esculpir, suavizar, pintar y agua. Trabaja siempre de grande a pequeño y de suave a detalle; el detalle prematuro se pierde al suavizar.
-- Materiales de Terrain: paleta limitada del motor; elige 3–5 y repite (coordinar con `roblox-materials-surfaces`). Menos materiales = transiciones más limpias.
-- Pendientes: el avatar sube pendientes moderadas; por encima de ~45° necesita saltos o zigzag (punto de partida, verificar en create.roblox.com/docs si dudas).
-- Agua de Terrain: volumen con nivel; evita láminas finas sobre vacío (se ven fugas). Orilla con banda de arena/grava para lectura.
-- Chunks: división lógica (carpetas + solapes visuales), no física del motor salvo streaming; documenta qué chunk contiene cada bioma.
-- Colisiones: el Terrain colisiona por defecto; añade Parts invisibles solo en bordes y cimas-fondo para bloquear salidas.
-- Rendimiento: el detalle fino en todo el mapa cuesta; concentra resolución visual en 150 studs alrededor de rutas.
+- Terrain editor: sculpt, smooth, paint, and water brushes. Always work from large to small and from soft to detailed; premature detail is lost when smoothing.
+- Terrain materials: limited engine palette; pick 3–5 and repeat (coordinate with `roblox-materials-surfaces`). Fewer materials = cleaner transitions.
+- Slopes: the avatar climbs moderate slopes; above ~45° it needs jumps or switchbacks (starting point, verify at create.roblox.com/docs if in doubt).
+- Terrain water: a volume with a level; avoid thin sheets over void (leaks show through). Banks with a sand/gravel band for readability.
+- Chunks: logical division (folders + visual overlaps), not an engine-physics feature except via streaming; document which chunk holds each biome.
+- Collisions: Terrain collides by default; add invisible Parts only on edges and backdrop summits to block exits.
+- Performance: fine detail everywhere costs; concentrate visual resolution within 150 studs of routes.
 
-## Buenas prácticas
+## Best practices
 
-- Guarda una copia del terreno antes de cada fase (nombre con fecha): el esculpido no tiene deshacer infinito fiable.
-- Niebla y fondo montañoso ocultan el borde del mapa mejor que un muro.
-- Repite 3–4 formaciones (colina tipo, orilla tipo) en vez de esculpir 20 únicas.
-- Pinta siempre con referencia de día neutro (ClockTime punto de partida 14, no verdad); de noche todo parece otro bioma.
-- Documenta materiales por bioma en una tabla visible para quien añada vegetación después.
+- Back up the terrain before each phase (dated name): sculpting has no reliable infinite undo.
+- Fog and a mountainous backdrop hide the map edge better than a wall.
+- Repeat 3–4 formations (hill type, bank type) instead of sculpting 20 unique ones.
+- Always paint against a neutral daytime reference (starting-point ClockTime 14, not gospel); at night everything looks like a different biome.
+- Document materials per biome in a visible table for whoever plants vegetation later.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Espagueti de materiales.** 8 materiales mezclados en 30 studs. Corrección: 2 por bioma + banda intermedia.
-2. **Río con escalones.** Agua en terrazas inconexas. Corrección: pendiente continua de arriba abajo.
-3. **Montaña-escalera.** Terrazas de 90° imposibles. Corrección: suavizar + ruta en zigzag.
-4. **Playa sin orilla.** Agua cortada contra hierba. Corrección: banda de arena 6–10 studs.
-5. **Mapa de un chunk.** 800 studs en una pieza inmanejable. Corrección: cuadrícula 200×200.
-6. **Fondo jugable.** El jugador sube a la montaña-fondo y ve el vacío. Corrección: barrera de rocas + niebla.
-7. **Detalle prematuro.** Textura fina antes de masas. Corrección: volver a pincel grande y re-bloquear.
+1. **Material spaghetti.** 8 materials mixed across 30 studs. Fix: 2 per biome + intermediate band.
+2. **Stepped river.** Water in disconnected terraces. Fix: continuous slope from top to bottom.
+3. **Staircase mountain.** Impossible 90° terraces. Fix: smooth + switchback route.
+4. **Beach with no shoreline.** Water cut hard against grass. Fix: 6–10 stud sand band.
+5. **Single-chunk map.** 800 studs in one unmanageable piece. Fix: 200×200 grid.
+6. **Playable backdrop.** The player climbs the backdrop mountain and sees the void. Fix: rock barrier + fog.
+7. **Premature detail.** Fine texture before masses. Fix: go back to a large brush and re-block.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Mapa de alturas previo archivado como referencia.
-- [ ] 3 manchas legibles en captura cenital (agua/llano/alto).
-- [ ] Transiciones con banda 8–15 studs, sin franjas <10 studs.
-- [ ] Río recorrible sin saltos; vadeable vs profundo legible.
-- [ ] Rutas marcadas subibles sin gear (vídeo de prueba).
-- [ ] Chunks 200×200 nombrados con solapes que ocultan cortes.
-- [ ] Copia de seguridad por fase guardada.
-- [ ] Recorrido 10 min sin atascos ni caídas injustas.
+- [ ] Prior height map archived as reference.
+- [ ] 3 blobs legible in top-down capture (water/flat/high).
+- [ ] Transitions with an 8–15 stud band, no strips <10 studs.
+- [ ] River walkable with no jumps; wadeable vs deep legible.
+- [ ] Marked routes climbable with no gear (test video).
+- [ ] Named 200×200 chunks with overlaps hiding seams.
+- [ ] Backup saved per phase.
+- [ ] 10-min traversal with no snags or unfair falls.
 
-## Herramientas
+## Tools
 
-- Terrain y su editor (esculpir/suavizar/pintar/agua) como herramienta principal.
-- Parts invisibles para bloqueos de borde y cima-fondo.
-- Lighting con ClockTime diurno neutro para pintar (detalles en `roblox-lighting-day-night`).
-- Atmosphere/niebla suave para cerrar horizonte (clima en `roblox-lighting-atmosphere`).
+- Terrain and its editor (sculpt/smooth/paint/water) as the primary tool.
+- Invisible Parts for edge and backdrop-summit blockers.
+- Lighting with neutral daytime ClockTime for painting (details in `roblox-lighting-day-night`).
+- Atmosphere/soft fog to close the horizon (weather in `roblox-lighting-atmosphere`).
 
-## Limitaciones
+## Limitations
 
-- No cubre vegetación, agua gameplay (daño, corrientes) ni scripting de biomas.
-- Medidas de pincel, chunks y pendientes son puntos de partida, no verdad.
-- Si dudas de un límite del motor (tamaño, resolución), escribe "(verificar en create.roblox.com/docs)".
-- Distingue referencia visual (foto de paisaje) de asset importable: no afirmes que un heightmap o pack existe sin crearlo o localizarlo.
+- Does not cover vegetation, water gameplay (damage, currents), or biome scripting.
+- Brush, chunk, and slope measurements are starting points, not gospel.
+- If you doubt an engine limit (size, resolution), write "(verify at create.roblox.com/docs)".
+- Distinguish a visual reference (landscape photo) from an importable asset: do not claim a heightmap or pack exists without creating or locating it.

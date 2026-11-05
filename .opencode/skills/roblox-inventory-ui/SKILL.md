@@ -1,49 +1,49 @@
 ---
-name: Inventario y Equipamiento Roblox
-description: Grids de inventario, categorías, equipar y tooltips. Úsala cuando crees mochila, equipamiento, drag/click para equipar o sincronización visible con guardado.
+name: Roblox Inventory and Equipment
+description: Roblox inventory and equipment grids, categories, equip, and tooltips. Use it when building a backpack, equipment, drag/click to equip, or visible sync with saving.
 ---
 
-# Inventario y Equipamiento Roblox
+# Roblox Inventory and Equipment
 
-## Objetivo
+## Objective
 
-Dar al jugador control total sobre sus objetos: ver qué tiene, comparar, equipar/usar/tirar sin errores y entender qué está equipado de un vistazo. El inventario debe ser rápido (equipar en 2 clics), legible con 100+ objetos y honesto sobre lo que está guardado en servidor.
+Give the player full control over their items: see what they have, compare, equip/use/drop without errors, and understand what is equipped at a glance. The inventory must be fast (equip in 2 clicks), readable with 100+ items, and honest about what is saved on the server.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre: grid de slots, categorías/filtros, equipar por clic o arrastre, tooltips de detalle, estados (equipado, nuevo, bloqueado), y reflejo en UI del guardado con datastore.
+Covers: slot grid, categories/filters, click or drag equip, detail tooltips, states (equipped, new, locked), and UI reflection of datastore saving.
 
-NO hace:
+Does NOT do:
 
-- Mecánica genérica responsiva: lo cubren `roblox-ui` y `roblox-user-interfaces`.
-- Diseño UX previo: lo cubre `roblox-game-ux`; esta skill implementa.
-- Tienda y compra de objetos: lo cubre `roblox-shop-ui`.
-- Diario de misiones y recompensas: lo cubre `roblox-quest-journal-ui`.
-- Mascotas y vehículos como sistemas: lo cubren `roblox-pets-ui` y `roblox-vehicle-ui` (aquí solo el patrón grid si se reutiliza).
+- Generic responsive mechanics: covered by `roblox-ui` and `roblox-user-interfaces`.
+- Prior UX design: covered by `roblox-game-ux`; this skill implements.
+- Shop and item purchase: covered by `roblox-shop-ui`.
+- Quest journal and rewards: covered by `roblox-quest-journal-ui`.
+- Pets and vehicles as systems: covered by `roblox-pets-ui` and `roblox-vehicle-ui` (only the grid pattern here if reused).
 
-## Casos de uso
+## Use cases
 
-- Mochila con pestañas Armas/Armadura/Consumibles y grid con scroll.
-- Equipar espada con clic o arrastrándola al slot de mano.
-- Tooltip con stats, rareza y botones Usar/Equipar/Soltar.
-- Indicador "Guardando… / Guardado" tras equipar o mover.
-- Límite de capacidad con barra "23/40" y aviso al llenarse.
+- Backpack with Weapons/Armor/Consumables tabs and scrolling grid.
+- Equip a sword by clicking or dragging it to the hand slot.
+- Tooltip with stats, rarity, and Use/Equip/Drop buttons.
+- "Saving… / Saved" indicator after equipping or moving.
+- Capacity bar "23/40" with warning when full.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define el modelo de datos en papel.** Tipos de objeto, slots de equipo (mano, cabeza, etc.), apilables vs únicos, capacidad máxima. Sin este contrato, la UI acumula parches.
-2. **Maqueta el layout.** Izquierda: categorías + grid (`ScrollingFrame` + `UIGridLayout`); derecha: panel de equipo + detalle. En móvil: pestañas arriba, grid a pantalla completa y detalle como hoja inferior.
-3. **Construye el grid.** `ScrollingFrame` con `UIGridLayout` (celda a `Scale` relativo, p. ej. 64 px equivalentes mínimos), cada slot = `Frame` + `ImageLabel` icono + `TextLabel` cantidad + marca de rareza (`UIStroke` o banda). Slots vacíos con placeholder tenue.
-4. **Implementa categorías y búsqueda.** `TextButton`s de filtro + caja de búsqueda opcional; filtrar nunca destruye datos, solo oculta slots. Contador visible por categoría.
-5. **Equipar por clic y por arrastre.** Clic = seleccionar + botón Equipar; doble clic o botón = equipar directo. Arrastre = mover entre slots con clon visual que sigue al cursor/dedo. Ambas rutas llaman a la misma función `requestEquip(id)`.
-6. **Tooltips con acciones.** Al seleccionar o hover: `Frame` con nombre, rareza, stats comparadas (+12 vs equipado), descripción de 1-2 líneas y botones Usar/Equipar/Soltar. En táctil el tooltip es panel fijo, no hover.
-7. **Sincronización visible.** La UI es optimista pero honesta: aplica el cambio al instante y muestra "Guardando…" hasta confirmación del servidor (verificar en create.roblox.com/docs para remotos y datastore); si falla, revierte y avisa. Nunca muestres "Guardado" antes de la confirmación.
-8. **Capacidad y bordes.** Barra de capacidad, aviso al 90% y bloqueo de recoger con mensaje claro. Objetos nuevos con insignia "¡Nuevo!" que se limpia al verlos.
-9. **Verifica con 150 objetos.** Llena el inventario de prueba, mide scroll a 60 fps, comprueba que equipar/desequipar no duplica y que reentrar conserva el equipo.
+1. **Define the data model on paper.** Item types, equipment slots (hand, head, etc.), stackables vs. uniques, max capacity. Without this contract, the UI accumulates patches.
+2. **Mock up the layout.** Left: categories + grid (`ScrollingFrame` + `UIGridLayout`); right: equipment + detail panel. On mobile: tabs on top, full-screen grid, and detail as a bottom sheet.
+3. **Build the grid.** `ScrollingFrame` with `UIGridLayout` (cell at relative `Scale`, e.g. 64 px-equivalent minimum), each slot = `Frame` + `ImageLabel` icon + `TextLabel` count + rarity mark (`UIStroke` or band). Empty slots with faint placeholder.
+4. **Implement categories and search.** Filter `TextButton`s + optional search box; filtering never destroys data, only hides slots. Visible counter per category.
+5. **Equip by click and by drag.** Click = select + Equip button; double-click or button = direct equip. Drag = move between slots with a visual clone following cursor/finger. Both paths call the same `requestEquip(id)` function.
+6. **Tooltips with actions.** On select or hover: `Frame` with name, rarity, compared stats (+12 vs. equipped), 1-2 line description, and Use/Equip/Drop buttons. On touch the tooltip is a fixed panel, not hover.
+7. **Visible sync.** The UI is optimistic but honest: apply the change instantly and show "Saving…" until server confirmation (see create.roblox.com/docs for remotes and datastores); on failure, revert and warn. Never show "Saved" before confirmation.
+8. **Capacity and edges.** Capacity bar, warning at 90%, and blocked pickup with a clear message. New items with a "New!" badge that clears when seen.
+9. **Verify with 150 items.** Fill a test inventory, measure scroll at 60 fps, check that equip/unequip doesn't duplicate and that rejoin preserves equipment.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Celda de grid (clases estables):
+- Grid cell (stable classes):
 
   ```luau
   -- Ejemplo ilustrativo: crear un slot de inventario
@@ -58,58 +58,58 @@ NO hace:
   -- Icono (ImageLabel), cantidad (TextLabel) y rareza (UIStroke) cuelgan del slot.
   ```
 
-- `UIGridLayout` con `CellSize` relativo + `CellPadding`; `ScrollingFrame` con `ScrollBarThickness` discreto y `CanvasSize` automática (verificar en create.roblox.com/docs para propiedades exactas).
-- Selección: un solo slot seleccionado, marcado con `UIStroke` de acento; el panel de equipo refleja el estado con iconos en cada slot corporal.
-- Drag: clon del icono con `ZIndex` alto que sigue a `UserInputService.InputChanged` (ratón/táctil); al soltar, resuelve slot destino o cancela con tween de retorno.
-- Datos: el cliente pide, el servidor valida y guarda (datastore y remotos; verificar en create.roblox.com/docs). El cliente nunca inventa objetos ni cantidades.
-- `UIScale` para modo compacto en pantallas pequeñas sin reescribir el layout.
+- `UIGridLayout` with relative `CellSize` + `CellPadding`; `ScrollingFrame` with discreet `ScrollBarThickness` and automatic `CanvasSize` (see create.roblox.com/docs for exact properties).
+- Selection: a single selected slot, marked with accent `UIStroke`; the equipment panel reflects state with icons in each body slot.
+- Drag: icon clone with high `ZIndex` following `UserInputService.InputChanged` (mouse/touch); on release, resolve target slot or cancel with return tween.
+- Data: the client requests, the server validates and saves (datastores and remotes; see create.roblox.com/docs). The client never invents items or counts.
+- `UIScale` for compact mode on small screens without rewriting the layout.
 
-### Identidad visual de esta skill (original, no copiar)
+### Visual identity of this skill (original, do not copy)
 
-- Dirección "armería técnica": fondo pizarra (#171D2E), slots grafito (#232B45) con banda de rareza (común gris, raro azul #4DA3FF, épico morado #B45CFF, legendario ámbar #FFC53D). Acento cian selección (#38E1FF).
-- Tipografía: nombres 14 semibold, cantidades 13 negrita en esquina, stats 13 monoespaciada o tabular, descripciones 13 gris claro.
-- Composición: grid 5-6 columnas PC / 4 móvil, panel derecho de equipo con silueta de slots (cabeza, torso, manos, pies). `UIPadding` 12, `UICorner` 8, `UIStroke` 1 px por rareza.
-- Espaciado: gap 8 entre slots, 16 entre secciones. Slots mínimo 56 px equivalentes en táctil.
-- Estados: hover eleva + borde, pressed 0.96, equipado con check + borde acento, nuevo con punto ámbar, bloqueado/límite en gris con candado textual, guardando con spinner en la cabecera.
-- Animación: equipar con pulso de 0.25 s vía `TweenService`; mover con fundido del clon; sin rebotes exagerados.
+- "Technical armory" direction: slate background (#171D2E), graphite slots (#232B45) with rarity band (common gray, rare blue #4DA3FF, epic purple #B45CFF, legendary amber #FFC53D). Cyan selection accent (#38E1FF).
+- Typography: names 14 semibold, counts 13 bold in corner, stats 13 monospaced or tabular, descriptions 13 light gray.
+- Composition: 5-6 column grid on PC / 4 on mobile, right-side equipment panel with body-slot silhouette (head, torso, hands, feet). `UIPadding` 12, `UICorner` 8, 1 px `UIStroke` per rarity.
+- Spacing: 8 gap between slots, 16 between sections. Slots minimum 56 px-equivalents on touch.
+- States: hover raises + border, pressed 0.96, equipped with check + accent border, new with amber dot, locked/full in gray with textual lock, saving with spinner in header.
+- Animation: equip with 0.25 s pulse via `TweenService`; move with clone fade; no exaggerated bounces.
 
-## Buenas prácticas
+## Best practices
 
-- Equipar siempre en ≤2 clics; lo frecuente (usar consumible) en 1.
-- Comparativa visible: "+12 daño vs equipado" vale más que 6 stats sueltas.
-- Confirmación solo para destructivo (tirar/vender legendario); lo reversible sin modal.
-- Orden estable: por rareza/reciente con criterio visible y persistente entre sesiones.
-- Coherencia con tienda y diario: mismos iconos, mismas rarezas, mismos botones.
-- Textos de error accionables: "Mochila llena (40/40). Suelta o vende algo." no "Error 7".
+- Always equip in ≤2 clicks; frequent actions (use consumable) in 1.
+- Visible comparison: "+12 damage vs. equipped" beats 6 bare stats.
+- Confirm only destructive actions (drop/sell legendary); don't modal the reversible.
+- Stable order: by rarity/recent with a visible criterion that persists across sessions.
+- Consistent with shop and journal: same icons, same rarities, same buttons.
+- Actionable error text: "Backpack full (40/40). Drop or sell something." not "Error 7".
 
-## Errores frecuentes
+## Common mistakes
 
-- Permitir equipar dos objetos en el mismo slot por doble clic rápido (falta debounce + validación servidor).
-- Mostrar objetos que el servidor no confirma y duplicar tras reentrar.
-- Grid solo con `Offset` que desborda en móvil o deja 2 columnas gigantes en PC.
-- Tooltip hover-only que en táctil es inaccesible.
-- Tirar objetos sin confirmación ni recuperación.
-- Iconos de raridad solo por color, ilegibles para daltónicos (añade texto o forma).
+- Allowing two items in the same slot via fast double-click (missing debounce + server validation).
+- Showing items the server never confirmed and duplicating after rejoin.
+- Grid with `Offset` only that overflows on mobile or leaves 2 giant columns on PC.
+- Hover-only tooltip that is unreachable on touch.
+- Dropping items with no confirmation or recovery.
+- Rarity icons by color only, unreadable for color-blind players (add text or shape).
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Equipar/desequipar/mover/usar funcionan con ratón y con táctil.
-- [ ] Con 150 objetos el scroll sigue fluido y la búsqueda filtra <200 ms.
-- [ ] El estado tras reentrar coincide con el guardado del servidor.
-- [ ] Sin duplicados ni pérdidas bajo spam de clics o latencia alta simulada.
-- [ ] Legible en PC, tablet y móvil vertical sin solapes.
-- [ ] Acciones destructivas piden confirmación; el resto no interrumpe.
+- [ ] Equip/unequip/move/use work with mouse and touch.
+- [ ] With 150 items scrolling stays smooth and search filters in <200 ms.
+- [ ] State after rejoin matches the server save.
+- [ ] No duplicates or losses under click spam or simulated high latency.
+- [ ] Readable on PC, tablet, and portrait mobile with no overlaps.
+- [ ] Destructive actions ask for confirmation; the rest don't interrupt.
 
-## Herramientas
+## Tools
 
-- Studio: Play con servidor para validar guardado, simulador táctil para drag.
-- MCP Studio (si disponible): capturas del grid lleno en 3 resoluciones, `Output` ante fallos de sync.
-- Rojo: definiciones de objetos (nombre, rareza, icono) como datos versionados.
-- Selene: lint de los handlers de equipar/mover y del debounce.
+- Studio: Play with server to validate saving, touch simulator for drag.
+- Studio MCP (if available): captures of the full grid on 3 resolutions, `Output` on sync failures.
+- Rojo: item definitions (name, rarity, icon) as versioned data.
+- Selene: lint equip/move handlers and debounce.
 
-## Limitaciones
+## Limitations
 
-- La persistencia real (datastore) y la validación viven en el servidor (verificar en create.roblox.com/docs); esta UI solo la refleja.
-- No incluye comercio entre jugadores ni subastas; solo gestión propia.
-- El drag táctil con listas largas puede requerir ajustes por plataforma; prueba en dispositivo real.
-- Iconos e imágenes deben respetar presupuesto de memoria del proyecto; sin assets externos nuevos.
+- Real persistence (datastore) and validation live on the server (see create.roblox.com/docs); this UI only reflects them.
+- No player-to-player trading or auctions; self-management only.
+- Touch drag on long lists may need per-platform tuning; test on a real device.
+- Icons and images must respect the project's memory budget; no new external assets.

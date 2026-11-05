@@ -1,96 +1,96 @@
 ---
-name: Arte de Entornos Roblox
-description: Construye entornos Roblox con iluminación, materiales y composición deliberadas. Úsala para decisiones Terreno-vs-parts, setups de LightingService, atmósfera, día-noche, clima y staging exterior/interior.
+name: Roblox Environment Art
+description: Build Roblox environments with deliberate lighting, materials, and composition. Use it for Terrain-vs-parts decisions, LightingService setups, atmosphere, day-night, weather, and exterior/interior staging.
 ---
 
 # roblox-environment-art
 
-Skill de ejecución para el look definido en `roblox-art-direction`,
-informada por `references/`. Complementarias: `roblox-terrain-sculpting`,
+Execution skill for the look defined in `roblox-art-direction`,
+informed by `references/`. Complementary: `roblox-terrain-sculpting`,
 `roblox-vegetation-landscaping`, `roblox-lighting-day-night`,
 `roblox-lighting-atmosphere`, `roblox-materials-surfaces`,
-`roblox-props-decoration` (especialistas por subsistema),
+`roblox-props-decoration` (subsystem specialists),
 `roblox-world-building`, `roblox-world-level-design`, `roblox-visual-design`.
 
-## Objetivo
+## Objective
 
-Entregar espacios legibles y performantes: exteriores/interiores con luz
-motivada, sets de materiales creíbles y composición que guía al jugador.
+Deliver readable, performant spaces: exteriors/interiors with motivated light,
+believable material sets, and composition that guides the player.
 
-## Alcance y límites
+## Scope and limits
 
-- Cubre: integración de terreno+arquitectura+luz+materiales+staging en un área.
-- NO sustituye a los especialistas (terreno, vegetación, iluminación,
-  materiales, props): los coordina. Para profundidad en un subsistema, deriva.
-- NO define dirección (eso es `roblox-art-direction`).
+- Covers: integrating terrain+architecture+light+materials+staging in one area.
+- Does NOT replace the specialists (terrain, vegetation, lighting,
+  materials, props): it coordinates them. For depth in a subsystem, defer.
+- Does NOT define direction (that is `roblox-art-direction`).
 
-## Casos de uso
+## Use cases
 
-- Montar un área nueva que combine terreno, edificios, luz y props.
-- Diagnosticar por qué una zona se ve plana o ilegible.
-- Preparar una zona para captura promocional o playtest.
+- Building a new area that combines terrain, buildings, light, and props.
+- Diagnosing why a zone looks flat or unreadable.
+- Preparing a zone for promo capture or playtest.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Suelo primero.** Terrain para lo orgánico (esculpe con el editor y ajusta
-   densidad de decoración `Water*` y `Grass`); parts para arquitectura. Nunca
-   un solo `BasePart` de más de 2048 studs: divide en tiles.
-2. **Ilumina la escena.**
-   - Fija `ClockTime`, `Ambient`/`OutdoorAmbient`, `Brightness` según dirección.
-   - `Atmosphere`: density/offset/color/decay para profundidad; `Bloom`
-     threshold ~1 para neón/noche, off o sutil de día.
-   - Sombras: Future lighting en escritorio; verifica que los fallbacks de
-     móvil sigan legibles.
-   - Interiores: una luz clave por sala (ventana/lámpara), relleno frío,
-     prácticas cálidas; nunca ambient plano a tope.
-3. **Materiales.** Asigna del set permitido; rompe superficies planas grandes
-   con trims, vigas o variación de textura. El suelo necesita al menos dos
-   tonos (camino vs campo) o se lee como vacío.
-4. **Staging.** Primer plano que enmarca (arco/ramas), sujeto en medio,
-   silueta de fondo (montañas/ciudad según `references/terrain/*`). Landmarks
-   visibles desde el spawn; caminos obvios sin señalética.
-5. **Día-noche/clima (solo si el juego lo necesita).** Mueve `ClockTime`
-   desde un script de servidor, replica un solo valor, los clientes renderizan.
-   Mantén la noche legible: sube el suelo de `Ambient` y añade luces
-   prácticas; la oscuridad no es dificultad.
-6. **Chequeo de coste.** `get_scene_analysis` tras cada área; la decoración
-   es la sospechosa habitual: reduce densidad a la mitad antes de tocar sistemas.
+1. **Ground first.** Terrain for the organic (sculpt with the editor and tune
+   decoration density `Water*` and `Grass`); parts for architecture. Never
+   a single `BasePart` larger than 2048 studs: split into tiles.
+2. **Light the scene.**
+   - Set `ClockTime`, `Ambient`/`OutdoorAmbient`, `Brightness` per direction.
+   - `Atmosphere`: density/offset/color/decay for depth; `Bloom`
+     threshold ~1 for neon/night, off or subtle by day.
+   - Shadows: Future lighting on desktop; verify mobile fallbacks
+     stay readable.
+   - Interiors: one key light per room (window/lamp), cold fill,
+     warm practicals; never flat full ambient.
+3. **Materials.** Assign from the allowed set; break large flat surfaces
+   with trims, beams, or texture variation. Ground needs at least two
+   tones (path vs field) or it reads as empty.
+4. **Staging.** Foreground framing (arch/branches), midground subject,
+   background silhouette (mountains/city per `references/terrain/*`). Landmarks
+   visible from spawn; obvious paths without signage.
+5. **Day-night/weather (only if the game needs it).** Move `ClockTime`
+   from a server script, replicate a single value, clients render.
+   Keep night readable: raise the `Ambient` floor and add practical
+   lights; darkness is not difficulty.
+6. **Cost check.** `get_scene_analysis` after each area; decoration
+   is the usual suspect: halve density before touching systems.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Terreno vs parts, Lighting + Atmosphere, presupuestos de instancias y
-  sombras, streaming para mapas extensos.
+- Terrain vs parts, Lighting + Atmosphere, instance budgets and
+  shadows, streaming for large maps.
 
-## Buenas prácticas
+## Best practices
 
-- Un área cada vez, con captura y coste registrados antes de pasar a la siguiente.
-- Luz motivada siempre: cada fuente visible o justificable.
-- Reutiliza kits (`roblox-modular-building`) en vez de modelar único.
+- One area at a time, with capture and cost logged before moving to the next.
+- Always motivated light: every source visible or justifiable.
+- Reuse kits (`roblox-modular-building`) instead of modelling one-offs.
 
-## Errores frecuentes
+## Common mistakes
 
-- Terreno pintado pero sin iluminar (sin atmósfera/niebla → plano); interiores
-  con un `PointLight` por pared (sopa de luz); builds nocturnos injugables en
-  brillo móvil; niebla que oculta el landmark que el nivel necesita.
+- Painted terrain but no lighting (no atmosphere/fog → flat); interiors
+  with a `PointLight` per wall (light soup); night builds unplayable on
+  mobile brightness; fog hiding the landmark the level needs.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Valores anotados (ClockTime, Ambient, Atmosphere, efectos) por área.
-- [ ] Captura a altura de ojos inspeccionada; landmark visible desde spawn.
-- [ ] Coste de escena comprobado; móvil sigue legible.
-- Verificación: relee propiedades de lighting + captura por área; cita ambas.
+- [ ] Values noted (ClockTime, Ambient, Atmosphere, effects) per area.
+- [ ] Eye-level capture inspected; landmark visible from spawn.
+- [ ] Scene cost checked; mobile still readable.
+- Verification: re-read lighting properties + capture per area; cite both.
 
-## Herramientas
+## Tools
 
-- MCP: `execute_luau` para valores, `capture_screenshot`,
-  `get_scene_analysis`; editor de Terrain; `references/`.
+- MCP: `execute_luau` for values, `capture_screenshot`,
+  `get_scene_analysis`; Terrain editor; `references/`.
 
-## Limitaciones
+## Limitations
 
-- No genera assets: compone con lo existente o lo derivado a especialistas.
-- El clima/efectos pesados deben pasar el gate móvil o recortarse.
+- Does not generate assets: composes with existing ones or defers to specialists.
+- Heavy weather/effects must pass the mobile gate or be cut.
 
-## Ejemplo: valores de exterior golden-hour
+## Example: golden-hour exterior values
 
 ```lua
 local Lighting = game:GetService("Lighting")

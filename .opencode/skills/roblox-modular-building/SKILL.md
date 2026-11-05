@@ -1,90 +1,90 @@
 ---
 name: roblox-modular-building
-description: Construcción modular con grid, kits reutilizables y pivots. Úsala cuando necesites piezas intercambiables, variaciones sin romper el set o escalar un nivel con pocos assets.
+description: Modular construction with grid, reusable kits, and pivots. Use it when you need interchangeable pieces, variations without breaking the set, or scaling a level with few assets.
 ---
 
-# Construcción Modular
+# Modular Construction
 
-## Objetivo
+## Objective
 
-Construir niveles y edificios a partir de un kit pequeño de piezas reutilizables (muros, suelos, esquinas, remates) que encajan sobre un grid fijo, mantienen pivots coherentes y admiten variación visual sin romper la compatibilidad del set.
+Build levels and buildings from a small kit of reusable pieces (walls, floors, corners, trims) that snap to a fixed grid, keep coherent pivots, and allow visual variation without breaking set compatibility.
 
-## Alcance y límites
+## Scope and limits
 
-Qué NO hace ni cubre esta skill:
+What this skill does NOT do or cover:
 
-- NO diseña QUÉ construir (temática, estilo, planta del nivel): eso lo diseñan `roblox-world-building` (generalista) y `roblox-exterior-architecture`, `roblox-interior-design`, `roblox-city-settlements`, `roblox-terrain-sculpting`, `roblox-vegetation-landscaping`, `roblox-materials-surfaces`, `roblox-props-decoration` (propias, en curso).
-- NO cubre el sync de ficheros ni la configuración de `project.json`: eso lo cubre `roblox-rojo`.
-- NO cubre creación de props sueltos ni MeshParts a medida: eso lo cubren `roblox-props-creation` y `roblox-meshparts-geometry`.
-- NO cubre organización global de jerarquías ni versionado: eso lo cubre `roblox-model-organization`.
+- It does NOT design WHAT to build (theme, style, level layout): that is designed by `roblox-world-building` (generalist) and `roblox-exterior-architecture`, `roblox-interior-design`, `roblox-city-settlements`, `roblox-terrain-sculpting`, `roblox-vegetation-landscaping`, `roblox-materials-surfaces`, `roblox-props-decoration` (own, in progress).
+- It does NOT cover file sync or `project.json` configuration: that is covered by `roblox-rojo`.
+- It does NOT cover loose props or custom MeshParts: that is covered by `roblox-props-creation` and `roblox-meshparts-geometry`.
+- It does NOT cover global hierarchy organization or versioning: that is covered by `roblox-model-organization`.
 
-Diferenciación declarada: `roblox-world-building` (instalada, generalista fina) y las skills propias (`roblox-exterior-architecture` / `roblox-interior-design` / `roblox-city-settlements` / `roblox-terrain-sculpting` / `roblox-vegetation-landscaping` / `roblox-materials-surfaces` / `roblox-props-decoration`) diseñan QUÉ construir; esta skill explica CÓMO construirlo (técnica modular). `roblox-rojo` cubre el sync; esta skill cubre la técnica de modelado.
+Declared differentiation: `roblox-world-building` (installed, fine generalist) and the own skills (`roblox-exterior-architecture` / `roblox-interior-design` / `roblox-city-settlements` / `roblox-terrain-sculpting` / `roblox-vegetation-landscaping` / `roblox-materials-surfaces` / `roblox-props-decoration`) design WHAT to build; this skill explains HOW to build it (modular technique). `roblox-rojo` covers sync; this skill covers modeling technique.
 
-## Casos de uso
+## Use cases
 
-- Set de muros/suelos/tejas para una ciudad que debe crecer sin modelar cada casa desde cero.
-- Interiores (dungeon, nave, oficina) con pasillos y habitaciones que se recombinan.
-- Kit de escaleras, barandillas y remates que encajan en cualquier edificio del juego.
-- Prototipado rápido de un nivel usando piezas grises antes del pase de arte.
+- Wall/floor/roof set for a city that must grow without modeling each house from scratch.
+- Interiors (dungeon, ship, office) with hallways and rooms that recombine.
+- Stair, railing, and trim kit that fits any building in the game.
+- Fast prototyping of a level using gray pieces before the art pass.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Fija el grid base.** Elige un módulo (p. ej. 4 studs) y declara que toda pieza mide múltiplos exactos (4, 8, 12...). Documenta el módulo en el nombre de la carpeta del kit.
-2. **Define la lista cerrada del kit.** Escribe la lista mínima (suelo 4x4, muro 4 de alto, esquina, dintel, escalón, remate) y no añadas piezas nuevas sin justificar cuál sustituyen.
-3. **Modela una pieza maestra por tipo.** Usa `Part` con tamaño exacto de grid, anclada (`Anchored=true`), y comprueba que dos copias pegadas no dejan huecos ni solapan.
-4. **Normaliza pivots.** Coloca el `Pivot` de cada `Model` en la misma referencia (p. ej. esquina inferior o centro de la base) para que mover/rotar piezas sea predecible.
-5. **Valida escala avatar.** Comprueba puertas y pasos: una puerta cómoda ronda ~2x la altura del avatar. Ajusta el kit (altura de muro, ancho de vano) antes de duplicar.
-6. **Añade variación sin romper compatibilidad.** Crea variantes que conservan medidas y pivot (muro liso, muro con ventana, muro dañado) y verifica que cada variante sustituye a la base sin mover el resto.
-7. **Marca con `CollectionService`/Tags y `Attributes`.** Etiqueta piezas (`Pared`, `Suelo`, `Modular`) y guarda `Attributes` como `Modulo="4"` o `Variante="Ventana"` para localizarlas por script.
-8. **Prueba de estrés del set.** Monta una habitación de prueba solo con el kit, recorre a pie cada unión y corrige huecos, saltos de colisión y piezas que z-fighting (superficies coplanares).
-9. **Empaqueta por `Folder` y `Model`.** Guarda el kit en un `Folder` (p. ej. `Kit_Muros_4studs`) con cada pieza como `Model` nombrado (`Muro_4x4_Liso`, `Muro_4x4_Ventana`).
-10. **Prepara para Rojo sin pisar trabajo.** Exporta el kit como modelo versionado y coordina quién edita el kit (una sola persona o rama) para no romper niveles que ya lo usan.
+1. **Fix the base grid.** Pick a module (e.g. 4 studs) and declare that every piece measures exact multiples (4, 8, 12...). Document the module in the kit folder name.
+2. **Define the closed kit list.** Write the minimum list (4x4 floor, 4-tall wall, corner, lintel, step, trim) and do not add new pieces without justifying which one they replace.
+3. **Model one master piece per type.** Use `Part` with exact grid size, anchored (`Anchored=true`), and check that two pasted copies leave no gaps or overlaps.
+4. **Normalize pivots.** Place each `Model`'s `Pivot` at the same reference (e.g. bottom corner or base center) so moving/rotating pieces is predictable.
+5. **Validate avatar scale.** Check doors and passages: a comfortable door is ~2x avatar height. Adjust the kit (wall height, opening width) before duplicating.
+6. **Add variation without breaking compatibility.** Create variants that keep measurements and pivot (plain wall, windowed wall, damaged wall) and verify each variant substitutes the base without moving the rest.
+7. **Tag with `CollectionService`/Tags and `Attributes`.** Label pieces (`Pared`, `Suelo`, `Modular`) and store `Attributes` such as `Modulo="4"` or `Variante="Ventana"` to find them by script.
+8. **Stress-test the set.** Build a test room using only the kit, walk every joint on foot, and fix gaps, collision jumps, and z-fighting pieces (coplanar surfaces).
+9. **Package by `Folder` and `Model`.** Store the kit in a `Folder` (e.g. `Kit_Muros_4studs`) with each piece as a named `Model` (`Muro_4x4_Liso`, `Muro_4x4_Ventana`).
+10. **Prepare for Rojo without overwriting work.** Export the kit as a versioned model and coordinate who edits the kit (one person or branch) so levels that already use it do not break.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Grid y múltiplos: si el módulo es 4 studs, todas las medidas (largo, alto, grosor) deben ser múltiplos para que las uniones cierren.
-- `Pivot` coherente: piezas con pivots distintos no se alinean igual al duplicar; la esquina inferior facilita apilar, el centro de base facilita rotar.
-- Escala avatar: puertas ~2x altura del avatar; pasillos mínimo para girar con comodidad; escalones que se suben sin saltar de forma incómoda.
-- Colisiones jugables: las piezas de tránsito deben tener colisión sólida y sin huecos; los remates decorativos pueden no colisionar si no bloquean.
-- Rendimiento: pocas piezas distintas reutilizadas muchas veces rinden mejor que cientos de piezas únicas; evita micro-piezas de 0.2 studs para cerrar huecos (revisa el grid en su lugar).
-- `Workspace` / `StreamingEnabled`: los kits modulares se benefician del streaming porque las piezas son predecibles; evita referencias cruzadas frágiles entre piezas lejanas.
-- `Camera`: valida desde la cámara de juego que las uniones no muestran huecos visibles en los ángulos reales de juego, no solo en vista de editor cenital.
+- Grid and multiples: if the module is 4 studs, every measurement (length, height, thickness) must be a multiple so joints close.
+- Coherent `Pivot`: pieces with different pivots do not align the same way when duplicated; the bottom corner makes stacking easy, the base center makes rotating easy.
+- Avatar scale: doors ~2x avatar height; hallways wide enough to turn comfortably; steps climbable without awkward jumping.
+- Playable collisions: transit pieces must have solid gapless collision; decorative trims may skip collision if they do not block.
+- Performance: few distinct pieces reused many times beat hundreds of unique pieces; avoid 0.2-stud micro-pieces to close gaps (fix the grid instead).
+- `Workspace` / `StreamingEnabled`: modular kits benefit from streaming because pieces are predictable; avoid fragile cross-references between distant pieces.
+- `Camera`: validate from the gameplay camera that joints show no visible gaps at real gameplay angles, not just in top-down editor view.
 
-## Buenas prácticas
+## Best practices
 
-- Nombra piezas con medida incluida (`Suelo_8x8`, `Muro_4x4_Puerta`) para saber qué sustituye a qué sin abrir el modelo.
-- Mantén el kit pequeño: mejor 12 piezas que encajan que 60 que casi encajan.
-- Versiona el kit (`Kit_v1`, `Kit_v2`) y no cambies medidas de `v1` una vez usado en niveles; crea `v2` para cambios.
-- Documenta el módulo y el pivot en un `Attributes` o nota dentro del `Folder` del kit.
-- Prueba cada variante sustituyendo a la base en un montaje real, no solo mirando la pieza aislada.
+- Name pieces with measurements included (`Suelo_8x8`, `Muro_4x4_Puerta`) so you know what substitutes what without opening the model.
+- Keep the kit small: better 12 pieces that fit than 60 that almost fit.
+- Version the kit (`Kit_v1`, `Kit_v2`) and never change `v1` measurements once used in levels; create `v2` for changes.
+- Document the module and pivot in an `Attributes` or note inside the kit `Folder`.
+- Test each variant by substituting the base in a real build, not just by looking at the isolated piece.
 
-## Errores frecuentes
+## Common mistakes
 
-- Piezas de 3.97 studs en un grid de 4: acumulan huecos visibles al repetir. Causa: modelar a ojo. Solución: escribir el tamaño numérico exacto.
-- Pivots mezclados (unos al centro, otros a la esquina): al rotar, unas piezas encajan y otras se desplazan. Solución: re-pivotar todo el kit igual.
-- Puertas a escala incorrecta (avatar se agacha o sobra un hueco enorme). Causa: no validar con avatar. Solución: regla ~2x avatar y prueba a pie.
-- Variantes que cambian el tamaño (el muro "con ventana" mide distinto). Causa: decorar fuera del volumen base. Solución: la decoración debe caber dentro del volumen del módulo.
-- Superficies coplanares que parpadean (z-fighting). Causa: dos caras exactamente superpuestas. Solución: desplazar 0.01–0.05 studs o fusionar en una sola pieza.
-- Romper niveles al "mejorar" el kit cambiando medidas. Solución: versionar y no editar medidas de kits en uso.
+- 3.97-stud pieces on a 4 grid: they accumulate visible gaps when repeated. Cause: eyeball modeling. Fix: write the exact numeric size.
+- Mixed pivots (some at center, some at corner): on rotation, some pieces fit and others shift. Fix: re-pivot the whole kit the same way.
+- Wrong-scale doors (avatar crouches or a huge gap is left). Cause: no avatar validation. Fix: ~2x avatar rule and on-foot test.
+- Variants that change size (the "windowed wall" measures differently). Cause: decorating outside the base volume. Fix: decoration must fit inside the module volume.
+- Flickering coplanar surfaces (z-fighting). Cause: two exactly overlapping faces. Fix: offset 0.01–0.05 studs or merge into one piece.
+- Breaking levels by "improving" the kit with measurement changes. Fix: version and never edit measurements of kits in use.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Toda pieza mide múltiplos exactos del módulo declarado, verificable en sus tamaños.
-- [ ] Todos los `Model` del kit comparten la misma convención de `Pivot`.
-- [ ] Cada variante sustituye a su base sin mover piezas vecinas (prueba de sustitución superada).
-- [ ] Puertas y pasos validados a pie con avatar (~2x avatar en puertas).
-- [ ] Montaje de prueba sin huecos, sin saltos de colisión y sin parpadeos visibles desde la `Camera` de juego.
-- [ ] Kit empaquetado en `Folder` con nombres con medida y `Tags`/`Attributes` de identificación.
-- [ ] Kit versionado y listo para Rojo sin romper niveles existentes.
+- [ ] Every piece measures exact multiples of the declared module, verifiable in its sizes.
+- [ ] All `Model`s in the kit share the same `Pivot` convention.
+- [ ] Each variant substitutes its base without moving neighboring pieces (substitution test passed).
+- [ ] Doors and passages validated on foot with an avatar (~2x avatar in doors).
+- [ ] Test build with no gaps, no collision jumps, and no flicker visible from the gameplay `Camera`.
+- [ ] Kit packaged in a `Folder` with measured names and identification `Tags`/`Attributes`.
+- [ ] Kit versioned and ready for Rojo without breaking existing levels.
 
-## Herramientas
+## Tools
 
-- `Part`, `Model`, `Folder` para piezas, conjuntos y empaquetado del kit.
-- `CollectionService` / Tags y `Attributes` para marcar piezas y variantes.
-- `Workspace` / `StreamingEnabled` y `Camera` para validar streaming y ángulos reales.
-- Rojo `project.json` / `$path` / `$className` solo como destino de sync (la configuración la cubre `roblox-rojo`).
+- `Part`, `Model`, `Folder` for kit pieces, assemblies, and packaging.
+- `CollectionService` / Tags and `Attributes` to tag pieces and variants.
+- `Workspace` / `StreamingEnabled` and `Camera` to validate streaming and real angles.
+- Rojo `project.json` / `$path` / `$className` only as sync destination (configuration is covered by `roblox-rojo`).
 
-Ejemplo Luau ilustrativo (organización por script, no gameplay):
+Illustrative Luau example (organization by script, not gameplay):
 
 ```luau
 -- Ilustrativo: listar piezas del kit marcadas con un Tag.
@@ -96,8 +96,8 @@ for _, pieza in CollectionService:GetTagged("Modular") do
 end
 ```
 
-## Limitaciones
+## Limitations
 
-- No diseña la temática ni la planta del nivel; solo la técnica modular.
-- No configura Rojo (`project.json`, `$path`, `$className` — verificar detalles en create.roblox.com/docs si dudas); solo deja el kit listo para sincronizar.
-- No sustituye pruebas de rendimiento con contadores reales de instancias en el lugar final.
+- Does not design the theme or level layout; only the modular technique.
+- Does not configure Rojo (`project.json`, `$path`, `$className` — check create.roblox.com/docs if in doubt); it only leaves the kit ready to sync.
+- Does not replace performance testing with real instance counts in the final place.

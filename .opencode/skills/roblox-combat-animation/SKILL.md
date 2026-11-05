@@ -1,60 +1,60 @@
 ---
 name: roblox-combat-animation
-description: Animaciones de combate con anticipación, impacto y recuperación. Úsala cuando los golpes se sienten flojos o no sincronizan con el daño.
+description: Combat animations with anticipation, impact, and recovery. Use it when hits feel weak or don't sync with damage.
 ---
 
-# Animación de Combate
+# Combat Animation
 
-## Objetivo
+## Objective
 
-Conseguir golpes que se sienten: anticipación legible, impacto con peso (hit-stop feel) y recuperación con compromiso, sincronizados con la ventana real de daño que valida el servidor.
+Land hits that feel right: readable anticipation, weighty impact (hit-stop feel), and committed recovery, synchronized with the real damage window validated by the server.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre ataques melee y a distancia del jugador: estructura en 3 fases, ventanas de hit, cancelaciones, capas de torso/brazos y feel sin romper autoridad de servidor.
+Covers player melee and ranged attacks: 3-phase structure, hit windows, cancels, torso/arm layers, and feel without breaking server authority.
 
-**Qué NO hace:**
+**What it does NOT do:**
 
-- NO cubre ciclo de vida respawn-safe: lo cubre `roblox-characters`.
-- NO cubre construcción del rig: lo cubre `roblox-rigging`.
-- NO cubre balance de daño ni diseño de habilidades: solo su expresión animada (el diseño de sistema combate como tal es otra disciplina).
-- NO es el dispatcher general: `roblox-animation` define el marco; aquí dominio combate.
-- NO cubre enemigos con IA: lo cubre `roblox-npcs`.
-- NO cubre cámaras de combate/shake: lo cubre `camera-systems` (aquí solo eventos que la cámara puede consumir).
+- Does NOT cover the respawn-safe lifecycle: covered by `roblox-characters`.
+- Does NOT cover rig construction: covered by `roblox-rigging`.
+- Does NOT cover damage balance or ability design: only their animated expression (combat system design as such is a separate discipline).
+- Is NOT the general dispatcher: `roblox-animation` defines the framework; combat domain here.
+- Does NOT cover AI enemies: covered by `roblox-npcs`.
+- Does NOT cover combat cameras/shake: covered by `camera-systems` (only events the camera can consume here).
 
-## Casos de uso
+## Use cases
 
-1. Espadazo que "no se siente" aunque quite vida.
-2. Combo de 3 golpes donde el segundo se come al primero.
-3. Disparo cuya animación termina después del impacto.
-4. Ataque que el jugador no puede esquivar porque no hay anticipación.
-5. Golpe recibido que no se lee (el jugador no sabe que le pegaron).
-6. Habilidad con carga que necesita lectura de "cargando vs listo".
+1. Sword swing that "doesn't feel like anything" even though it deals damage.
+2. 3-hit combo where the second hit eats the first one.
+3. Shot whose animation ends after the impact.
+4. Attack the player cannot dodge because there is no anticipation.
+5. Received hit that doesn't read (the player doesn't know they were hit).
+6. Charged ability that needs "charging vs ready" readability.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define la ventana real de daño.** Pregunta al diseño/código: ¿en qué frames el servidor acepta golpe? Anota inicio/fin en segundos. Toda la animación se construye alrededor de esa ventana, no al revés.
-2. **Estructura en 3 fases.** Anticipación (carga, 20–30% del tiempo, pose exagerada y legible), Impacto (golpe activo, rápido, 10–20%), Recuperación (vuelta, lenta, 50–70% con compromiso de movimiento). Dibuja las 3 poses clave antes de interpolar.
-3. **Haz la anticipación esquivable.** Debe durar lo suficiente para reaccionar (mínimo ~0.15 s en melee rápido, más en ataques fuertes) y usar silueta grande (arma atrás, cuerpo girado). Prueba: ¿un jugador nuevo distingue "va a pegar" a tiempo?
-4. **Sincroniza impacto con hitbox.** El fotograma de extensión máxima = centro de la ventana de servidor. Si el arte y el servidor discrepan más de ~0.05 s, se siente injusto: ajusta el clip, no pidas cambiar la ventana sin motivo.
-5. **Añade feel sin tocar simulación.** Hit-stop (congelar 2–4 frames al impactar), retroceso de torso, flash en el arma, sonido en el frame de impacto. El hit-stop es visual: nunca detiene la validación del servidor.
-6. **Diseña la recuperación como coste.** Tras un golpe fuerte el personaje queda vendido 0.3–0.6 s (no puede atacar ni esprintar). Anímalo con peso bajo y pose abierta. Sin compromiso, no hay decisión táctica.
-7. **Encadena combos con ventanas de cancelación.** Define en qué % de la recuperación se acepta el siguiente input (típico: último 30%). Anima la cancelación como transición corta, no como corte seco.
-8. **Capas: piernas vs torso.** Locomoción en piernas (sigue corriendo), ataque en torso/brazos con prioridad superior. Así se puede pegar corriendo sin deslizar (coordina con `roblox-locomotion-animation`).
-9. **Anima recibir golpe y muerte.** Hit-react de 0.15–0.25 s con prioridad alta que interrumpe locomoción pero no teleporta; muerte con caída que despeja la hitbox visual. Sin esto el combate es unidireccional.
-10. **Valida con dummy y latencia.** Prueba contra objetivo fijo y con 150 ms simulados: ¿el impacto visual coincide con el número de daño? Ajusta hasta que sí.
+1. **Define the real damage window.** Ask design/code: on which frames does the server accept a hit? Note start/end in seconds. The whole animation is built around that window, not the other way around.
+2. **Structure in 3 phases.** Anticipation (wind-up, 20–30% of the time, exaggerated readable pose), Impact (active hit, fast, 10–20%), Recovery (return, slow, 50–70% with movement commitment). Sketch the 3 key poses before interpolating.
+3. **Make anticipation dodgeable.** It must last long enough to react to (minimum ~0.15 s for fast melee, more for heavy attacks) and use a large silhouette (weapon back, body turned). Test: can a new player tell "it's about to hit" in time?
+4. **Sync impact with the hitbox.** Maximum-extension frame = center of the server window. If art and server disagree by more than ~0.05 s, it feels unfair: adjust the clip, don't ask to change the window without reason.
+5. **Add feel without touching simulation.** Hit-stop (freeze 2–4 frames on impact), torso recoil, flash on the weapon, sound on the impact frame. Hit-stop is visual: it never stops server validation.
+6. **Design recovery as cost.** After a heavy hit the character is exposed for 0.3–0.6 s (cannot attack or sprint). Animate it with low weight and an open pose. Without commitment, there is no tactical decision.
+7. **Chain combos with cancel windows.** Define at which % of recovery the next input is accepted (typical: last 30%). Animate the cancel as a short transition, not a hard cut.
+8. **Layers: legs vs torso.** Locomotion on legs (keeps running), attack on torso/arms with higher priority. This way you can attack while running without sliding (coordinate with `roblox-locomotion-animation`).
+9. **Animate hit reaction and death.** 0.15–0.25 s hit-react with high priority that interrupts locomotion but doesn't teleport; death with a fall that clears the visual hitbox. Without this, combat is one-directional.
+10. **Validate with a dummy and latency.** Test against a static target and with 150 ms simulated: does the visual impact match the damage number? Adjust until it does.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- **Las 3 fases como contrato:** anticipación/impacto/recuperación deben existir como marcadores de tiempo compartidos entre animación y código. Si el código no expone la ventana, la sincronía es imposible.
-- **`AnimationTrack` y prioridades:** el ataque va en prioridad superior a locomoción; el hit-react aún más arriba pero breve. Dos ataques nunca deben mezclarse al 50%: uno interrumpe o espera.
-- **Hit-stop feel:** pausa visual de 30–80 ms + escala de sonido. Solo afecta presentación; la posición del `HumanoidRootPart` y la vida las decide el servidor.
-- **`Tool` y armas:** el arma (`Tool`) sigue a la mano por su soldadura; si el arma "flota" en el impacto, el problema suele ser el punto de agarre, no el clip.
-- **`IKControl` de manos:** en ataques a dos manos o bloqueos, planta la mano secundaria en el arma. Actívalo solo durante el ataque.
-- **Anticipación y juego limpio:** ataques sin anticipación se perciben como bugs aunque el código sea correcto.
-- **Replicación:** el atacante reproduce inmediato (predicción visual), los demás ven la versión validada por servidor (ver `roblox-animation-systems`).
+- **The 3 phases as a contract:** anticipation/impact/recovery must exist as shared timestamps between animation and code. If the code doesn't expose the window, sync is impossible.
+- **`AnimationTrack` and priorities:** attacks go at higher priority than locomotion; hit-react even higher but brief. Two attacks must never blend at 50%: one interrupts or waits.
+- **Hit-stop feel:** 30–80 ms visual pause + sound scaling. It only affects presentation; `HumanoidRootPart` position and health are decided by the server.
+- **`Tool` and weapons:** the weapon (`Tool`) follows the hand via its weld; if the weapon "floats" on impact, the problem is usually the grip point, not the clip.
+- **Hand `IKControl`:** for two-handed attacks or blocks, plant the secondary hand on the weapon. Enable it only during the attack.
+- **Anticipation and fair play:** attacks without anticipation feel like bugs even when the code is correct.
+- **Replication:** the attacker plays immediately (visual prediction), everyone else sees the server-validated version (see `roblox-animation-systems`).
 
-Ejemplo ilustrativo (fases como comentarios, no código final):
+Illustrative example (phases as comments, not final code):
 
 ```luau
 -- Ilustrativo: el track de ataque expone fases que el código consulta.
@@ -64,45 +64,45 @@ track:Play(0.08) -- fade corto: los ataques entran rápido
 -- El servidor solo acepta golpe durante la ventana de impacto.
 ```
 
-## Buenas prácticas
+## Best practices
 
-- El cliente propone el ataque, el servidor valida: el cliente reproduce la animación al pulsar, pero el daño solo ocurre si el servidor confirma ventana, distancia, cooldown y línea de vista.
-- Nunca confíes en el tiempo del clip para validar daño; el servidor usa su propio temporizador.
-- Un ataque, una lectura: si el jugador no sabe si fue golpe débil o fuerte en 0.3 s, rediseña la anticipación.
-- Limita cancelaciones: permitir cancelar la anticipación rompe el compromiso; permite cancelar solo la cola de recuperación.
-- Sonido en el frame de impacto, no al pulsar el botón.
-- Documenta cada ataque en una ficha: duración, ventana, recuperación, cancelación, prioridad.
+- The client proposes the attack, the server validates: the client plays the animation on press, but damage only happens if the server confirms window, distance, cooldown, and line of sight.
+- Never trust clip timing to validate damage; the server uses its own timer.
+- One attack, one read: if the player doesn't know whether it was a weak or heavy hit within 0.3 s, redesign the anticipation.
+- Limit cancels: allowing anticipation to be cancelled breaks commitment; only allow cancelling the tail of recovery.
+- Sound on the impact frame, not on button press.
+- Document each attack in a card: duration, window, recovery, cancel, priority.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Sin anticipación:** golpe instantáneo imposible de esquivar. Siempre hay carga visible.
-2. **Impacto desincronizado:** el daño entra 0.2 s antes del visual. Ajusta el clip a la ventana, no al revés.
-3. **Hit-stop que congela la simulación:** pausar el `Humanoid` real para "sentir" el golpe abre exploits. Solo congela presentación.
-4. **Combos que se pisan:** el track 2 entra al 50% del track 1 y ambos se ven a medias. Define punto único de cancelación.
-5. **Recuperación inexistente:** spam de ataque sin coste. Añade compromiso proporcional al daño.
-6. **Arma flotante:** `Tool` mal agarrado; el golpe pierde toda credibilidad. Revisa agarre antes que el clip.
-7. **Hit-react eterno:** stun de 1 s por cada golpe jab; el jugador pierde el control. Escala el react al daño.
+1. **No anticipation:** instant hit impossible to dodge. Always show visible wind-up.
+2. **Desynced impact:** damage lands 0.2 s before the visual. Fit the clip to the window, not the other way around.
+3. **Hit-stop freezing simulation:** pausing the real `Humanoid` to "sell" the hit opens exploits. Only freeze presentation.
+4. **Combos stepping on each other:** track 2 enters at 50% of track 1 and both show half-blended. Define a single cancel point.
+5. **No recovery:** attack spam with no cost. Add commitment proportional to damage.
+6. **Floating weapon:** badly gripped `Tool`; the hit loses all credibility. Check the grip before the clip.
+7. **Eternal hit-react:** 1 s stun per jab; the player loses control. Scale react to damage.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Cada ataque tiene ficha con 3 fases y ventana de servidor anotada.
-- [ ] Anticipación legible por jugador nuevo en test ciego (esquiva al menos 50% sin tutorial).
-- [ ] Impacto visual y número de daño coinciden con latencia simulada de 150 ms.
-- [ ] Recuperación con compromiso real (medido: no se puede re-atacar ni esprintar).
-- [ ] Combos encadenan sin pops ni mezcla a medias.
-- [ ] Hit-react y muerte implementados y priorizados.
-- [ ] Validación de servidor (ventana, distancia, cooldown) verificada; la animación nunca otorga daño.
+- [ ] Each attack has a card with 3 phases and the server window noted.
+- [ ] Anticipation readable by a new player in a blind test (dodges at least 50% without tutorial).
+- [ ] Visual impact and damage number match with 150 ms simulated latency.
+- [ ] Recovery with real commitment (measured: cannot re-attack or sprint).
+- [ ] Combos chain without pops or half-blends.
+- [ ] Hit-react and death implemented and prioritized.
+- [ ] Server validation (window, distance, cooldown) verified; animation never grants damage.
 
-## Herramientas
+## Tools
 
-- Dummy de pruebas con visualización de ventana de impacto.
-- Ficha de ataque estándar (duración, ventana, recuperación, cancelación, prioridad).
-- Simulador de latencia para validar sincronía.
-- Checklist de feel (anticipación, hit-stop, sonido, retroceso) por ataque.
+- Test dummy with impact-window visualization.
+- Standard attack card (duration, window, recovery, cancel, priority).
+- Latency simulator to validate sync.
+- Feel checklist (anticipation, hit-stop, sound, recoil) per attack.
 
-## Limitaciones
+## Limitations
 
-- No diseña balance (daños, cooldowns, hitboxes como lógica); solo su expresión y sincronía visual.
-- No cubre VFX de partículas ni sonido más allá de su timing.
-- No cubre cámaras ni shake (ver `camera-systems`).
-- APIs fuera de la lista estable: "(verificar en create.roblox.com/docs)".
+- Does not design balance (damage, cooldowns, hitboxes as logic); only its expression and visual sync.
+- Does not cover particle VFX or sound beyond their timing.
+- Does not cover cameras or shake (see `camera-systems`).
+- APIs outside the stable list: "(verificar en create.roblox.com/docs)".

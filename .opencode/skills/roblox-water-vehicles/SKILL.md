@@ -1,60 +1,60 @@
 ---
 name: roblox-water-vehicles
-description: Vehículos acuáticos (flotación, oleaje, atraque, agua Terrain vs parts). Úsala cuando montes barcas, motos de agua o barcos con puertos.
+description: Water vehicles (buoyancy, waves, docking, Terrain vs part water). Use it when building boats, jet skis, or ships with harbors.
 ---
 
-# Vehículos Acuáticos
+# Water Vehicles
 
-## Objetivo
+## Objective
 
-Navegar con credibilidad arcade: flotación estable, respuesta a oleaje sin marear, controles de timón predecibles, puertos/atraque limpios y red con dueño único validado por servidor.
+Sail with believable arcade feel: stable buoyancy, wobble-free wave response, predictable rudder controls, clean harbors/docking, and networking with a single server-validated owner.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre barcas, lanchas, motos de agua y barcos del jugador: flotación, propulsión, atraque y red.
+Covers player boats, launches, jet skis, and ships: buoyancy, propulsion, docking, and networking.
 
-**Qué NO hace:**
+**What it does NOT do:**
 
-- NO cubre natación del personaje: ver `roblox-character-controller` (aquí solo embarque/desembarque).
-- NO cubre cámaras de persecución acuática: lo cubre `camera-systems`.
-- NO cubre pesca/economía/daño naval: sistemas aparte.
-- NO cubre NPCs navegando: lo cubre `roblox-npcs`.
-- NO cubre audio de agua/motor: solo expone velocidad/estado como requisito.
-- NO cubre terreno como tal: decide entre agua de `Terrain` o volúmenes de partes, pero el esculpido del terreno es otra disciplina.
+- Does NOT cover character swimming: see `roblox-character-controller` (only embark/disembark here).
+- Does NOT cover water chase cameras: covered by `camera-systems`.
+- Does NOT cover fishing/economy/naval damage: separate systems.
+- Does NOT cover navigating NPCs: covered by `roblox-npcs`.
+- Does NOT cover water/engine audio: only exposes speed/state as a requirement.
+- Does NOT cover terrain as such: it decides between `Terrain` water or part volumes, but sculpting terrain is another discipline.
 
-## Casos de uso
+## Use cases
 
-1. Barca de pesca tranquila para explorar.
-2. Moto de agua rápida con derrape.
-3. Barco grande con varios pasajeros.
-4. Puerto con amarres donde dejar el bote.
-5. Bote que vuelca con cada ola o se queda clavado en la orilla.
-6. Jugadores que llevan el bote a tierra y lo usan como coche.
+1. Calm fishing boat for exploring.
+2. Fast jet ski with drift.
+3. Large boat with several passengers.
+4. Harbor with moorings to leave the boat.
+5. Boat that capsizes with every wave or gets stuck on the shore.
+6. Players who take the boat ashore and use it as a car.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Elige agua `Terrain` vs partes.** Agua de `Terrain` (verificar en create.roblox.com/docs): oleaje y natación integrados, mejor look, menos control. Volúmenes de partes: control total de flotación y límites, más trabajo. Decide por mapa: mundo abierto = `Terrain`; arena cerrada = partes.
-2. **Define flotación arcade.** Línea de flotación (qué % del casco va sumergido), adrizado (el casco tiende a horizontal con retardo), cabeceo/balanceo máximos. La barca nunca vuelca 180° salvo daño diseñado; ante ola grande se inclina y recupera.
-3. **Monta casco + `Seat`.** Casco con colisión simple (sin detalles que enganchen en muelles), `Seat` de patrón + pasajeros, punto de embarque a bordo. Helice/remo visual sin colisión.
-4. **Propulsión y timón.** Motor: aceleración suave, velocidad max por tipo (barca 15, lancha 40, moto 55, valores a calibrar). Timón: gira más a baja velocidad, menos a alta (evita giros imposibles a 50 studs/s). Marcha atrás lenta con visibilidad.
-5. **Oleaje sin mareo.** Balanceo visual (±5–10°) + desplazamiento vertical suave; la cámara (ver `camera-systems`) debe estabilizar horizonte. Si el oleaje mueve la física real, capa su fuerza: estética sí, catapulta no.
-6. **Orillas y encallado.** Define profundidad mínima navegable: bajo ella, el bote frena y encalla (no atraviesa tierra). Empujar a tierra = el bote se detiene y avisa; prohibido usarlo como coche (sin ruedas no anda en tierra).
-7. **Puertos y atraque.** Zonas de atraque etiquetadas (`CollectionService` "amarre"): al entrar despacio, opción de amarrar (frena, fija posición, permite bajar seguro). Pasarela/punto de desembarque libre comprobado; nunca dentro del muelle.
-8. **Embarque/desembarque.** Embarque: cerca + bote casi quieto + sitio libre, vía `ProximityPrompt` o `Seat`. Desembarque: al muelle si hay amarre cercano, si no al agua (nada) con coste pactado. Prohibido desembarcar a toda velocidad.
-9. **Ownership y validación.** Patrón simula, demás ven réplica; al bajar, propiedad al servidor. Servidor valida: velocidad max, dentro de agua/mapa, sin "navegar" por tierra. El cliente propone timón, el servidor valida posición.
-10. **Congela la ficha.** Tipo, flotación, velocidades, oleaje, reglas de encallado/atraque y ownership.
+1. **Pick `Terrain` vs part water.** `Terrain` water (verify at create.roblox.com/docs): integrated waves and swimming, better look, less control. Part volumes: full control of buoyancy and limits, more work. Decide by map: open world = `Terrain`; closed arena = parts.
+2. **Define arcade buoyancy.** Waterline (what % of the hull sits submerged), righting (the hull tends to horizontal with delay), max pitch/roll. The boat never capsizes 180° except by designed damage; on a big wave it heels and recovers.
+3. **Assemble hull + `Seat`.** Hull with simple collision (no details that snag on docks), pattern `Seat` + passengers, boarding point aboard. Propeller/oar visuals with no collision.
+4. **Propulsion and rudder.** Engine: smooth acceleration, max speed per type (boat 15, launch 40, jet ski 55, values to calibrate). Rudder: turns more at low speed, less at high (avoids impossible turns at 50 studs/s). Slow reverse with visibility.
+5. **Waves without motion sickness.** Visual heel (±5–10°) + smooth vertical bob; the camera (see `camera-systems`) must stabilize the horizon. If waves move real physics, cap their force: aesthetics yes, catapult no.
+6. **Shores and grounding.** Define minimum navigable depth: below it, the boat slows and grounds (never crosses land). Pushing ashore = the boat stops and warns; forbidden to use it as a car (no wheels, no driving on land).
+7. **Harbors and docking.** Docking zones tagged (`CollectionService` mooring): on entering slowly, option to moor (brakes, locks position, allows safe exit). Gangway/disembark point verified clear; never inside the dock.
+8. **Embark/disembark.** Embark: nearby + boat nearly still + free seat, via `ProximityPrompt` or `Seat`. Disembark: to the dock if a nearby mooring, else to water (swims) with agreed cost. Never disembark at full speed.
+9. **Ownership and validation.** Pattern simulates, others see a replica; on exit, ownership to the server. Server validates: max speed, inside water/map, no "sailing" on land. The client proposes rudder, the server validates position.
+10. **Freeze the spec sheet.** Type, buoyancy, speeds, waves, grounding/docking rules, and ownership.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- **Flotación arcade:** fuerza vertical hacia línea de flotación + pares de adrizado (vuelven el casco a horizontal). Simple, estable en red y suficiente para gameplay.
-- **Casco simple:** una o dos partes de colisión; barandillas, mástiles y motores visuales sin colisión para no engancharse en cada pilote.
-- **`Seat` a bordo:** el `Humanoid` sentado suspende el controlador a pie; al desembarcar se restaura (coordina con `roblox-character-controller`). Patrón y pasajeros diferenciados.
-- **Agua `Terrain` vs partes:** `Terrain` da olas y material agua gratis pero el comportamiento exacto depende de la plataforma (verificar en create.roblox.com/docs); partes/volúmenes dan control total de límites y profundidad a costa de implementar olas.
-- **Encallado:** sonda de profundidad bajo el casco; si es menor que el calado, frena proporcionalmente hasta detener. Así la orilla es límite natural.
-- **Amarre:** estado "atracado" que fija el bote (sin simulación libre) y libera al patrón sin deriva. Desamarrar devuelve ownership al patrón.
-- **Olas y red:** el balanceo visual puede ser local por cliente (no se replica la fase exacta); la posición/velocidad sí se validan en servidor.
+- **Arcade buoyancy:** vertical force toward the waterline + righting torques (returning the hull to horizontal). Simple, network-stable, and enough for gameplay.
+- **Simple hull:** one or two collision parts; rails, masts, and visual engines with no collision so they don't catch on every piling.
+- **`Seat` aboard:** the seated `Humanoid` suspends the on-foot controller; on disembark it's restored (coordinate with `roblox-character-controller`). Pattern and passengers differentiated.
+- **`Terrain` vs part water:** `Terrain` gives waves and water material for free but exact behavior depends on the platform (verify at create.roblox.com/docs); part/volume water gives full control of limits and depth at the cost of implementing waves.
+- **Grounding:** depth probe under the hull; if shallower than draft, brake proportionally to a stop. That makes the shore a natural limit.
+- **Mooring:** "docked" state that locks the boat (no free simulation) and releases the pattern without drift. Unmooring returns ownership to the pattern.
+- **Waves and networking:** visual bob can be client-local (exact phase isn't replicated); position/velocity are server-validated.
 
-Ejemplo ilustrativo (encallado como freno, no código final):
+Illustrative example (grounding as a brake, not final code):
 
 ```luau
 -- Ilustrativo: poca profundidad = freno progresivo, nunca atravesar tierra.
@@ -64,45 +64,45 @@ if profundidad < CALADO_MIN then
 end
 ```
 
-## Buenas prácticas
+## Best practices
 
-- El cliente propone timón/acelerador, el servidor valida: velocidad, agua bajo el casco y zona de mapa.
-- Un dueño a la vez; atracado = propiedad segura en servidor.
-- Solo el casco colisiona; todo lo demás es visual.
-- Desembarque siempre a punto libre (muelle o agua pactada); jamás dentro de geometría.
-- Oleaje que se ve pero no expulsa: inclina, no catapulta.
-- Orilla como límite natural: sin agua suficiente no hay navegación, sin excepciones.
+- The client proposes rudder/throttle, the server validates: speed, water under hull, and map zone.
+- One owner at a time; docked = safe ownership on server.
+- Only the hull collides; everything else is visual.
+- Always disembark to a clear point (dock or agreed water); never inside geometry.
+- Waves that show but don't eject: heel, don't catapult.
+- Shore as natural limit: without enough water there's no sailing, no exceptions.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Bote-coche:** permite navegar por tierra. Encallado obligatorio bajo calado mínimo.
-2. **Vuelco con cada ola:** adrizado débil o olas físicas sin capar. Inclina visual, estabiliza físico.
-3. **Muelle con colisión dentada:** el bote se engancha al atracar. Muelles con colisión simple y defensas.
-4. **Desembarque en el muelle (dentro):** aparece atascado en la madera. Punto libre comprobado.
-5. **Sin amarre:** el bote a la deriva se pierde o bloquea el puerto. Estado atracado + respawn pactado.
-6. **Pasajero-patrón:** pasajeros que pueden acelerar o girar. Solo el patrón tiene input.
-7. **Servidor que confía:** bote a 200 studs/s por tierra. Valida velocidad + agua + zona.
+1. **Boat-car:** allows sailing on land. Mandatory grounding below minimum draft.
+2. **Capsize on every wave:** weak righting or uncapped physical waves. Heel visually, stabilize physically.
+3. **Toothed dock collision:** the boat snags when docking. Docks with simple collision and fenders.
+4. **Disembark inside the dock:** spawns stuck in the wood. Verified-clear point.
+5. **No mooring:** the drifting boat is lost or blocks the harbor. Docked state + agreed respawn.
+6. **Passenger-pattern:** passengers who can steer or throttle. Only the pattern has input.
+7. **Trusting server:** boat at 200 studs/s on land. Validate speed + water + zone.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Ficha con flotación, velocidades, oleaje y reglas de atraque.
-- [ ] Encallado verificado en 3 orillas: frena y detiene, nunca atraviesa.
-- [ ] Atraque en amarre etiquetado con embarque/desembarque limpios (20 intentos).
-- [ ] Oleaje visible sin marear cámara ni expulsar el bote (prueba con horizonte de `camera-systems`).
-- [ ] Validación de servidor rechaza velocidad/teleport/navegación terrestre.
-- [ ] Controles probados en PC + (mando o táctil).
-- [ ] Bote abandonado: deriva pactada o respawn sin bloquear el puerto.
+- [ ] Spec sheet with buoyancy, speeds, waves, and docking rules.
+- [ ] Grounding verified on 3 shores: brakes and stops, never crosses.
+- [ ] Docking at tagged mooring with clean embark/disembark (20 attempts).
+- [ ] Visible waves without camera sickness or ejecting the boat (`camera-systems` horizon test).
+- [ ] Server validation rejects speed/teleport/land-sailing.
+- [ ] Controls tested on PC + (gamepad or touch).
+- [ ] Abandoned boat: agreed drift or respawn without blocking the harbor.
 
-## Herramientas
+## Tools
 
-- Lago de pruebas (aguas profundas, orilla suave, muelle con 2 amarres, zona de olas).
-- Ficha de barco + tabla de amarres etiquetados.
-- Sonda de profundidad visible para calibrar calado.
-- Prueba de exploit (tierra, velocidad, teleport, robo).
+- Test lake (deep water, soft shore, dock with 2 moorings, wave zone).
+- Boat spec sheet + tagged mooring table.
+- Visible depth probe for calibrating draft.
+- Exploit test (land, speed, teleport, theft).
 
-## Limitaciones
+## Limitations
 
-- No cubre esculpido de `Terrain` ni ríos/oceanos como arte de nivel.
-- No cubre combate naval, pesca ni economía.
-- No cubre natación/buceo del personaje (ver controlador).
-- APIs fuera de la lista estable: "(verificar en create.roblox.com/docs)".
+- Does not cover `Terrain` sculpting or rivers/oceans as level art.
+- Does not cover naval combat, fishing, or economy.
+- Does not cover character swimming/diving (see controller).
+- APIs outside the stable list: "(verify at create.roblox.com/docs)".

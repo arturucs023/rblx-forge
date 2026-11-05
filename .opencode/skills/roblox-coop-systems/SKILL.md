@@ -1,150 +1,148 @@
 ---
 name: roblox-coop-systems
-description: Diseña juego cooperativo con revivir, reparto de botín y objetivos. Úsala cuando necesites down-but-not-out, botín compartido, dificultad escalada o sync de objetivos de equipo.
+description: Design cooperative play with revive, loot sharing, and objectives. Use it when you need down-but-not-out, shared loot, scaled difficulty, or team objective sync.
 ---
 
-# Sistemas cooperativos que unen en vez de frustrar
+# Cooperative systems that unite instead of frustrating
 
-## Objetivo
+## Objective
 
-Construir cooperación real: revivir compañeros, reparto de botín sin peleas,
-dificultad que escala con el grupo, objetivos sincronizados y ayudas que
-premien jugar juntos en vez de castigar al que se cae o llega tarde.
+Build real cooperation: reviving teammates, fight-free loot sharing, difficulty that scales with the group, synchronized objectives, and assists that reward playing together instead of punishing the player who drops or arrives late.
 
-## Alcance y límites
+## Scope and limits
 
-**Diferenciación declarada:** las skills instaladas `roblox-networking`,
-`roblox-teleport`, `roblox-teleport-matchmaking`, `roblox-social-systems` y
-`roblox-security` cubren transporte, teleport, matchmaking, social y
-validación fina. Esta skill NO repite el transporte: cubre diseño de sistemas
-cooperativos (revivir, reparto de botín, dificultad escalada, sync de
-objetivos).
+**Stated differentiation:** the installed skills `roblox-networking`,
+`roblox-teleport`, `roblox-teleport-matchmaking`, `roblox-social-systems`, and
+`roblox-security` cover transport, teleport, matchmaking, social, and
+fine-grained validation. This skill does NOT repeat transport: it covers cooperative system design
+(revive, loot sharing, scaled difficulty, objective
+sync).
 
-Esta skill NO hace:
+This skill does NOT do:
 
-- Replicación momento a momento → lo cubre `roblox-state-replication`.
-- Recovery tras desconexión → lo cubre `roblox-disconnect-recovery`.
-- Servidores privados como producto → lo cubre `roblox-private-servers`.
-- Competitivo y ranked → lo cubre `roblox-competitive-systems`.
+- Moment-to-moment replication → covered by `roblox-state-replication`.
+- Recovery after disconnect → covered by `roblox-disconnect-recovery`.
+- Private servers as a product → covered by `roblox-private-servers`.
+- Competitive and ranked → covered by `roblox-competitive-systems`.
 
-## Casos de uso
+## Use cases
 
-1. Sistema down-but-not-out con revivir por compañero en 5 s.
-2. Botín que se reparte sin que el más rápido se lo lleve todo.
-3. Mazmorra que escala enemigos según 1, 2, 3 o 4 jugadores.
-4. Objetivo de equipo ("activad 3 palancas a la vez") sincronizado.
-5. Amigo que se une a mitad de misión sin romperla.
-6. Grupo donde uno es nivel 50 y otro nivel 5, y ambos se divierten.
+1. Down-but-not-out system with 5 s teammate revive.
+2. Loot shared so the fastest player doesn't take everything.
+3. Dungeon that scales enemies for 1, 2, 3, or 4 players.
+4. Team objective ("activate 3 levers at once") synchronized.
+5. Friend joining mid-mission without breaking it.
+6. Group where one is level 50 and another level 5, and both have fun.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define la fantasía cooperativa.** ¿Héroes que se rescatan, equipo
-   táctico, o amigos de chill? El revivir dramatico encaja en la primera; el
-   reparto estricto, en la segunda. Sin fantasía clara, los sistemas chocan.
-2. **Diseña el ciclo de caída y revivir.** Estados: sano → caído (reanimable,
-   tiempo límite) → fuera (espera o especta). Tiempos, distancia de revive y
-   coste (vulnerabilidad del que revive) explícitos. Ejemplo ilustrativo:
+1. **Define the cooperative fantasy.** Heroes who rescue each other, tactical
+   team, or chill friends? Dramatic revive fits the first; strict
+   distribution fits the second. Without a clear fantasy, systems clash.
+2. **Design the down-and-revive loop.** States: healthy → down (revivable,
+   time limit) → out (waits or spectates). Explicit times, revive distance, and
+   cost (vulnerability of the reviver). Illustrative example:
    ```luau
    -- Ilustrativo: máquina de estados del caído (tiempos en segundos).
    local FASES = { Sano = 0, Caido = 1, Fuera = 2 }
    local TIEMPO_REANIMAR = 5
    local TIEMPO_SANGRADO = 30 -- caído sin ayuda -> fuera
    ```
-3. **El servidor valida lo importante.** Caídas, revives, reparto y progreso
-   de objetivos se resuelven en servidor con `RemoteEvent`; el cliente pide
-   y anima, el servidor autoriza. Anti-exploit fino: `roblox-security`.
-4. **Elige el modelo de botín.** Opciones: instanciado por jugador (cada uno
-   ve el suyo, cero conflicto), reparto por turnos, o necesidad/codicia con
-   votación. Para la mayoría de juegos, botín instanciado + comercio opcional
-   da menos peleas que cualquier votación.
-5. **Escala la dificultad con el grupo.** Fórmula explícita (p. ej. vida de
-   enemigos ×(1 + 0.35 por jugador extra), sin pasar de N). Documenta la
-   fórmula; la dificultad "a ojo" siempre queda rota en algún tamaño.
-6. **Sincroniza objetivos en el servidor.** Progreso de equipo (palancas,
-   llaves, jefes) como estado de servidor replicado a todos; el join tardío
-   recibe snapshot del progreso (`roblox-state-replication`,
-   `roblox-disconnect-recovery` para la vuelta).
-7. **Trata niveles dispares.** Bandas de nivel por misión, escalado suave del
-   débil hacia arriba (nunca capar al fuerte a la baja de forma humillante) y
-   recompensas que sirvan a ambos. Sin esto, invitar a un amigo nuevo es un
-   castigo.
-8. **Diseña ayudas, no castigos.** Bonus por revive, combo de equipo, reanimar
-   da puntos: premia cooperar en vez de penalizar no hacerlo. Los castigos
-   por "no ayudar" generan toxicidad, no teamwork.
-9. **Resuelve el duelo final: ¿qué pasa si todos caen?** Wipe con reintento
-   desde checkpoint, nunca desde cero salvo diseño roguelike declarado.
-   Checkpoint generoso = amigos que siguen jugando.
-10. **Organiza con `Teams` donde encaje.** Equipos, roles y fuego amigo
-    (normalmente desactivado en coop) con `Teams` y `Players`; lo social
-    persistente (grupos, amigos) es de `roblox-social-systems`.
-11. **Prueba con grupos reales.** Solo, dúo, trío, lleno; un veterano + un
-    novato; uno que se cae a mitad del jefe. Cada combinación revela un bug
-    distinto de diseño.
-12. **Mide cooperación.** Revives por sesión, botín disputado (cero es la
-    meta con botín instanciado), abandono a mitad de misión. Si nadie revive,
-    el revive está mal diseñado, no los jugadores.
+3. **The server validates what matters.** Downs, revives, distribution, and progress
+   of objectives are resolved on the server with `RemoteEvent`; the client asks
+   and animates, the server authorizes. Fine-grained exploit handling: `roblox-security`.
+4. **Pick the loot model.** Options: instanced per player (each sees
+   their own, zero conflict), round-robin, or need/greed with
+   voting. For most games, instanced loot + optional trading
+   causes fewer fights than any vote.
+5. **Scale difficulty with the group.** Explicit formula (e.g. enemy health
+   ×(1 + 0.35 per extra player), capped at N). Document the
+   formula; eyeballed difficulty always breaks at some size.
+6. **Sync objectives on the server.** Team progress (levers,
+   keys, bosses) as server state replicated to everyone; late joiners
+   receive a progress snapshot (`roblox-state-replication`,
+   `roblox-disconnect-recovery` for the return).
+7. **Handle disparate levels.** Level bands per mission, gentle scaling of the
+   weak player upward (never humiliatingly capping the strong one downward), and
+   rewards useful to both. Without this, inviting a new friend is a
+   punishment.
+8. **Design assists, not punishments.** Bonus for revives, team combos, reviving
+   grants points: reward cooperating instead of penalizing not doing so. Punishments
+   for "not helping" breed toxicity, not teamwork.
+9. **Resolve the final question: what if everyone goes down?** Wipe with retry
+   from checkpoint, never from zero unless it's a stated roguelike design.
+   Generous checkpoints = friends who keep playing.
+10. **Organize with `Teams` where it fits.** Teams, roles, and friendly fire
+    (usually off in coop) with `Teams` and `Players`; persistent
+    social (groups, friends) belongs to `roblox-social-systems`.
+11. **Test with real groups.** Solo, duo, trio, full; one veteran + one
+    newcomer; one dropping mid-boss. Each combination reveals a different
+    design bug.
+12. **Measure cooperation.** Revives per session, contested loot (zero is the
+    goal with instanced loot), mid-mission abandonment. If nobody revives,
+    the revive is badly designed, not the players.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- El servidor valida lo importante: estados de caída, elegibilidad de revive
-  (distancia, tiempo, interrupciones), reparto y objetivos. Todo con
-  autoridad de servidor.
-- Persistencia: progreso cooperativo duradero (misiones completadas,
-  recompensas) por jugador con escrituras limitadas; el estado de misión en
-  curso es efímero y vive en servidor, con snapshot para join tardío.
-- Errores: si falla el guardado de recompensa, reintenta con backoff y no
-  dupliques (idempotencia como en `roblox-disconnect-recovery`); `pcall` en
-  rutas de reparto y guardado.
-- `Players` y `Teams` para organización; `RemoteEvent` para propuestas y
-  `RemoteFunction` solo para consultas con respuesta inmediata.
-- Coordinación entre servidores solo si el diseño la exige
-  (`MemoryStoreService` / `MessagingService`, cuotas: verificar en
+- The server validates what matters: down states, revive eligibility
+  (distance, time, interruptions), distribution, and objectives. All with
+  server authority.
+- Persistence: lasting cooperative progress (completed missions,
+  rewards) per player with limited writes; in-progress mission state is
+  ephemeral and lives on the server, with a snapshot for late joiners.
+- Errors: if reward saving fails, retry with backoff and don't
+  duplicate (idempotency as in `roblox-disconnect-recovery`); `pcall` on
+  distribution and save paths.
+- `Players` and `Teams` for organization; `RemoteEvent` for proposals and
+  `RemoteFunction` only for queries with an immediate response.
+- Cross-server coordination only if the design requires it
+  (`MemoryStoreService` / `MessagingService`, quotas: verify at
   create.roblox.com/docs).
 
-## Buenas prácticas
+## Best practices
 
-- Botín instanciado por defecto; votaciones solo si el género lo exige.
-- Fórmula de escalado escrita, con tope y probada en cada tamaño.
-- Revivir rápido de ejecutar y claro de leer (anillo, barra, sonido).
-- Premiar la ayuda visiblemente; no castigar su ausencia.
-- Wipe con checkpoint generoso, nunca restart cruel por defecto.
-- Bandas de nivel para que invitar novatos no castigue.
+- Instanced loot by default; voting only if the genre demands it.
+- Scaling formula written down, with a cap and tested at each size.
+- Revive fast to execute and clear to read (ring, bar, sound).
+- Visibly reward helping; never punish its absence.
+- Wipe with generous checkpoint, never cruel restart by default.
+- Level bands so inviting newcomers doesn't punish.
 
-## Errores frecuentes
+## Common mistakes
 
-1. Botín único que se lleva el más rápido → fin de la amistad.
-2. Dificultad fija: trivial en grupo, imposible solo.
-3. Revive tan lento o arriesgado que nadie lo usa.
-4. Objetivos con progreso solo en un cliente → desync de misión.
-5. Capar al veterano para "igualar" → el veterano deja de venir.
-6. Wipe desde cero sin avisar → abandono masivo.
-7. Cliente que decide su propio revive o su botín → exploit directo.
+1. Single loot item taken by the fastest → end of the friendship.
+2. Fixed difficulty: trivial in a group, impossible solo.
+3. Revive so slow or risky nobody uses it.
+4. Objectives with progress on a single client → mission desync.
+5. Capping the veteran to "equalize" → the veteran stops coming.
+6. Wipe from zero without warning → mass abandonment.
+7. Client deciding its own revive or loot → direct exploit.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Ciclo sano→caído→fuera con tiempos y costes documentados.
-- [ ] Modelo de botín elegido e implementado sin disputas en prueba.
-- [ ] Fórmula de escalado escrita y probada en cada tamaño de grupo.
-- [ ] Objetivos como estado de servidor con snapshot para tardíos.
-- [ ] Niveles dispares tratados (bandas o escalado suave).
-- [ ] Wipe con checkpoint y ayudas que premian cooperar.
-- [ ] Todo lo crítico validado en servidor; métricas de coop sanas.
+- [ ] Healthy→down→out cycle with documented times and costs.
+- [ ] Loot model chosen and implemented without disputes in testing.
+- [ ] Scaling formula written and tested at each group size.
+- [ ] Objectives as server state with snapshot for late joiners.
+- [ ] Disparate levels handled (bands or gentle scaling).
+- [ ] Wipe with checkpoint and assists that reward cooperating.
+- [ ] Everything critical validated on the server; healthy coop metrics.
 
-## Herramientas
+## Tools
 
-- `Players`, `Teams` para organización de equipo y roles.
-- `RemoteEvent` / `RemoteFunction` para acciones validadas en servidor.
-- `SocialService` para invitar amigos (social fino:
-  `roblox-social-systems`; miembros: verificar en
+- `Players`, `Teams` for team organization and roles.
+- `RemoteEvent` / `RemoteFunction` for server-validated actions.
+- `SocialService` to invite friends (fine-grained social:
+  `roblox-social-systems`; members: verify at
   create.roblox.com/docs).
-- `TeleportService`, `TeleportOptions` si la misión mueve de lugar
-  (detalle: `roblox-teleport`).
+- `TeleportService`, `TeleportOptions` if the mission moves places
+  (detail: `roblox-teleport`).
 
-## Limitaciones
+## Limitations
 
-- No hace replicación fina ni recovery: deriva a
-  `roblox-state-replication` y `roblox-disconnect-recovery`.
-- No hace social persistente ni validación fina: deriva a
-  `roblox-social-systems` y `roblox-security`.
-- No diseña competitivo: deriva a `roblox-competitive-systems`.
-- Verifica miembros y cuotas dudosos en create.roblox.com/docs.
+- Does not do fine-grained replication or recovery: see
+  `roblox-state-replication` and `roblox-disconnect-recovery`.
+- Does not do persistent social or fine-grained validation: see
+  `roblox-social-systems` and `roblox-security`.
+- Does not design competitive: see `roblox-competitive-systems`.
+- Verify doubtful members and quotas at create.roblox.com/docs.

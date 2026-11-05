@@ -1,49 +1,49 @@
 ---
-name: Menú Principal Roblox
-description: Menús principales con jugar, modos, noticias y teaser de temporada. Úsala cuando crees la pantalla de título, selector de modos, panel de eventos o transiciones de entrada/salida.
+name: Roblox Main Menu
+description: Main menus with play, modes, news, and season teaser. Use it when creating the title screen, mode selector, event panel, or entry/exit transitions.
 ---
 
-# Menú Principal Roblox
+# Roblox Main Menu
 
-## Objetivo
+## Objective
 
-Construir el menú principal como puerta del juego: que el jugador llegue a jugar en 2 clics, descubra modos y eventos activos, y sienta la identidad del juego antes de entrar. Incluye entrada animada, navegación entre secciones y salida con transición hacia la partida o el modo elegido.
+Build the main menu as the game's front door: the player reaches play in 2 clicks, discovers active modes and events, and feels the game's identity before entering. Includes animated entrance, section navigation, and exit transition into the match or chosen mode.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre: pantalla de título, botones Jugar/Modos, panel de noticias/eventos, prueba social (jugadores en línea, amigos), teaser de pase de temporada, pie con ajustes/salir, y transiciones de entrada/salida del menú.
+Covers: title screen, Play/Modes buttons, news/event panel, social proof (players online, friends), season pass teaser, footer with settings/exit, and menu entry/exit transitions.
 
-NO hace:
+Does NOT do:
 
-- Mecánica genérica responsiva (layouts, constraints, stylesheets): lo cubren `roblox-ui` y `roblox-user-interfaces`.
-- Diseño UX previo o wireframes de descubrimiento: lo cubre `roblox-game-ux`; esta skill implementa.
-- Onboarding de primera sesión paso a paso: lo cubre `roblox-welcome-onboarding`.
-- Pausa dentro de partida: lo cubre `roblox-pause-menu`.
-- Lobby con salas y matchmaking detallado: lo cubre `roblox-lobby-ui`.
+- Generic responsive mechanics (layouts, constraints, stylesheets): covered by `roblox-ui` and `roblox-user-interfaces`.
+- Prior UX design or discovery wireframes: covered by `roblox-game-ux`; this skill implements.
+- Step-by-step first-session onboarding: covered by `roblox-welcome-onboarding`.
+- In-match pause: covered by `roblox-pause-menu`.
+- Lobby with detailed lobbies and matchmaking: covered by `roblox-lobby-ui`.
 
-## Casos de uso
+## Use cases
 
-- Título con botón Jugar gigante + fila de modos (Casual, Ranked, Evento).
-- Panel lateral de noticias con 2-3 tarjetas e imagen.
-- "12.4K jugando ahora · 3 amigos en línea" como prueba social.
-- Teaser de temporada con barra de progreso y botón ver pase.
-- Salida animada que funde el menú y revela la carga de partida.
+- Title with giant Play button + mode row (Casual, Ranked, Event).
+- Side news panel with 2-3 cards and image.
+- "12.4K playing now · 3 friends online" as social proof.
+- Season teaser with progress bar and view pass button.
+- Animated exit that fades the menu and reveals match loading.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define las 3 rutas críticas.** Jugar rápido, elegir modo, ver evento. Todo lo demás es secundario y va al pie o a subpanel. Si Jugar no se alcanza en 2 clics, rehaz la jerarquía.
-2. **Maqueta la composición.** Hero a la izquierda (título + Jugar + modos), columna derecha con noticias/eventos en PC; en móvil, hero arriba y pestañas abajo (Jugar/Noticias/Pase). Dibuja los 3 tamaños antes de construir.
-3. **Construye el esqueleto.** `ScreenGui` en `PlayerGui` → `Frame` raíz a `Scale` → zonas: Header (`TextLabel` título + `TextLabel` jugadores en línea), Hero, panel Noticias (`ScrollingFrame` + `UIListLayout`), pie (`TextButton` Ajustes, Ayuda, Salir).
-4. **Implementa modos como tarjetas.** Cada modo = `Frame` + `ImageLabel` miniatura + `TextLabel` nombre + `TextLabel` meta (jugadores/duración) + `TextButton` Jugar. Selección marca con `UIStroke` de acento; el resto queda atenuado.
-5. **Añade noticias y teaser.** Noticias = lista de 2-4 tarjetas con imagen, titular de 1 línea y fecha. Teaser de temporada = `Frame` con `TextLabel` + barra de progreso (`Frame` fondo + `Frame` relleno a `Scale`) + botón. Sin datos reales, usa contenido de ejemplo claramente marcado.
-6. **Prueba social honesta.** Muestra conteos solo si vienen del servidor/sesión (verificar en create.roblox.com/docs); nunca inventes cifras en producción. Si no hay dato, oculta el bloque en vez de mostrar "0".
-7. **Transiciones de entrada/salida.** Entrada: fundido + subida del hero con `TweenService` (0.35 s). Salida a partida: fundido a negro con `CanvasGroup` y luego oculta el menú. El botón presionado da feedback inmediato (<100 ms) aunque la carga tarde.
-8. **Estados y errores.** Sin conexión: banner reintentable. Modo lleno: tarjeta en disabled con etiqueta "Lleno". Evento terminado: tarjeta atenuada con "Finalizado". Loading de Jugar: botón en estado loading que ignora doble clic.
-9. **Verifica responsive y rendimiento.** Prueba 1920x1080, 1366x768 y móvil vertical. Miniaturas comprimidas, máximo 1 `ImageLabel` grande de fondo. Sin vídeos ni partículas pesadas en el menú.
+1. **Define the 3 critical paths.** Quick play, pick mode, view event. Everything else is secondary and goes to the footer or a sub-panel. If Play isn't reachable in 2 clicks, redo the hierarchy.
+2. **Mock up the composition.** Hero left (title + Play + modes), right column with news/events on PC; on mobile, hero on top and tabs below (Play/News/Pass). Draw the 3 sizes before building.
+3. **Build the skeleton.** `ScreenGui` in `PlayerGui` → root `Frame` at `Scale` → zones: Header (`TextLabel` title + `TextLabel` players online), Hero, News panel (`ScrollingFrame` + `UIListLayout`), footer (`TextButton` Settings, Help, Exit).
+4. **Implement modes as cards.** Each mode = `Frame` + `ImageLabel` thumbnail + `TextLabel` name + `TextLabel` meta (players/duration) + `TextButton` Play. Selection marked with `UIStroke` accent; the rest dimmed.
+5. **Add news and teaser.** News = 2-4 card list with image, 1-line headline, and date. Season teaser = `Frame` with `TextLabel` + progress bar (`Frame` background + `Frame` fill at `Scale`) + button. Without real data, use clearly marked sample content.
+6. **Honest social proof.** Show counts only if they come from the server/session (see create.roblox.com/docs); never invent production figures. If there is no data, hide the block instead of showing "0".
+7. **Entry/exit transitions.** Entry: fade + hero rise with `TweenService` (0.35 s). Exit to match: fade to black with `CanvasGroup` then hide the menu. The pressed button gives immediate feedback (<100 ms) even if loading takes a while.
+8. **States and errors.** No connection: retryable banner. Full mode: card in disabled state with "Full" label. Ended event: dimmed card with "Finished". Play loading: button in loading state ignoring double-click.
+9. **Verify responsive and performance.** Test 1920x1080, 1366x768, and portrait mobile. Compressed thumbnails, at most 1 large background `ImageLabel`. No videos or heavy particles in the menu.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Jerarquía recomendada (clases estables):
+- Recommended hierarchy (stable classes):
 
   ```luau
   -- Ejemplo ilustrativo: esqueleto del menú principal
@@ -62,58 +62,58 @@ NO hace:
   -- Hero, NewsPanel y Footer cuelgan de root con tamaños Scale.
   ```
 
-- Navegación por pestañas: un `Frame` contenedor + `TextButton`s que alternan `Visible` de subpaneles; guarda la pestaña activa en un atributo para telemetría.
-- `TweenService` para fundidos: anima `GroupTransparency` de `CanvasGroup` o `BackgroundTransparency` + `TextTransparency` en grupo. Evita animar `Size` cada frame en listas largas.
-- `UIGridLayout` para la fila de modos en PC, `UIListLayout` vertical en móvil; cambia la orientación por `UISizeConstraint` o código según viewport (verificar en create.roblox.com/docs).
-- Contadores y noticias: la UI solo pinta; los datos llegan del servidor o de configuración (verificar en create.roblox.com/docs). Define un timeout: si no llegan en 3 s, muestra estado de carga y luego fallback.
-- `GuiService` para respetar menús del sistema y no solapar el botón de Roblox.
+- Tab navigation: a `Frame` container + `TextButton`s toggling sub-panel `Visible`; keep the active tab in an attribute for telemetry.
+- `TweenService` for fades: animate `CanvasGroup` `GroupTransparency` or `BackgroundTransparency` + `TextTransparency` as a group. Avoid animating `Size` every frame in long lists.
+- `UIGridLayout` for the mode row on PC, vertical `UIListLayout` on mobile; switch orientation via `UISizeConstraint` or viewport code (see create.roblox.com/docs).
+- Counters and news: the UI only paints; data comes from the server or configuration (see create.roblox.com/docs). Define a timeout: if they don't arrive in 3 s, show loading then fallback.
+- `GuiService` to respect system menus and not overlap the Roblox button.
 
-### Identidad visual de esta skill (original, no copiar)
+### Visual identity of this skill (original, do not copy)
 
-- Dirección "cartel cinematográfico": fondo oscuro grafito (#10131D) con imagen hero a la derecha al 45% y viñeta; acento eléctrico cian (#38E1FF) + dorado de evento (#FFC53D).
-- Tipografía: título display extra-negrita 40-56, nombres de modo 20 en semibold, meta 13 en regular gris claro. Todo con `UITextSizeConstraint` min/max.
-- Composición: rejilla 12 columnas en PC (hero 7, lateral 5); móvil en pila con pestañas inferiores. `UIPadding` 20-28, tarjetas con `UICorner` 14 y `UIStroke` 1 px translúcido.
-- Espaciado: 16 entre tarjetas, 24 entre secciones. Nada pegado al borde: margen seguro mínimo 5% en móvil.
-- Estados: tarjeta hover eleva 2 px + brillo, pressed escala 0.98, disabled 45% transparencia + etiqueta, loading con shimmer en la miniatura, seleccionada con `UIStroke` cian de 2 px.
-- Animación: entrada escalonada hero→modos→noticias (retardo 60 ms cada bloque), salida fundido a negro 0.3 s. Moderada, sin loops infinitos.
+- "Cinematic poster" direction: dark graphite background (#10131D) with hero image right at 45% and vignette; electric cyan accent (#38E1FF) + event gold (#FFC53D).
+- Typography: display extra-bold title 40-56, mode names 20 semibold, meta 13 regular light gray. All with min/max `UITextSizeConstraint`.
+- Composition: 12-column grid on PC (hero 7, side 5); stacked with bottom tabs on mobile. `UIPadding` 20-28, cards with `UICorner` 14 and translucent 1 px `UIStroke`.
+- Spacing: 16 between cards, 24 between sections. Nothing glued to the edge: minimum 5% safe margin on mobile.
+- States: hover card lifts 2 px + glow, pressed scales 0.98, disabled 45% transparency + label, loading with shimmer on thumbnail, selected with 2 px cyan `UIStroke`.
+- Animation: staggered entrance hero→modes→news (60 ms delay each block), 0.3 s fade-to-black exit. Moderate, no endless loops.
 
-## Buenas prácticas
+## Best practices
 
-- Jugar siempre visible sin scroll en todas las resoluciones.
-- Una sola acción primaria por pantalla; el resto secundarias.
-- Noticias con fecha y estado (Activo/Nuevo/Finalizado); nada de banners eternos sin fecha.
-- Coherencia con onboarding y pausa: mismos botones, mismos radios, mismos iconos.
-- Precarga la miniatura del modo por defecto; el resto en diferido.
-- Textos originales: no copies eslóganes ni layouts de juegos existentes.
+- Play always visible without scrolling on all resolutions.
+- One primary action per screen; the rest secondary.
+- News with date and state (Active/New/Finished); no eternal banners without a date.
+- Consistent with onboarding and pause: same buttons, same radii, same icons.
+- Preload the default mode thumbnail; the rest lazy.
+- Original texts: don't copy slogans or layouts from existing games.
 
-## Errores frecuentes
+## Common mistakes
 
-- 6 botones "Jugar" compitiendo entre sí y el jugador sin saber cuál pulsar.
-- Cifras de jugadores inventadas que se descubren en cuanto entran al juego.
-- Fondo a `Offset` fijo que deja bandas en ultra-wide o corta el título en móvil.
-- Doble clic en Jugar que lanza dos peticiones de matchmaking (falta estado loading con debounce).
-- Noticias sin estado que anuncian eventos caducados.
-- Tapar el botón del sistema Roblox con el header propio.
+- 6 competing "Play" buttons and the player unsure which to press.
+- Invented player counts exposed as soon as they enter the game.
+- `Offset`-fixed background leaving bands on ultrawide or cutting the title on mobile.
+- Double-click on Play firing two matchmaking requests (missing loading state with debounce).
+- News with no state advertising expired events.
+- Covering the Roblox system button with your own header.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Jugar alcanzable en ≤2 clics desde cualquier pestaña del menú.
-- [ ] Sin solapes en 3 resoluciones de referencia (PC 1080p, portátil 768p, móvil vertical).
-- [ ] Entrada y salida animadas sin cortes; el menú no reaparece tras entrar a partida.
-- [ ] Estados vacíos, loading y error definidos para noticias y modos.
-- [ ] Rendimiento: menú a 60 fps, memoria de imágenes bajo presupuesto del proyecto.
-- [ ] Textos originales y fecha visible en cada noticia.
+- [ ] Play reachable in ≤2 clicks from any menu tab.
+- [ ] No overlaps on 3 reference resolutions (1080p PC, 768p laptop, portrait mobile).
+- [ ] Animated entry and exit with no cuts; the menu doesn't reappear after entering the match.
+- [ ] Empty, loading, and error states defined for news and modes.
+- [ ] Performance: menu at 60 fps, image memory under project budget.
+- [ ] Original texts and visible date on every news item.
 
-## Herramientas
+## Tools
 
-- Studio: editor de UI, simulador de dispositivos, Profiler para el coste de imágenes.
-- MCP Studio (si disponible): capturas comparativas PC/móvil, inspección de `Output` ante fallos de carga.
-- Rojo: tarjetas de modos y noticias como datos (tabla) para que diseño edite sin tocar código.
-- Selene: lint de los controladores de pestañas y del debounce de Jugar.
+- Studio: UI editor, device simulator, Profiler for image cost.
+- Studio MCP (if available): comparative PC/mobile captures, `Output` inspection on load failures.
+- Rojo: mode and news cards as data (table) so design edits without touching code.
+- Selene: lint tab controllers and Play debounce.
 
-## Limitaciones
+## Limitations
 
-- No implementa matchmaking real ni creación de servidores (lo cubre `roblox-lobby-ui`).
-- No gestiona compras del pase de temporada; solo el teaser (la compra va en `roblox-shop-ui`).
-- Conteos y noticias dependen del backend del juego (verificar en create.roblox.com/docs); sin backend solo hay contenido de ejemplo.
-- No incluye chat ni lista de amigos completa; solo el micro-bloque de prueba social.
+- No real matchmaking or server creation (covered by `roblox-lobby-ui`).
+- No season-pass purchase handling; only the teaser (purchase goes in `roblox-shop-ui`).
+- Counts and news depend on the game backend (see create.roblox.com/docs); without backend only sample content.
+- No chat or full friends list; only the social-proof micro-block.

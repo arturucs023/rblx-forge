@@ -1,97 +1,78 @@
 ---
-name: Auditoría de Seguridad Roblox
-description: Audita handlers, remotes, DataStores y assets de terceros buscando exploits. Úsala en revisiones pre-release o ante sospecha de trampas, dupeos o pérdida de datos.
+name: Roblox Security Audit
+description: Audit handlers, remotes, DataStores, and third-party assets for exploits. Use it in pre-release reviews or when you suspect cheating, duping, or data loss.
 ---
 
 # roblox-security-audit
 
-Revisión sistemática de exploits. Trabaja en solo lectura hasta completar la
-lista de hallazgos; corrige solo después de triar por severidad.
-Complementarias: `roblox-security`, `roblox-security-economy`,
-`roblox-creator-store-security-audit`, `roblox-networking`, `roblox-datastores`.
+Systematic exploit review. Work read-only until the findings list is complete; fix only after triaging by severity.
+Related: `roblox-security`, `roblox-security-economy`, `roblox-creator-store-security-audit`, `roblox-networking`, `roblox-datastores`.
 
-## Objetivo
+## Objective
 
-Encontrar: remotes sin validar, valores confiados del cliente, cooldowns
-ausentes, instancias falsificables, escrituras DataStore inseguras, secretos
-filtrados y modelos maliciosos de la Toolbox.
+Find: unvalidated remotes, trusted client values, missing cooldowns, spoofable instances, unsafe DataStore writes, leaked secrets, and malicious Toolbox models.
 
-## Alcance y límites
+## Scope and limits
 
-- Cubre: superficie de ataque, revisión de handlers, DataStores, secretos y
-  assets de terceros.
-- NO implementa sistemas (eso es `roblox-game-systems`, `roblox-networking`).
-- NO sustituye el testeo funcional (`roblox-testing`, `roblox-multiplayer-testing`).
+- Covers: attack surface, handler review, DataStores, secrets, and third-party assets.
+- Does NOT implement systems (that is `roblox-game-systems`, `roblox-networking`).
+- Does NOT replace functional testing (`roblox-testing`, `roblox-multiplayer-testing`).
 
-## Casos de uso
+## Use cases
 
-- Revisión pre-release antes de publicar.
-- Sospecha de cheating, dupeo o pérdida de datos.
-- Auditoría tras añadir un sistema que toque moneda, inventario o guardado.
+- Pre-release review before publishing.
+- Suspected cheating, duping, or data loss.
+- Audit after adding a system that touches currency, inventory, or saving.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Enumera la superficie de ataque.** `grep_scripts` de `OnServerEvent`,
-   `OnServerInvoke`, `PromptPurchase`, `LoadString`, `require(`, `HttpService`,
-   `SetAsync`. Lista cada punto disparable por el cliente con `fichero:línea`.
-2. **Revisa cada handler** con esta checklist:
-   - [ ] ¿Tipos/longitudes de argumentos comprobados (`typeof`, topes de
-     longitud, números finitos, UTF-8 válido, sin claves NaN/nil)?
-   - [ ] ¿Instancias verificadas por clase Y contenedor esperado (nunca una
-     instancia cualquiera que pase el cliente)?
-   - [ ] ¿Ownership/proximidad validados (distancia, `player.Character`, vivo)?
-   - [ ] ¿Cooldown / rate limit por usuario (estilo `RateLimiter`, tabla `os.clock`)?
-   - [ ] ¿Resultado calculado en servidor (precios, daño, recompensas de tablas
-     del servidor)?
-   - [ ] ¿Ningún remote borra/mueve instancias arbitrarias ni carga assets por ID de cliente?
-3. **DataStores.** `pcall` en cada llamada; `UpdateAsync` con transform pura
-   para valores disputados; validación de esquema al cargar; sin Instances ni
-   strings sobredimensionados.
-4. **Secretos.** Nada de `.ROBLEXSECURITY`, tokens ni API keys en scripts;
-   claves de Open Cloud en Secrets Store + `HttpService:GetSecret`.
-5. **Assets de terceros.** Todo modelo de Toolbox/Creator Store con scripts
-   pasa por `preview_asset`: sin `require(assetId)`, sin exfiltración HTTP,
-   sin ofuscación. `insert_asset` elimina scripts: re-añade solo código propio.
+1. **List the attack surface.** `grep_scripts` for `OnServerEvent`, `OnServerInvoke`, `PromptPurchase`, `LoadString`, `require(`, `HttpService`, `SetAsync`. List each client-fireable point with `file:line`.
+2. **Review each handler** with this checklist:
+   - [ ] Argument types/lengths checked (`typeof`, length caps, finite numbers, valid UTF-8, no NaN/nil keys)?
+   - [ ] Instances verified by class AND expected container (never any instance the client passes)?
+   - [ ] Ownership/proximity validated (distance, `player.Character`, alive)?
+   - [ ] Cooldown / rate limit per user (`RateLimiter` style, `os.clock` table)?
+   - [ ] Result computed on server (prices, damage, rewards from server tables)?
+   - [ ] No remote deletes/moves arbitrary instances or loads assets by client ID?
+3. **DataStores.** `pcall` on every call; `UpdateAsync` with pure transform for contested values; schema validation on load; no Instances or oversized strings.
+4. **Secrets.** No `.ROBLEXSECURITY`, tokens, or API keys in scripts; Open Cloud keys in Secrets Store + `HttpService:GetSecret`.
+5. **Third-party assets.** Every Toolbox/Creator Store model with scripts goes through `preview_asset`: no `require(assetId)`, no HTTP exfiltration, no obfuscation. `insert_asset` removes scripts: re-add only your own code.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- El cliente es totalmente hostil: valida tipo, rango, ownership y contexto.
-- Los cooldowns globales los rompe un explotador rotando cuentas: siempre por usuario.
-- `InvokeClient` no sirve para decisiones de seguridad (el cliente puede mentir).
+- The client is fully hostile: validate type, range, ownership, and context.
+- Global cooldowns are broken by an exploiter rotating accounts: always per-user.
+- `InvokeClient` is useless for security decisions (the client can lie).
 
-## Buenas prácticas
+## Best practices
 
-- Trabaja en solo lectura hasta tener la tabla de hallazgos completa.
-- Triaje por severidad antes de corregir: críticos primero.
-- Re-test con las mismas sondas maliciosas tras cada fix.
+- Work read-only until the full findings table is done.
+- Triage by severity before fixing: criticals first.
+- Re-test with the same malicious probes after each fix.
 
-## Errores frecuentes
+## Common mistakes
 
-- Validar solo el tipo pero no el rango/ownership (cuelan instancias falsificadas).
-- Un cooldown global en vez de por usuario (un explotador bloquea a todos, o
-  rota cuentas para saltarlo).
-- Usar `InvokeClient` para decisiones de seguridad.
+- Validating only type but not range/ownership (spoofed instances get through).
+- One global cooldown instead of per-user (one exploiter blocks everyone, or rotates accounts to bypass it).
+- Using `InvokeClient` for security decisions.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Tabla de hallazgos: severidad (crítica/alta/media), `fichero:línea`,
-  escenario de exploit y fix concreto.
-- [ ] Cada crítico re-testeado con sonda maliciosa `FireServer` sin efecto.
-- [ ] Sin `loadstring`, `require(assetId)` ni código cargado por HTTP en el juego.
-- Verificación: repite las sondas tras los fixes (mismas entradas, no-ops
-  observados) y relee `get_runtime_logs`.
+- [ ] Findings table: severity (critical/high/medium), `file:line`, exploit scenario, and concrete fix.
+- [ ] Each critical re-tested with a malicious `FireServer` probe with no effect.
+- [ ] No `loadstring`, `require(assetId)`, or HTTP-loaded code in the game.
+- Verification: repeat the probes after fixes (same inputs, observed no-ops) and re-read `get_runtime_logs`.
 
-## Herramientas
+## Tools
 
-- MCP: `grep_scripts`, `get_script_source`, `get_runtime_logs`, `preview_asset`,
-  `execute_luau`/`eval_server_runtime` para sondas.
+- MCP: `grep_scripts`, `get_script_source`, `get_runtime_logs`, `preview_asset`, `execute_luau`/`eval_server_runtime` for probes.
 
-## Limitaciones
+## Limitations
 
-- No detecta exploits de motor ni de Studio; solo lógica del juego y assets.
-- Un audit limpio no garantiza ausencia de bugs: combina con testing y QA.
+- Does not detect engine or Studio exploits; only game logic and assets.
+- A clean audit does not guarantee zero bugs: combine with testing and QA.
 
-## Ejemplo: vulnerable vs corregido
+## Example: vulnerable vs fixed
 
 ```lua
 -- VULNERABLE: confía en la cantidad del cliente

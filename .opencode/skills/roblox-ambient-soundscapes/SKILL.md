@@ -1,65 +1,42 @@
 ---
 name: roblox-ambient-soundscapes
-description: Diseña ambientes sonoros por capas y zonas con transiciones suaves. Úsala cuando necesites ambience de bosque, ciudad, cueva, lluvia, día/noche o mezclas que cambian por zona.
+description: Design layered, zoned ambient soundscapes with smooth transitions. Use it when you need forest, city, cave, rain, day/night ambience, or mixes that change by zone.
 ---
 
-# Ambientes sonoros por capas y zonas
+# Layered, Zoned Ambient Soundscapes
 
-## Objetivo
+## Objective
 
-Construir paisajes sonoros ambientales creíbles y baratos en rendimiento: capas
-independientes (base, detalle, eventos esporádicos) que entran y salen según la
-zona del jugador, la hora del día y el clima, con transiciones sin cortes ni
-saltos de volumen perceptibles.
+Build believable, performance-cheap ambient soundscapes: independent layers (base, detail, sporadic events) that enter and leave according to the player's zone, time of day, and weather, with transitions free of cuts or perceptible volume jumps.
 
-## Alcance y límites
+## Scope and limits
 
-**Diferenciación declarada:** la skill instalada `roblox-audio` cubre el motor
-de audio y el grafo moderno (`AudioPlayer`, `AudioEmitter`, `AudioListener`,
-`Wire`, efectos). Esta skill NO repite el motor: cubre diseño por dominio de
-ambientes (capas, zonas, día/noche, transiciones). La skill instalada
-`roblox-animation-audio-feedback` cubre el *juice* general y el feel de
-interacciones; esta skill no la repite (la referencia para remates de feel
-donde un cambio de zona merezca un acento).
+**Declared differentiation:** the installed `roblox-audio` skill covers the audio engine and the modern graph (`AudioPlayer`, `AudioEmitter`, `AudioListener`, `Wire`, effects). This skill does NOT repeat the engine: it covers domain design of ambience (layers, zones, day/night, transitions). The installed `roblox-animation-audio-feedback` skill covers general *juice* and interaction feel; this skill does not repeat it (it references it for feel accents where a zone change deserves one).
 
-Esta skill NO hace:
+This skill does NOT do:
 
-- Composición musical adaptativa → lo cubre `roblox-dynamic-music`.
-- Diseño de one-shots de UI, pasos o impactos → lo cubre `roblox-sfx-design`.
-- Mezcla global, compresión y presupuestos de assets → lo cubre
-  `roblox-audio-mixing`.
-- Chat de voz ni moderación de voz → lo cubre el motor (`roblox-audio`) y
-  `VoiceChatService` (verificar miembros exactos en create.roblox.com/docs).
+- Adaptive musical composition → covered by `roblox-dynamic-music`.
+- One-shot design for UI, footsteps, or impacts → covered by `roblox-sfx-design`.
+- Global mixing, compression, and asset budgets → covered by `roblox-audio-mixing`.
+- Voice chat or voice moderation → covered by the engine (`roblox-audio`) and `VoiceChatService` (check exact members in create.roblox.com/docs).
 
-## Casos de uso
+## Use cases
 
-1. Bosque con base de viento + pájaros esporádicos + arroyo solo cerca del río.
-2. Ciudad con tráfico lejano de día que baja de noche y grillos que suben.
-3. Cueva con goteo aleatorio y reverberación percibida más cerrada.
-4. Lluvia global con capa de interior atenuada bajo techo.
-5. Zona de peligro con capa de tensión grave que entra por proximidad.
-6. Transición día/noche con crossfade de 10–20 segundos sin silencios.
+1. Forest with wind base + sporadic birds + stream only near the river.
+2. City with distant daytime traffic that drops at night while crickets rise.
+3. Cave with random dripping and a perceived tighter reverb.
+4. Global rain with an attenuated indoor layer under roofs.
+5. Danger zone with a low tension layer entering by proximity.
+6. Day/night transition with a 10–20 second crossfade and no silences.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Inventaria las zonas.** Lista cada bioma o interior con su rectángulo o
-   radio aproximado. No pases de 6–8 zonas con audio propio en un primer pase.
-2. **Define 2–4 capas por zona.** Base continua (viento, tráfico), detalle
-   (hojas, ecos) y esporádicos (búho, gota). La base usa `Sound` con
-   `Looped = true`; los esporádicos son one-shots con temporizador aleatorio.
-3. **Asigna cada capa a un `SoundGroup`.** Por ejemplo: `AmbienceBase`,
-   `AmbienceDetail`, `AmbienceOneshots`. Esto permite mezclar por familia sin
-   tocar volúmenes individuales (el cómo mezclar es de `roblox-audio-mixing`).
-4. **Elige emisor global o posicional.** Bases de zona: `Sound` no posicional
-   (o `AudioEmitter` global según grafo usado). Detalles atados a un punto
-   (cascada, generador): sonido posicional con `RollOffMaxDistance` ajustado.
-5. **Implementa detección de zona en el servidor.** El servidor determina en
-   qué zona está cada jugador (por posición) y lo replica; el cliente solo
-   mezcla. El servidor valida lo importante: nunca fíes al cliente para
-   decidir zonas con efecto de gameplay (zona de peligro audible).
-6. **Programa crossfades, no cortes.** Al cambiar de zona, interpola el
-   `Volume` de la capa saliente a 0 en 2–4 s y la entrante a su nivel en 2–4 s.
-   Ejemplo ilustrativo (simplificado):
+1. **Inventory the zones.** List each biome or interior with its approximate rectangle or radius. Don't go beyond 6–8 zones with their own audio in a first pass.
+2. **Define 2–4 layers per zone.** Continuous base (wind, traffic), detail (leaves, echoes), and sporadics (owl, drip). The base uses a `Sound` with `Looped = true`; sporadics are one-shots on a random timer.
+3. **Assign each layer to a `SoundGroup`.** For example: `AmbienceBase`, `AmbienceDetail`, `AmbienceOneshots`. This lets you mix by family without touching individual volumes (how to mix is `roblox-audio-mixing`'s job).
+4. **Choose global vs. positional emitter.** Zone bases: non-positional `Sound` (or `AudioEmitter` global per the graph used). Details tied to a point (waterfall, generator): positional sound with `RollOffMaxDistance` tuned.
+5. **Implement zone detection on the server.** The server determines which zone each player is in (by position) and replicates it; the client only mixes. The server validates what matters: never trust the client to decide zones with gameplay effect (audible danger zone).
+6. **Program crossfades, not cuts.** On zone change, interpolate the outgoing layer's `Volume` to 0 over 2–4 s and the incoming one to its level over 2–4 s. Illustrative example (simplified):
    ```luau
    -- Ilustrativo: fundido de una capa ambiental.
    local TweenService = game:GetService("TweenService")
@@ -68,90 +45,62 @@ Esta skill NO hace:
    capaEntrante:Play()
    TweenService:Create(capaEntrante, info, { Volume = 0.6 }):Play()
    ```
-7. **Añade variación a los esporádicos.** Intervalo aleatorio (p. ej. 8–25 s)
-   y `PlaybackSpeed` ligeramente aleatorio (0.92–1.08) para evitar repetición
-   mecánica. Si suena robótico, vuelve a este paso antes de añadir más sonidos.
-8. **Trata el día/noche como dos mezclas.** Define niveles día y noche por
-   capa e interpola con la hora del juego en 10–20 s. No pares y rearranques
-   sonidos: solo mueve volúmenes.
-9. **Atenúa interiores.** Bajo techo, baja la capa exterior (0.2–0.4 del
-   nivel) y sube una capa de interior (reverberación leve, crujidos). Detecta
-   interior con raycast vertical o por zona marcada, no por el cliente a ciegas.
-10. **Considera `VoiceChatService`.** El ambiente nunca debe enmascarar la voz:
-    reserva margen de volumen y documenta que la mezcla de voz la gobierna el
-    motor (`roblox-audio`). Si dudas de un miembro del servicio, escribe
-    "(verificar en create.roblox.com/docs)".
-11. **Prueba con recorridos reales.** Camina entre zonas, entra y sale de
-    interiores, y cambia día/noche. Anota cada clic, corte o salto de volumen.
-12. **Recorta y congela.** Elimina capas que nadie nota en prueba ciega. Cada
-    sonido simultáneo cuesta; menos capas bien mezcladas suenan mejor.
+7. **Add variation to sporadics.** Random interval (e.g. 8–25 s) and slightly random `PlaybackSpeed` (0.92–1.08) to avoid mechanical repetition. If it sounds robotic, return to this step before adding more sounds.
+8. **Treat day/night as two mixes.** Define day and night levels per layer and interpolate with game time over 10–20 s. Don't stop and restart sounds: only move volumes.
+9. **Attenuate interiors.** Under a roof, lower the exterior layer (0.2–0.4 of level) and raise an interior layer (slight reverb, creaks). Detect interiors with a vertical raycast or a marked zone, not by blind client.
+10. **Consider `VoiceChatService`.** Ambience must never mask voice: reserve volume headroom and document that voice mixing is governed by the engine (`roblox-audio`). If in doubt about a member of the service, write "(check create.roblox.com/docs)".
+11. **Test with real walkthroughs.** Walk between zones, enter and leave interiors, and switch day/night. Note every click, cut, or volume jump.
+12. **Trim and freeze.** Remove layers nobody notices in a blind test. Every simultaneous sound costs; fewer well-mixed layers sound better.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- El servidor valida lo importante: la zona activa de cada jugador y cualquier
-  bandera con efecto de gameplay se calculan en el servidor y se replican con
-  `RemoteEvent` (el transporte fino es de las skills instaladas
-  `roblox-networking` y `roblox-security`).
-- Persistencia: las preferencias de ambiente del jugador (volumen de ambiente,
-  mute) pueden guardarse en `DataStoreService` (verificar cuota y API exacta
-  en create.roblox.com/docs); el estado transitorio (zona actual, fase de
-  fundido) NO se persiste, se recalcula al entrar.
-- Errores: envuelve la resolución de zona en `pcall` si depende de datos
-  externos; ante error, cae a una mezcla neutra segura en vez de silenciarlo
-  todo.
-- `SoundService` gobierna la escucha global; `SoundGroup` agrupa por familia;
-  `EqualizerEffect` / `CompressorEffect` pertenecen a la mezcla
-  (`roblox-audio-mixing`), no a esta skill.
-- Los sonidos posicionales usan atenuación por distancia; ajusta
-  `RollOffMaxDistance` para que el detalle muera antes de contaminar la zona
-  vecina.
+- The server validates what matters: each player's active zone and any gameplay-effect flag are computed on the server and replicated with `RemoteEvent` (fine transport is the installed `roblox-networking` and `roblox-security` skills' job).
+- Persistence: the player's ambience preferences (ambience volume, mute) may be saved in `DataStoreService` (check quota and exact API in create.roblox.com/docs); transient state (current zone, fade phase) is NOT persisted, it is recomputed on entry.
+- Errors: wrap zone resolution in `pcall` if it depends on external data; on error, fall back to a safe neutral mix instead of silencing everything.
+- `SoundService` governs global listening; `SoundGroup` groups by family; `EqualizerEffect` / `CompressorEffect` belong to mixing (`roblox-audio-mixing`), not this skill.
+- Positional sounds use distance attenuation; tune `RollOffMaxDistance` so detail dies before contaminating the neighboring zone.
 
-## Buenas prácticas
+## Best practices
 
-- Máximo 3–4 capas simultáneas por jugador en móvil.
-- Loops de al menos 8–15 s, con inicio y fin que encadenen sin clic.
-- Nombra assets por convención: `AMB_bosque_base_v1`.
-- Documenta por zona: capas, niveles día/noche, tiempos de fundido.
-- Prueba con auriculares y con altavoz de móvil: lo que funciona en uno puede
-  saturar en el otro.
-- Deja un "silencio diseñado": no todas las zonas necesitan 3 capas.
+- Maximum 3–4 simultaneous layers per player on mobile.
+- Loops of at least 8–15 s, with start and end that chain without clicks.
+- Name assets by convention: `AMB_bosque_base_v1`.
+- Document per zone: layers, day/night levels, fade times.
+- Test with headphones and with a phone speaker: what works on one is guaranteed to saturate on the other.
+- Leave a "designed silence": not every zone needs 3 layers.
 
-## Errores frecuentes
+## Common mistakes
 
-1. Cortar sonidos al cambiar de zona en vez de fundir → clics y baches.
-2. Demasiadas capas simultáneas → barro sonoro y coste de rendimiento.
-3. Esporádicos con intervalo fijo → el cerebro detecta el patrón en minutos.
-4. Dejar que el cliente decida zonas con efecto de gameplay → explotable.
-5. Subir el ambiente hasta tapar la voz → quejas garantizadas.
-6. Loops cortos (2–3 s) con el corte audible → fatiga inmediata.
-7. No probar la transición noche→día, solo día→noche → sorpresas al amanecer.
+1. Cutting sounds on zone change instead of fading → clicks and dips.
+2. Too many simultaneous layers → sonic mud and performance cost.
+3. Sporadics on a fixed interval → the brain detects the pattern within minutes.
+4. Letting the client decide gameplay-effect zones → exploitable.
+5. Raising ambience until it covers voice → guaranteed complaints.
+6. Short loops (2–3 s) with an audible seam → instant fatigue.
+7. Not testing the night→day transition, only day→night → surprises at dawn.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Cada zona tiene su mezcla documentada (capas + niveles día/noche).
-- [ ] Ningún cambio de zona produce cortes, clics ni silencios.
-- [ ] Día/noche transiciona en 10–20 s sin rearranques.
-- [ ] Interiores atenúan el exterior de forma audible pero no brusca.
-- [ ] Con 5 minutos de juego, ningún esporádico se percibe repetitivo.
-- [ ] La voz sigue inteligible con el ambiente al máximo (margen reservado).
-- [ ] Recorrido de prueba completo sin anomalías anotadas.
+- [ ] Each zone has its documented mix (layers + day/night levels).
+- [ ] No zone change produces cuts, clicks, or silences.
+- [ ] Day/night transitions over 10–20 s with no restarts.
+- [ ] Interiors attenuate the exterior audibly but not abruptly.
+- [ ] After 5 minutes of play, no sporadic feels repetitive.
+- [ ] Voice stays intelligible with ambience at maximum (reserved headroom).
+- [ ] Full walkthrough test with no noted anomalies.
 
-## Herramientas
+## Tools
 
-- `Sound`, `SoundGroup`, `SoundService` para capas y mezcla por familia.
-- `AudioPlayer`, `AudioEmitter`, `AudioListener`, `Wire` si el proyecto usa el
-  grafo moderno (detalle del motor: `roblox-audio`).
-- `VoiceChatService` solo como consideración de coexistencia con la voz.
-- `RemoteEvent` para replicar la zona activa calculada en servidor.
-- `TweenService` (verificar nombre exacto en create.roblox.com/docs) o
-  interpolación manual para fundidos.
+- `Sound`, `SoundGroup`, `SoundService` for family-based layers and mixing.
+- `AudioPlayer`, `AudioEmitter`, `AudioListener`, `Wire` if the project uses the modern graph (engine detail: `roblox-audio`).
+- `VoiceChatService` only as a coexistence consideration with voice.
+- `RemoteEvent` to replicate the server-computed active zone.
+- `TweenService` (check exact name in create.roblox.com/docs) or manual interpolation for fades.
 
-## Limitaciones
+## Limitations
 
-- No diseña música ni SFX: deriva a `roblox-dynamic-music` y
-  `roblox-sfx-design`.
-- No fija la mezcla final ni presupuestos: deriva a `roblox-audio-mixing`.
-- No documenta el grafo moderno en profundidad: deriva a `roblox-audio`.
-- El feel de remates e impactos es de `roblox-animation-audio-feedback`.
-- Si un miembro de API no aparece aquí, verifícalo en
-  create.roblox.com/docs antes de usarlo.
+- Does not design music or SFX: see `roblox-dynamic-music` and `roblox-sfx-design`.
+- Does not set the final mix or budgets: see `roblox-audio-mixing`.
+- Does not document the modern graph in depth: see `roblox-audio`.
+- Feel accents and impacts are `roblox-animation-audio-feedback`'s job.
+- If an API member is not listed here, check it in create.roblox.com/docs before using it.

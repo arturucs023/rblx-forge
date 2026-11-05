@@ -1,90 +1,90 @@
 ---
 name: roblox-dynamic-events
-description: Eventos temporales con jefes, clima de gameplay y anuncios. Úsala cuando necesites invasiones, drops, jefes de mundo o modificadores rotativos.
+description: Temporary events with bosses, gameplay weather, and announcements. Use it when you need invasions, drops, world bosses, or rotating modifiers.
 ---
 
-# Eventos Dinámicos y Temporales
+# Dynamic and Temporary Events
 
-## Objetivo
-Mantener el juego vivo con eventos programados y emergentes: spawns especiales, jefes de mundo, climas que cambian reglas y anuncios que movilizan sin saturar.
+## Objective
+Keep the game alive with scheduled and emergent events: special spawns, world bosses, rule-changing weather, and announcements that mobilize without saturating.
 
-## Alcance y límites
-Cubre calendario, spawneo, escalado por jugadores, anuncios y recompensas de evento.
-Diferenciación declarada: `roblox-game-systems` (instalada) es recetario fino; esta skill es la versión profunda con scheduling, escalado y anti-camp. NO cubre IA de jefes al detalle (componer con `roblox-combat-systems`), ni quests ligadas a eventos (lo cubre `roblox-quest-progression-systems`), ni economía de drops raros (lo cubre `roblox-economy-balancing`). `roblox-genre-patterns` no profundiza en eventos.
+## Scope and limits
+Covers calendar, spawning, scaling by players, announcements, and event rewards.
+Stated differentiation: the installed `roblox-game-systems` is a fine-grained recipe book; this skill is the deep version with scheduling, scaling, and anti-camp. Does NOT cover boss AI in detail (compose with `roblox-combat-systems`), nor quests tied to events (covered by `roblox-quest-progression-systems`), nor rare-drop economy (covered by `roblox-economy-balancing`). `roblox-genre-patterns` doesn't go deep into events.
 
-## Casos de uso
-- Jefe de mundo cada hora con loot compartido.
-- Lluvia de meteoros que altera rutas 5 min.
-- Invasión nocturna con oleadas en base.
-- Drop aéreo disputado en PvP.
-- Fin de semana doble XP con tope.
+## Use cases
+- Hourly world boss with shared loot.
+- Meteor rain that alters routes for 5 min.
+- Night invasion with base waves.
+- Contested air drop in PvP.
+- Double-XP weekend with a cap.
 
-## Bucle de juego o sistema (diseño)
-1. Pre-aviso (5 min + 1 min) con lugar y reglas.
-2. Viaje/preparación (decisión de riesgo).
-3. Participación (daño, defensa, recolección según evento).
-4. Cierre con ranking y reparto (participación > daño puro).
-5. Cooldown y rotación para evitar fatiga.
-Balance de ejemplo: jefe 12k HP base + 2k por jugador extra (cap 40k), ventana 10 min, loot top 5% + participación 60% del valor; frecuencia: menor cada 15 min, mayor cada 60–120 min; si asistencia cae <20% del pico en 2 semanas, rota tipo/horario.
+## Game or system loop (design)
+1. Advance notice (5 min + 1 min) with place and rules.
+2. Travel/preparation (risk decision).
+3. Participation (damage, defense, gathering per event).
+4. Close with ranking and distribution (participation > pure damage).
+5. Cooldown and rotation to avoid fatigue.
+Balance example: boss 12k base HP + 2k per extra player (40k cap), 10 min window, top 5% loot + 60% of value via participation; frequency: minor every 15 min, major every 60–120 min; if attendance drops below 20% of peak over 2 weeks, rotate type/time.
 
-## Proceso paso a paso
-1. Define catálogo `EventDefs`: `id`, `duración`, `avisoPrevio`, `minJugadores`, `escalado`, `recompensa`, `cooldownGlobal`.
-2. Scheduler central en servidor: cola con `os.time()`, evita solapes (máx 1 mayor + 1 menor), respeta horario pico.
-3. Anuncios en 3 niveles: banner + sonido + marcador de mapa; incluye cuenta atrás y reglas en 2 líneas.
-4. Spawneo validado: puntos libres, fuera de zonas seguras si es PvP, con `Attributes` (`EventId`, `ExpiraEn`).
-5. Escalado: HP/daño/nodos según participantes reales a T+60 s, no según servidor lleno.
-6. Participación: tabla `daño/heal/tiempoEnZona` por jugador; recompensa por umbrales, no solo top-1.
-7. Cierre limpio: despawn, reparto, log y cooldown; anuncio de próximos 2 eventos.
-8. Telemetría: asistencia, duración real, quejas/fatiga (ignorar avisos), ajusta frecuencia.
+## Step-by-step process
+1. Define the `EventDefs` catalog: `id`, `duration`, `advanceNotice`, `minPlayers`, `scaling`, `reward`, `globalCooldown`.
+2. Central scheduler on the server: queue with `os.time()`, avoid overlaps (max 1 major + 1 minor), respect peak hours.
+3. Announcements in 3 levels: banner + sound + map marker; include countdown and rules in 2 lines.
+4. Validated spawning: free spots, outside safe zones if PvP, with `Attributes` (`EventId`, `ExpiresAt`).
+5. Scaling: HP/damage/nodes based on real participants at T+60 s, not on full server.
+6. Participation: table of `damage/heal/timeInZone` per player; reward by thresholds, not top-1 only.
+7. Clean close: despawn, distribute, log, and cooldown; announce the next 2 events.
+8. Telemetry: attendance, real duration, complaints/fatigue (ignoring notices), tune frequency.
 
-## Conocimientos técnicos
-### Qué valida el servidor
-- Elegibilidad de recompensa: daño/tiempo mínimo, presente al cierre o muerto en ventana (gracia 30 s).
-- Daño a jefe solo dentro de arena y ventana activa; fuera = 0.
-- Recogida de drops de evento con proximidad ≤12 studs y dueño/ventana de loot.
-- Un jugador = una recompensa por evento (idempotencia por `eventUid+UserId`).
-### Persistencia
-- Guarda participaciones y pity de legendario de evento con `DataStoreService`; no guardes estado del evento vivo.
-- Calendario persistente ligero (último mayor, racha asistida) para bonus de fidelidad.
-### Errores/desconexiones
-- Caída mid-evento: si vuelve en <5 min conserva participación parcial.
-- Jefe atascado (sin daño 90 s): re-posiciona o resetea con HP conservado; si 2 resets, cierra con recompensa parcial.
-- Cierre de servidor: evento se cancela y se devuelve coste de entrada si lo hubo.
+## Technical knowledge
+### What the server validates
+- Reward eligibility: minimum damage/time, present at close or dead within window (30 s grace).
+- Damage to the boss only inside the arena and active window; outside = 0.
+- Event drop pickup with proximity ≤12 studs and owner/loot window.
+- One player = one reward per event (idempotency via `eventUid+UserId`).
+### Persistence
+- Save event participations and legendary pity with `DataStoreService`; don't save live event state.
+- Light persistent calendar (last major, attended streak) for loyalty bonus.
+### Errors/disconnections
+- Mid-event drop: if back in <5 min, partial participation is kept.
+- Stuck boss (no damage for 90 s): reposition or reset with HP preserved; after 2 resets, close with partial reward.
+- Server shutdown: event is cancelled and entry cost refunded if there was one.
 ### Anti-exploit
-- Anti-AFK en zona: requiere daño/movimiento, no solo presencia.
-- Anti-teleport al drop: valida llegada a pie/distancia razonable.
-- Anti-multicaja: reduce loot 50% desde 2.ª cuenta en mismo evento (heurística + log).
-- Rate-limit de daño reportado si usas remotos de hit: 15/s.
+- Anti-AFK in zone: requires damage/movement, not just presence.
+- Anti-teleport to the drop: validate arrival on foot/reasonable distance.
+- Anti-multibox: reduce loot 50% from the 2nd account on in the same event (heuristic + log).
+- Rate-limit reported damage if using hit remotes: 15/s.
 
-## Buenas prácticas
-- Un evento a la vez en pantalla; colas visibles, no 3 banners a la vez.
-- Reglas justas anunciadas antes: "top 5 + todos con >500 daño cobran".
-- Accesible: teleport gratuito al evento, nivel mínimo claro, modo espectador.
-- Usa `CollectionService` para limpiar restos y `Attributes` para temporizadores visibles.
-- Ritmo: 70% eventos menores, 25% medianos, 5% épicos.
+## Best practices
+- One event at a time on screen; visible queues, not 3 banners at once.
+- Fair rules announced upfront: "top 5 plus everyone over 500 damage gets paid".
+- Accessible: free teleport to the event, clear minimum level, spectator mode.
+- Use `CollectionService` to clean up leftovers and `Attributes` for visible timers.
+- Pace: 70% minor events, 25% medium, 5% epic.
 
-## Errores frecuentes
-1. Jefe con HP fijo → trivial con 30 o imposible con 3; escalar por asistencia real.
-2. Solo premia top-1 → 90% no vuelve; pagar por umbrales amplios.
-3. Avisos sin ubicación → nadie llega; marcador + teleport.
-4. Eventos solapados → lag y confusión; scheduler con mutex.
-5. Loot sin ventana → ninja-loot y toxicidad; loot personal o por contribución.
+## Common mistakes
+1. Fixed-HP boss → trivial with 30 players or impossible with 3; scale by real attendance.
+2. Only rewards top-1 → 90% never return; pay via wide thresholds.
+3. Notices with no location → nobody arrives; marker + teleport.
+4. Overlapping events → lag and confusion; scheduler with mutex.
+5. Loot with no window → ninja-loot and toxicity; personal or contribution loot.
 
-## Criterios de calidad y terminado
-- [ ] 3 eventos seguidos (menor/mayor/menor) sin solape ni restos en mapa.
-- [ ] Jefe escala 12k→20k al pasar de 4 a 8 participantes (±15%).
-- [ ] AFK 5 min en zona recibe 0 recompensa; participante mínimo sí cobra.
-- [ ] Desconexión y rejoin en 3 min conserva participación.
-- [ ] Asistencia medida y log de reparto auditable en 2 eventos.
-- [ ] Avisos ignorados <30% (fatiga controlada).
+## Quality and done criteria
+- [ ] 3 consecutive events (minor/major/minor) with no overlap or leftovers on the map.
+- [ ] Boss scales 12k→20k going from 4 to 8 participants (±15%).
+- [ ] 5-min AFK in zone gets zero reward; minimum participant does get paid.
+- [ ] Disconnect and rejoin within 3 min keeps participation.
+- [ ] Attendance measured and distribution log auditable over 2 events.
+- [ ] Ignored notices <30% (controlled fatigue).
 
-## Herramientas
-Servicios/clases: `RemoteEvent`, `Players`, `Teams`, `CollectionService`, `Attributes`, `DataStoreService`, `MessagingService` (coordinar eventos cross-server si aplica), `BadgeService` (medallas de evento). Verificar en create.roblox.com/docs.
+## Tools
+Services/classes: `RemoteEvent`, `Players`, `Teams`, `CollectionService`, `Attributes`, `DataStoreService`, `MessagingService` (to coordinate cross-server events if applicable), `BadgeService` (event badges). Verify at create.roblox.com/docs.
 
-## Limitaciones
-- No diseña jefes con fases complejas; componer con `roblox-combat-systems`.
-- No balancea economía de drops únicos; componer con `roblox-economy-balancing`.
-- Coordinación cross-server avanzada requiere diseño adicional de `MessagingService`.
+## Limitations
+- Does not design bosses with complex phases; compose with `roblox-combat-systems`.
+- Does not balance unique-drop economy; compose with `roblox-economy-balancing`.
+- Advanced cross-server coordination needs additional `MessagingService` design.
 
 ```luau
 -- Ilustrativo: escalado de HP por participantes.

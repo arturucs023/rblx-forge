@@ -1,99 +1,99 @@
 ---
 name: roblox-interior-design
-description: Diseña interiores jugables y confortables con zonas claras y circulación fluida. Úsala cuando necesites distribuir habitaciones, amueblar, iluminar interiores o marcar salidas.
+description: Design playable, comfortable interiors with clear zones and smooth circulation. Use it when laying out rooms, furnishing, lighting interiors, or marking exits.
 ---
 
-# Diseño de interiores en Roblox
+# Interior Design in Roblox
 
-## Objetivo
+## Objective
 
-Crear interiores que el jugador entiende en 15 segundos: zonas diferenciadas, circulación sin atascos, mobiliario a escala y salidas siempre visibles, con confort visual en sesiones largas.
+Create interiors the player understands in 15 seconds: differentiated zones, jam-free circulation, to-scale furniture, and always-visible exits, with visual comfort for long sessions.
 
-## Alcance y límites
+## Scope and limits
 
-Hace: zonificación interior (estar/circular/servicio), circulación y anchos de paso, mobiliario y escala, iluminación interior por capas, confort visual (contraste, saturación, descanso visual), salidas y lectura de emergencia.
+Does: interior zoning (living/circulation/service), circulation and passage widths, furniture and scale, layered interior lighting, visual comfort (contrast, saturation, eye rest), exit and emergency readability.
 
-NO hace:
+Does NOT do:
 
-- Fachadas y masas exteriores → `roblox-exterior-architecture`.
-- Trazado de ciudad o edificio en planta urbana → `roblox-city-settlements`.
-- Materiales y variantes (paleta global) → `roblox-materials-surfaces`.
-- Ciclo día/noche global → `roblox-lighting-day-night`.
-- Props finos y señalética → `roblox-props-decoration`.
-- Efectos ambientales (polvo, auxiliares) → `roblox-ambient-effects`.
+- Facades and exterior masses → `roblox-exterior-architecture`.
+- City or building footprint layout → `roblox-city-settlements`.
+- Materials and variants (global palette) → `roblox-materials-surfaces`.
+- Global day/night cycle → `roblox-lighting-day-night`.
+- Fine props and signage → `roblox-props-decoration`.
+- Ambient effects (dust, helpers) → `roblox-ambient-effects`.
 
-Diferenciación declarada: `roblox-world-building` (instalada) es generalista y fina (154 líneas sin auxiliares); esta skill es su versión profunda por especialidad (solo interiores). `roblox-visual-design` y `roblox-art-direction` dirigen (definen estilo y paleta); esta skill ejecuta (distribuye y amuebla).
+Declared differentiation: `roblox-world-building` (installed) is a concise generalist (154 lines with no helpers); this skill is its deep specialty version (interiors only). `roblox-visual-design` and `roblox-art-direction` direct (define style and palette); this skill executes (lays out and furnishes).
 
-## Casos de uso
+## Use cases
 
-1. Casa inicial donde el jugador encuentra cama, salida y cofre sin tutorial.
-2. Taberna con barra, mesas y escenario sin que los avatares se atasquen.
-3. Oficina/nave con zonas de trabajo legibles y rutas de evacuación claras.
-4. Mazmorra interior donde cada sala tiene identidad y la salida se intuye.
-5. Interior existente oscuro, laberíntico o vacío que necesita reforma.
+1. Starter house where the player finds bed, exit, and chest with no tutorial.
+2. Tavern with bar, tables, and stage where avatars don't get stuck.
+3. Office/warehouse with readable work zones and clear evacuation routes.
+4. Interior dungeon where every room has identity and the exit is guessable.
+5. Existing interior that is dark, maze-like, or empty and needs a rework.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Lista programa y superficies.** Ej. estar 12×10, cocina 8×8, dormitorio 10×10 (studs, puntos de partida). Suma y verifica que cabe en la huella del edificio.
-2. **Traza circulación primero.** Pasillo principal punto de partida 6 studs, secundario 4 studs. Dibuja con Parts de suelo de otro color. Regla: cualquier punto alcanza una salida con como máximo 2 giros.
-3. **Zonifica con 3 recursos.** Cambio de suelo (material/color), cambio de altura de techo o falso techo, y mueble-barrera (estantería, barra). Verifica: captura cenital con cada zona nombrable.
-4. **Amuebla de grande a pequeño.** Piezas ancla (cama, mesa grande, mostrador) → secundarias (sillas, estantes) → relleno. Deja radio libre punto de partida 4 studs alrededor de puertas.
-5. **Escala al avatar.** Asiento punto de partida: 2×2 base, 1,5 alto. Mesa: 3 alto. Mostrador: 3,5–4 alto. Prueba: avatar R15 se sienta/atiende sin atravesar geometría.
-6. **Ilumina por capas.** Base: PointLight tenue cenital cada 12–16 studs (punto de partida). Tarea: SpotLight sobre mesa/mostrador. Acento: SurfaceLight cálida en pared de fondo. Verifica de noche: ninguna zona queda a oscuras y ninguna quema (sin blanco puro).
-7. **Marca salidas siempre.** Puerta de salida con marco de color distinto + luz más intensa + línea de suelo que conduce a ella. Test: desde cualquier rincón, alguna señal de salida es visible.
-8. **Añade confort visual.** Cada 20 studs, un punto de descanso: ventana, planta, cuadro (Decal) o pared lisa. Límite: saturación alta solo en acentos (<10% superficie).
-9. **Optimiza colisiones y cámara.** Muebles grandes con colisión simple (una Part invisible); decoración pequeña sin colisión. Altura libre mínima punto de partida 7 studs; tabiques que la cámara atraviesa se marcan y se bajan o se hacen parciales.
-10. **QA de uso real.** Recorre con 2–3 avatares a la vez: sin atascos en puertas, sin rincones ciegos, tiempo a salida <15 s. Ajusta anchos y repite.
+1. **List program and areas.** E.g. living 12×10, kitchen 8×8, bedroom 10×10 (studs, starting points). Sum and verify it fits the building footprint.
+2. **Lay out circulation first.** Main corridor starting at 6 studs, secondary 4 studs. Draw with different-colored floor Parts. Rule: any point reaches an exit with at most 2 turns.
+3. **Zone with 3 devices.** Floor change (material/color), ceiling height change or false ceiling, and furniture barrier (shelf, counter). Verify: top-down capture with each zone nameable.
+4. **Furnish large to small.** Anchor pieces (bed, large table, counter) → secondary (chairs, shelves) → filler. Keep a free radius starting at 4 studs around doors.
+5. **Scale to the avatar.** Seat starting at: 2×2 base, 1.5 tall. Table: 3 tall. Counter: 3.5–4 tall. Test: R15 avatar sits/serves without clipping geometry.
+6. **Light in layers.** Base: dim overhead `PointLight` every 12–16 studs (starting point). Task: `SpotLight` over table/counter. Accent: warm `SurfaceLight` on backdrop wall. Verify at night: no zone pitch-black and none blown out (no pure white).
+7. **Always mark exits.** Exit door with distinct frame color + brighter light + floor line leading to it. Test: from any corner, some exit cue is visible.
+8. **Add visual comfort.** Every 20 studs, a rest point: window, plant, painting (Decal), or plain wall. Limit: high saturation only on accents (<10% surface).
+9. **Optimize collisions and camera.** Large furniture with simple collision (one invisible Part); small decor with no collision. Minimum free height starting at 7 studs; partitions the camera crosses get marked and lowered or made partial.
+10. **Real-use QA.** Walk through with 2–3 avatars at once: no door jams, no blind corners, time to exit <15 s. Adjust widths and repeat.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- PointLight: luz omnidireccional barata para base; rango punto de partida 20–30 studs, brillo bajo. Demasiados PointLight = caída mobile; comparte y espacia.
-- SpotLight: ideal para mesas y expositores; ángulo punto de partida 40–60 (punto de partida, no verdad).
-- SurfaceLight: lava paredes y crea fondos legibles; úsala en la pared que el jugador mira al entrar.
-- Lighting y Atmosphere: el interior debe funcionar con los valores globales; si el exterior cambia (noche), el interior mantiene su capa base (coordinar con `roblox-lighting-day-night`).
-- Decal/Texture: cuadros, alfombras y paneles; una Decal grande por pared como máximo para no saturar memoria.
-- ViewportFrame: para mapas del edificio o fotos en pared sin cargar geometría extra (verificar en create.roblox.com/docs si dudas de límites).
-- Sonido no cubierto aquí; si el interior es ruidoso visualmente, reduce a 2 materiales dominantes (coordinar con `roblox-materials-surfaces`).
+- PointLight: cheap omnidirectional base light; starting range 20–30 studs, low brightness. Too many PointLights = mobile drop; share and space them.
+- SpotLight: ideal for tables and displays; starting angle 40–60 (starting point, not truth).
+- SurfaceLight: washes walls and creates readable backdrops; use it on the wall the player faces on entry.
+- Lighting and Atmosphere: the interior must work with global values; if the exterior changes (night), the interior keeps its base layer (coordinate with `roblox-lighting-day-night`).
+- Decal/Texture: paintings, rugs, and panels; at most one large Decal per wall to avoid memory bloat.
+- ViewportFrame: for building maps or wall photos without extra geometry (see create.roblox.com/docs if unsure about limits).
+- Sound not covered here; if the interior is visually noisy, cut to 2 dominant materials (coordinate with `roblox-materials-surfaces`).
 
-## Buenas prácticas
+## Best practices
 
-- Puertas siempre abren hacia zona amplia, nunca contra un mueble.
-- Pasillos con un lado libre de muebles: el jugador pega la cámara a la pared contraria.
-- Repite familias de muebles (mismo set 3–4 veces) en vez de 10 muebles únicos: coherencia + rendimiento.
-- Techos: color claro y mate; techo oscuro baja 1 stud visual y oscurece el doble.
-- Guarda cada habitación como Model con nombre `INT_Cocina_v1` para reutilizar en otros edificios.
+- Doors always open toward a wide zone, never against furniture.
+- Corridors with one furniture-free side: the player hugs the camera to the opposite wall.
+- Repeat furniture families (same set 3–4 times) instead of 10 unique pieces: consistency + performance.
+- Ceilings: light and matte; a dark ceiling lowers 1 visual stud and doubles darkness.
+- Save each room as a Model named `INT_Kitchen_v1` for reuse in other buildings.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Laberinto de tabiques.** 5 giros para salir. Corrección: abre vanos y aplica regla de 2 giros.
-2. **Muebles a escala real humana.** Sillas de 1 stud donde el avatar no cabe. Corrección: reescala todo ×1,3 respecto a mueble real.
-3. **Una sola luz cenital.** Centro quemado, esquinas negras. Corrección: 3 capas (base/tarea/acento).
-4. **Salida camuflada.** Puerta igual que armarios. Corrección: marco + luz + línea de suelo distintivos.
-5. **Saturación total.** Paredes, suelo y muebles en colores vivos: fatiga en 5 min. Corrección: base neutra, acento <10%.
-6. **Colisión en cada bibelot.** Física innecesaria y atascos. Corrección: colisión solo en piezas ancla.
-7. **Techo a 5 studs.** La cámara choca y el jugador ve negro. Corrección: mínimo 7 studs libres.
+1. **Partition maze.** 5 turns to exit. Fix: open up spans and apply the 2-turn rule.
+2. **Human-scale furniture.** 1-stud chairs the avatar can't fit. Fix: rescale everything ×1.3 vs. real furniture.
+3. **Single overhead light.** Burned center, black corners. Fix: 3 layers (base/task/accent).
+4. **Camouflaged exit.** Door identical to closets. Fix: distinctive frame + light + floor line.
+5. **Total saturation.** Walls, floor, and furniture in vivid colors: fatigue in 5 min. Fix: neutral base, accent <10%.
+6. **Collision on every trinket.** Unneeded physics and jams. Fix: collision only on anchor pieces.
+7. **5-stud ceiling.** The camera clips and the player sees black. Fix: minimum 7 free studs.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Circulación: salida alcanzable con ≤2 giros desde cualquier punto.
-- [ ] Anchos libres verificados: principal ≥6, secundario ≥4, radio puertas ≥4 studs.
-- [ ] Zonas nombrables en captura cenital por un tercero sin ayuda.
-- [ ] Iluminación de noche: sin zonas negras ni quemadas (3 capturas).
-- [ ] Salida visible desde cualquier rincón (foto desde 4 esquinas).
-- [ ] Recorrido con 3 avatares sin atascos ni atravesamientos.
-- [ ] Mobiliario reutilizable guardado como Models nombrados.
-- [ ] Acentos saturados <10% de superficie visible.
+- [ ] Circulation: exit reachable with ≤2 turns from any point.
+- [ ] Free widths verified: main ≥6, secondary ≥4, door radius ≥4 studs.
+- [ ] Zones nameable in top-down capture by a third party with no help.
+- [ ] Night lighting: no black or blown zones (3 captures).
+- [ ] Exit visible from any corner (photo from 4 corners).
+- [ ] Walkthrough with 3 avatars with no jams or clipping.
+- [ ] Reusable furniture saved as named Models.
+- [ ] Saturated accents <10% of visible surface.
 
-## Herramientas
+## Tools
 
-- Parts/Models para tabiques y muebles modulares; MeshPart para piezas repetidas (sillas, estantes).
-- PointLight / SpotLight / SurfaceLight para las 3 capas de luz.
-- Decal / Texture para cuadros, alfombras y paneles (una por pared como máximo).
-- Highlight con moderación para marcar salidas u objetivos (coordinar con `roblox-props-decoration` para señalética).
+- Parts/Models for partitions and modular furniture; MeshPart for repeated pieces (chairs, shelves).
+- PointLight / SpotLight / SurfaceLight for the 3 light layers.
+- Decal / Texture for paintings, rugs, and panels (one per wall maximum).
+- Highlight sparingly to mark exits or objectives (coordinate with `roblox-props-decoration` for signage).
 
-## Limitaciones
+## Limitations
 
-- No cubre sistemas de juego (tiendas, cofres interactivos) ni scripting de puertas.
-- No define paleta global de materiales: usa la de `roblox-materials-surfaces`.
-- Valores de luces y medidas son puntos de partida, no verdad: ajústalos por estilo y dispositivo.
-- Distingue referencia visual (moodboard de interior) de asset importable: no afirmes que un mueble existe sin crearlo o localizarlo.
+- No game systems (shops, interactive chests) or door scripting.
+- No global material palette: use `roblox-materials-surfaces`.
+- Light values and measurements are starting points, not truth: adjust for style and device.
+- Distinguish visual reference (interior moodboard) from importable asset: don't claim furniture exists without creating or locating it.

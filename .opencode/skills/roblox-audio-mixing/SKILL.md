@@ -1,59 +1,60 @@
 ---
 name: roblox-audio-mixing
-description: Mezcla, prioriza y optimiza todo el audio del juego. Úsala cuando necesites niveles por familia, ducking, compresión para móvil o presupuestos de assets y voces.
+description: Mix, prioritize, and optimize all game audio. Use it when you need levels per family, ducking, mobile-safe compression, or asset and voice budgets.
 ---
 
-# Mezcla, prioridades y optimización de audio
+# Audio Mixing, Priorities, and Optimization
 
-## Objetivo
+## Objective
 
-Convertir una colección de sonidos en una mezcla legible en cualquier
-dispositivo: niveles por familia, prioridades y ducking para que lo importante
-siempre se oiga, compresión que proteja el móvil, y presupuestos de assets y
-voces que el proyecto pueda pagar.
+Turn a collection of sounds into a mix that reads on any device: levels per
+family, priorities and ducking so what matters is always heard, compression
+that protects mobile, and asset and voice budgets the project can afford.
 
-## Alcance y límites
+## Scope and limits
 
-**Diferenciación declarada:** la skill instalada `roblox-audio` cubre el motor
-de audio y el grafo moderno (`AudioPlayer`, `AudioEmitter`, `AudioListener`,
-`Wire`, efectos). Esta skill NO repite el motor: cubre diseño por dominio de
-mezcla y optimización (niveles, prioridades/ducking, compresión móvil,
-budgets). La skill instalada `roblox-animation-audio-feedback` cubre el
-*juice* general; esta skill no la repite (una buena mezcla hace que ese juice
-se escuche en vez de perderse en el barro).
+**Declared differentiation:** the installed `roblox-audio` skill covers the
+audio engine and the modern graph (`AudioPlayer`, `AudioEmitter`,
+`AudioListener`, `Wire`, effects). This skill does NOT repeat the engine: it
+covers the domain design of mixing and optimization (levels,
+priorities/ducking, mobile compression, budgets). The installed
+`roblox-animation-audio-feedback` skill covers general *juice*; this skill
+does not repeat it (a good mix is what lets that juice be heard instead of
+drowning in mud).
 
-Esta skill NO hace:
+This skill does NOT do:
 
-- Diseño de ambientes, música, SFX o motores → lo cubren
-  `roblox-ambient-soundscapes`, `roblox-dynamic-music`, `roblox-sfx-design` y
-  `roblox-vehicle-audio`.
-- Implementación del grafo moderno paso a paso → lo cubre `roblox-audio`.
-- Accesibilidad de subtítulos o UI visual → fuera de alcance (coordínala con
-  el equipo de UI).
+- Design of ambience, music, SFX, or engines → covered by
+  `roblox-ambient-soundscapes`, `roblox-dynamic-music`, `roblox-sfx-design`,
+  and `roblox-vehicle-audio`.
+- Step-by-step implementation of the modern graph → covered by
+  `roblox-audio`.
+- Subtitle accessibility or visual UI → out of scope (coordinate with the
+  UI team).
 
-## Casos de uso
+## Use cases
 
-1. El combate tapa la voz y los pasos: reequilibrar por familias.
-2. La mezcla distorsiona en altavoces de móvil pero suena bien en PC.
-3. Demasiadas voces simultáneas hunden el rendimiento en batallas.
-4. Los assets de audio pesan demasiado para el presupuesto de carga.
-5. La música compite con los SFX en la misma banda de frecuencia.
-6. El jugador necesita controles de volumen por familia que funcionen.
+1. Combat drowns voice and footsteps: rebalance by families.
+2. The mix distorts on mobile speakers but sounds fine on PC.
+3. Too many simultaneous voices tank performance in battles.
+4. Audio assets weigh too much for the loading budget.
+5. Music competes with SFX in the same frequency band.
+6. The player needs working per-family volume controls.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Crea un `SoundGroup` por familia.** Mínimo viable: `Master`, `Music`,
-   `Ambience`, `SFX_UI`, `SFX_World`, `Vehicles`, `Voice`. Sin grupos, cada
-   ajuste es cirugía individual.
-2. **Fija la jerarquía de niveles.** Orden típico: voz > SFX críticos > UI >
-   música > ambiente > decorativos. Asigna un nivel base a cada grupo (p. ej.
-   voz 1.0, música 0.5, ambiente 0.4) y documenta por qué.
-3. **Define prioridades y robo de voz.** Cada familia tiene prioridad y tope
-   de voces; al saturar, cae lo decorativo primero y lo crítico nunca. Prueba
-   la saturación provocando el peor caso (batalla + lluvia + 5 vehículos).
-4. **Implementa ducking donde importe.** Bajo voz o SFX crítico, la música y
-   el ambiente bajan 3–6 dB con ataque rápido y recuperación lenta (1–2 s).
-   Ejemplo ilustrativo (simplificado):
+1. **Create one `SoundGroup` per family.** Viable minimum: `Master`,
+   `Music`, `Ambience`, `SFX_UI`, `SFX_World`, `Vehicles`, `Voice`. Without
+   groups, every adjustment is individual surgery.
+2. **Set the level hierarchy.** Typical order: voice > critical SFX > UI >
+   music > ambience > decorative. Assign a base level per group (e.g. voice
+   1.0, music 0.5, ambience 0.4) and document why.
+3. **Define priorities and voice stealing.** Each family has a priority and
+   voice cap; on saturation, decorative drops first and critical never does.
+   Test saturation by staging the worst case (battle + rain + 5 vehicles).
+4. **Implement ducking where it matters.** Under voice or critical SFX,
+   music and ambience drop 3–6 dB with fast attack and slow recovery (1–2 s).
+   Illustrative example (simplified):
    ```luau
    -- Ilustrativo: ducking de música bajo un anuncio de voz.
    musica.Volume = musica.Volume * 0.5
@@ -61,88 +62,87 @@ Esta skill NO hace:
    -- recuperar con fundido en vez de salto (ver fundidos en skills de dominio)
    musica.Volume = nivelBaseMusica
    ```
-5. **Aplica compresión protectora.** Un `CompressorEffect` suave en el bus
-   maestro evita picos que distorsionan en móvil; un `EqualizerEffect`
-   recorta graves inútiles para altavoz pequeño. Los valores exactos se
-   ajustan de oído, no de tabla.
-6. **Fija budgets de assets.** Tope de tamaño total de audio, de duración por
-   asset y de voces simultáneas por plataforma (móvil más estricto). Todo
-   asset nuevo debe caber o desplazar a otro.
-7. **Optimiza formatos y duraciones.** Loops cortos que encadenen bien,
-   one-shots recortados sin silencio muerto, nada de estéreo donde el mono
-   basta (ambientes de fondo, rodaduras).
-8. **Expón controles al jugador.** Volumen por familia (al menos master,
-   música, SFX) + mute total, persistidos como preferencia. Verifica que el
-   mute silencie de verdad todas las familias, incluido el grafo moderno.
-9. **Mezcla de referencia en tres dispositivos.** Auriculares, altavoz de
-   móvil y altavoz de portátil. Si solo mezclas en uno, fallas en los otros
-   dos seguro.
-10. **Prueba el peor caso sonoro.** Batalla multijugador con lluvia, música de
-    combate, vehículos y voz: debe seguir legible y sin distorsión.
-11. **Registra y congela la mezcla.** Tabla grupo → nivel → prioridad → tope
-    de voces → ducking. Sin tabla, cada update reintroduce el caos.
-12. **Revisa por plataforma.** Móvil: menos voces, menos graves, niveles más
-    conservadores. PC/consola: puedes abrir la mano, pero sin romper la
-    jerarquía.
+5. **Apply protective compression.** A gentle `CompressorEffect` on the
+   master bus tames peaks that distort on mobile; an `EqualizerEffect` trims
+   useless lows for small speakers. Exact values are tuned by ear, not by
+   table.
+6. **Set asset budgets.** Cap on total audio size, per-asset duration, and
+   simultaneous voices per platform (stricter on mobile). Every new asset
+   must fit or displace another.
+7. **Optimize formats and durations.** Short loops that chain cleanly,
+   trimmed one-shots with no dead air, nothing stereo where mono suffices
+   (background ambience, rolling loops).
+8. **Expose controls to the player.** Volume per family (at least master,
+   music, SFX) + total mute, persisted as a preference. Verify mute truly
+   silences every family, including the modern graph.
+9. **Reference mix on three devices.** Headphones, phone speaker, and laptop
+   speaker. If you only mix on one, you fail on the other two, guaranteed.
+10. **Test the worst sonic case.** Multiplayer battle with rain, combat
+    music, vehicles, and voice: must stay readable and distortion-free.
+11. **Record and freeze the mix.** Group → level → priority → voice cap →
+    ducking table. Without a table, every update reintroduces chaos.
+12. **Review per platform.** Mobile: fewer voices, fewer lows, more
+    conservative levels. PC/console: you can open up, but never break the
+    hierarchy.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- El servidor valida lo importante: los niveles y prioridades son diseño de
-  cliente, pero cualquier volumen ligado a gameplay (p. ej. atenuar al rival)
-  debe venir de datos validados en servidor, nunca de la preferencia local.
-- Persistencia: guarda preferencias de volumen/mute por jugador; la mezcla
-  base vive en configuración versionada, no en datos de jugador.
-- Errores: si un efecto (`CompressorEffect`, `EqualizerEffect`) no existe en
-  un contexto, la mezcla debe seguir funcionando sin él (degradación
-  elegante, no silencio). Envuelve en `pcall` lo que dependa del entorno.
-- `SoundService` como bus global; `SoundGroup` por familia como faders;
-  `CompressorEffect` y `EqualizerEffect` como protección y corrección.
-- Con grafo moderno (`AudioPlayer`, `AudioEmitter`, `AudioListener`, `Wire`),
-  replica la misma jerarquía de buses: la mezcla es la misma, cambia el
-  cableado (detalle del motor: `roblox-audio`).
+- The server validates what matters: levels and priorities are client-side
+  design, but any gameplay-tied volume (e.g. ducking a rival) must come from
+  server-validated data, never from the local preference.
+- Persistence: save player volume/mute preferences; the base mix lives in
+  versioned configuration, not player data.
+- Errors: if an effect (`CompressorEffect`, `EqualizerEffect`) doesn't exist
+  in a context, the mix must keep working without it (graceful degradation,
+  not silence). Wrap environment-dependent parts in `pcall`.
+- `SoundService` as the global bus; `SoundGroup` per family as faders;
+  `CompressorEffect` and `EqualizerEffect` as protection and correction.
+- With the modern graph (`AudioPlayer`, `AudioEmitter`, `AudioListener`,
+  `Wire`), replicate the same bus hierarchy: the mix is the same, only the
+  wiring changes (engine detail: `roblox-audio`).
 
-## Buenas prácticas
+## Best practices
 
-- Mezcla por familias, nunca sonido a sonido.
-- Ducking con recuperación lenta: el bombeo rápido cansa más que el volumen.
-- Headroom permanente en el master: la suma de picos siempre sorprende.
-- Presupuestos escritos y visibles antes de producir assets nuevos.
-- Controles de jugador simples: 3–4 sliders como máximo.
-- Revisa la mezcla tras cada gran feature de audio, no solo al final.
+- Mix by families, never sound by sound.
+- Ducking with slow recovery: fast pumping tires more than volume.
+- Permanent headroom on the master: summed peaks always surprise.
+- Written, visible budgets before producing new assets.
+- Simple player controls: 3–4 sliders max.
+- Revisit the mix after every major audio feature, not just at the end.
 
-## Errores frecuentes
+## Common mistakes
 
-1. Sin `SoundGroup` por familia → ajustes imposibles de mantener.
-2. Todo al máximo volumen → guerra de volumen y distorsión.
-3. Ducking con recuperación instantánea → bombeo audible y molesto.
-4. Compresión agresiva que aplana toda la dinámica → fatiga.
-5. Presupuestos solo de palabra → se incumplen en la primera entrega.
-6. Mezclar solo en auriculares buenos → desastre en móvil.
-7. Mute que no muta alguna familia (normalmente ambiente o un emisor
-   del grafo) → bug reportado el día 1.
+1. No `SoundGroup` per family → unmaintainable adjustments.
+2. Everything at maximum volume → volume war and distortion.
+3. Ducking with instant recovery → audible, annoying pumping.
+4. Aggressive compression flattening all dynamics → fatigue.
+5. Word-only budgets → broken on the first delivery.
+6. Mixing only on good headphones → disaster on mobile.
+7. Mute that doesn't mute some family (usually ambience or a graph
+   emitter) → bug reported on day 1.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] `SoundGroup` por familia con niveles y prioridades documentados.
-- [ ] Ducking de música/ambiente bajo voz y SFX críticos, sin bombeo.
-- [ ] Compresión protectora sin aplanamiento audible.
-- [ ] Budgets de tamaño, duración y voces definidos por plataforma.
-- [ ] Controles de volumen por familia + mute total, persistidos.
-- [ ] Mezcla verificada en auriculares, móvil y portátil.
-- [ ] Peor caso sonoro legible y sin distorsión.
+- [ ] `SoundGroup` per family with documented levels and priorities.
+- [ ] Music/ambience ducking under voice and critical SFX, no pumping.
+- [ ] Protective compression with no audible flattening.
+- [ ] Size, duration, and voice budgets defined per platform.
+- [ ] Per-family volume controls + total mute, persisted.
+- [ ] Mix verified on headphones, mobile, and laptop.
+- [ ] Worst sonic case readable and distortion-free.
 
-## Herramientas
+## Tools
 
-- `SoundService`, `SoundGroup`, `Sound` como base de mezcla por familias.
-- `CompressorEffect`, `EqualizerEffect` para protección y corrección.
-- `AudioPlayer`, `AudioEmitter`, `AudioListener`, `Wire` si el proyecto usa el
-  grafo moderno (motor: `roblox-audio`).
-- Persistencia de preferencias para volúmenes del jugador.
+- `SoundService`, `SoundGroup`, `Sound` as the family-mix base.
+- `CompressorEffect`, `EqualizerEffect` for protection and correction.
+- `AudioPlayer`, `AudioEmitter`, `AudioListener`, `Wire` if the project uses
+  the modern graph (engine: `roblox-audio`).
+- Preference persistence for player volumes.
 
-## Limitaciones
+## Limitations
 
-- No diseña contenidos (ambientes, música, SFX, vehículos): deriva a las
-  cuatro skills de dominio.
-- No documenta el grafo moderno en profundidad: deriva a `roblox-audio`.
-- No hace accesibilidad visual ni subtítulos.
-- Verifica cualquier miembro de API dudoso en create.roblox.com/docs.
+- Does not design content (ambience, music, SFX, vehicles): see the four
+  domain skills.
+- Does not document the modern graph in depth: see `roblox-audio`.
+- Does not do visual accessibility or subtitles.
+- Check any doubtful API member in create.roblox.com/docs.

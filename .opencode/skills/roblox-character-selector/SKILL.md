@@ -1,49 +1,49 @@
 ---
-name: Selector de Personajes Roblox
-description: Cards de clases, stats comparadas y preview 3D. Úsala cuando crees selección de personaje/clase, desbloqueos por nivel o pago, o confirmación antes de jugar.
+name: Roblox Character Selector
+description: Class cards, compared stats, and 3D preview. Use it when creating character/class selection, level or paid unlocks, or confirmation before playing.
 ---
 
-# Selector de Personajes Roblox
+# Roblox Character Selector
 
-## Objetivo
+## Objective
 
-Ayudar a elegir personaje o clase con criterio en 30 segundos: ver opciones, comparar stats, previsualizar el aspecto y entender qué está bloqueado y cómo se desbloquea. Termina siempre con confirmación explícita antes de entrar al juego.
+Help players pick a character or class with confidence in 30 seconds: see options, compare stats, preview the look, and understand what is locked and how to unlock it. Always ends with explicit confirmation before entering the game.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre: galería de cards, stats comparadas con barras, preview en `ViewportFrame`, bloqueo por nivel/pago con ruta de desbloqueo, y confirmación de selección.
+Covers: card gallery, compared stats with bars, `ViewportFrame` preview, level/paid locking with unlock path, and selection confirmation.
 
-NO hace:
+Does NOT do:
 
-- Mecánica genérica responsiva: lo cubren `roblox-ui` y `roblox-user-interfaces`.
-- Diseño UX previo de clases: lo cubre `roblox-game-ux`; esta skill implementa la pantalla.
-- Tienda y cobro real: lo cubre `roblox-shop-ui` (aquí solo la etiqueta de requisito).
-- Lobby y matchmaking: lo cubre `roblox-lobby-ui`.
-- Habilidades en partida y cooldowns: sistema de juego, no de esta pantalla (la UI de habilidades en HUD va en `roblox-hud`).
+- Generic responsive mechanics: covered by `roblox-ui` and `roblox-user-interfaces`.
+- Prior class UX design: covered by `roblox-game-ux`; this skill implements the screen.
+- Real shop and charging: covered by `roblox-shop-ui` (here only the requirement label).
+- Lobby and matchmaking: covered by `roblox-lobby-ui`.
+- In-match abilities and cooldowns: game system, not this screen (ability UI in the HUD goes in `roblox-hud`).
 
-## Casos de uso
+## Use cases
 
-- 4 clases (Tanque, Exploradora, Médico, Ingeniero) con cards y stats.
-- Preview 3D que rota al seleccionar, con nombre y rol.
-- Personaje bloqueado "Nivel 8" con barra de progreso hacia el desbloqueo.
-- Comparativa "Velocidad 8/10 vs 5/10" al pasar de una card a otra.
-- Confirmar con "Jugar como Ingeniera" y volver sin perder la selección.
+- 4 classes (Tank, Scout, Medic, Engineer) with cards and stats.
+- 3D preview that rotates on select, with name and role.
+- Character locked at "Level 8" with progress bar toward unlock.
+- "Speed 8/10 vs 5/10" comparison when switching cards.
+- Confirm with "Play as Engineer" and go back without losing selection.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define la fantasía de cada opción.** 1 rol + 1 frase + 3 stats (0-10) + dificultad (Fácil/Media/Difícil). Si dos opciones se describen igual, rediséñalas antes de maquetar.
-2. **Maqueta la galería.** PC: carril de cards a la izquierda, preview grande + detalle a la derecha, Confirmar abajo-derecha. Móvil: preview arriba (40%), carril horizontal de cards en medio, detalle compacto + Confirmar fijo abajo.
-3. **Construye las cards.** Cada card = `Frame` + `ImageLabel` retrato o mini `ViewportFrame` + `TextLabel` nombre + `TextLabel` rol + mini-barras de 2-3 stats + etiqueta de estado (Disponible/Nivel X/Pago). Selección con `UIStroke` de acento.
-4. **Stats comparadas honestas.** Barras (`Frame` fondo + `Frame` relleno a `Scale`) de 0-10 con número. Al cambiar de selección, anima la transición con `TweenService` y marca en verde/rojo la diferencia vs la anterior solo si ayuda (máximo 3 stats).
-5. **Preview en ViewportFrame.** Un único `ViewportFrame` con el modelo del personaje seleccionado, cámara fija e iluminación simple; rotación lenta o arrastre para girar. Sin efectos que oculten el aspecto real.
-6. **Bloqueos con ruta clara.** Bloqueado muestra requisito exacto ("Nivel 8 · vas en 5" con barra, o "Pase X" con botón Ver que abre la tienda). Nada de candados sin explicación ni de "Próximamente" eterno.
-7. **Confirmación explícita.** `TextButton` "Jugar como X" con nombre dinámico; al pulsar, loading breve + transición al lobby/partida. Atrás conserva la selección. Doble pulsación protegida con debounce.
-8. **Datos desde configuración.** Roster, stats y requisitos como tabla de datos del proyecto; la UI solo pinta. Si el servidor dice que está bloqueado, la UI no lo deja elegir aunque se manipule localmente.
-9. **Verifica con 8+ personajes.** Scroll fluido, preview sin caídas, textos sin truncar en móvil, y prueba con cuenta nueva (todo bloqueado) y veterana (todo abierto).
+1. **Define each option's fantasy.** 1 role + 1 sentence + 3 stats (0–10) + difficulty (Easy/Medium/Hard). If two options read the same, redesign them before laying out.
+2. **Lay out the gallery.** PC: card rail on the left, big preview + detail on the right, Confirm bottom-right. Mobile: preview on top (40%), horizontal card rail in the middle, compact detail + fixed Confirm at the bottom.
+3. **Build the cards.** Each card = `Frame` + `ImageLabel` portrait or mini `ViewportFrame` + `TextLabel` name + `TextLabel` role + mini-bars for 2–3 stats + state label (Available/Level X/Paid). Selection with accent `UIStroke`.
+4. **Honest compared stats.** Bars (`Frame` background + `Frame` fill at `Scale`) from 0–10 with numbers. On selection change, animate the transition with `TweenService` and mark the green/red delta vs the previous one only if it helps (max 3 stats).
+5. **Preview in ViewportFrame.** A single `ViewportFrame` with the selected character's model, fixed camera, and simple lighting; slow rotation or drag to turn. No effects hiding the real look.
+6. **Locks with a clear path.** Locked shows the exact requirement ("Level 8 · you're at 5" with bar, or "X Pass" with a View button opening the shop). No unexplained padlocks, no eternal "Coming soon".
+7. **Explicit confirmation.** `TextButton` "Play as X" with a dynamic name; on press, brief loading + transition to lobby/match. Back preserves selection. Double-press protected with debounce.
+8. **Data-driven roster.** Roster, stats, and requirements as project data tables; the UI only paints. If the server says it's locked, the UI can't pick it even if manipulated locally.
+9. **Verify with 8+ characters.** Smooth scroll, preview with no drops, no truncated text on mobile, plus a test with a new account (all locked) and a veteran one (all open).
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Card + preview (clases estables):
+- Card + preview (stable classes):
 
   ```luau
   -- Ejemplo ilustrativo: marcar una card como seleccionada
@@ -55,58 +55,58 @@ NO hace:
   -- El resto de cards apagan su UIStroke en la misma pasada.
   ```
 
-- `UIGridLayout`/`UIListLayout` para el carril; `ScrollingFrame` horizontal en móvil; `UISizeConstraint` para que las cards no se aplasten.
-- `ViewportFrame`: un modelo a la vez, cámara con `CFrame` fijo, fondo simple; evita sombras y partículas dentro del preview.
-- Barras de stats a `Scale` (valor/10) con `UICorner` y `UITextSizeConstraint` en los números.
-- Selección: estado local para pintar + confirmación que pide al servidor crear/instanciar con ese personaje (verificar en create.roblox.com/docs para el flujo del juego). El servidor valida desbloqueo y propiedad.
-- `TweenService` para transiciones de stats y entrada de cards; `CanvasGroup` para fundir el cambio de preview.
+- `UIGridLayout`/`UIListLayout` for the rail; horizontal `ScrollingFrame` on mobile; `UISizeConstraint` so cards don't squash.
+- `ViewportFrame`: one model at a time, camera with fixed `CFrame`, plain background; avoid shadows and particles inside the preview.
+- Stat bars at `Scale` (value/10) with `UICorner` and `UITextSizeConstraint` on numbers.
+- Selection: local state for painting + confirmation asking the server to create/spawn with that character (check create.roblox.com/docs for the game flow). The server validates unlock and ownership.
+- `TweenService` for stat transitions and card entry; `CanvasGroup` to fade preview swaps.
 
-### Identidad visual de esta skill (original, no copiar)
+### Visual identity of this skill (original, do not copy)
 
-- Dirección "galería de héroes": fondo degradado índigo noche (#141A33→#1E2A52), cards grafito con retrato grande, acento cian selección (#38E1FF) + ámbar legendario (#FFC53D).
-- Tipografía: nombre 18 semibold, rol 13 mayúsculas ámbar, stats 12 con número a la derecha. Dificultad con 1 palabra + 3 puntos, no párrafo.
-- Composición: cards 3:4 con retrato 60%, stats 25%, estado 15%. Preview 16:10 en PC con nombre superpuesto abajo. `UIPadding` 12, `UICorner` 12.
-- Espaciado: gap 12 entre cards, 20 entre zonas. Confirmar de 200-260 px equivalentes, altura 52-56.
-- Estados: hover eleva 3 px, pressed 0.97, seleccionada con `UIStroke` 2 px + fondo +6% brillo, bloqueada 55% transparencia + banda de requisito, loading en Confirmar con spinner.
-- Animación: entrada escalonada del carril, stats que barren de 0 al valor en 0.4 s, preview con fundido al cambiar. Moderada y sin loops que mareen.
+- "Hero gallery" direction: indigo-night gradient background (#141A33→#1E2A52), graphite cards with large portrait, cyan selection accent (#38E1FF) + legendary amber (#FFC53D).
+- Typography: name 18 semibold, role 13 uppercase amber, stats 12 with number on the right. Difficulty as 1 word + 3 dots, not a paragraph.
+- Composition: 3:4 cards with 60% portrait, 25% stats, 15% state. 16:10 preview on PC with overlaid name at the bottom. `UIPadding` 12, `UICorner` 12.
+- Spacing: 12 gap between cards, 20 between zones. Confirm at 200–260 px equivalent, 52–56 tall.
+- States: hover lifts 3 px, pressed 0.97, selected with 2 px `UIStroke` + 6% brighter background, locked at 55% transparency + requirement band, loading on Confirm with spinner.
+- Animation: staggered rail entry, stats sweeping 0 to value in 0.4 s, preview fade on swap. Moderate, with no dizzying loops.
 
-## Buenas prácticas
+## Best practices
 
-- 3-6 opciones visibles sin scroll en PC; más de 8 exige búsqueda o filtros por rol.
-- Stats comparables (misma escala 0-10) y explicadas en 1 línea cada una.
-- Preview fiel al juego: mismo modelo, mismos colores, sin armaduras que no existen.
-- Bloqueos con progreso ("5/8") o precio/tienda exacta, nunca "Bloqueado" a secas.
-- Confirmar siempre nombra la elección ("Jugar como X").
-- Coherencia con HUD e inventario: mismos iconos de stats y rarezas.
+- 3–6 options visible without scroll on PC; more than 8 needs search or role filters.
+- Comparable stats (same 0–10 scale) each explained in 1 line.
+- Preview faithful to the game: same model, same colors, no armor that doesn't exist.
+- Locks with progress ("5/8") or exact shop price, never bare "Locked".
+- Confirm always names the choice ("Play as X").
+- Coherent with HUD and inventory: same stat and rarity icons.
 
-## Errores frecuentes
+## Common mistakes
 
-- Stats inventadas que no coinciden con el balance real y generan quejas.
-- Preview con 8 `ViewportFrame`s simultáneos que hunden el FPS móvil.
-- Permitir confirmar un bloqueado manipulando la UI local (falta validación servidor).
-- Cards solo con `Offset` que se cortan en tablet o se hacen enanas en PC.
-- Textos de rol de 4 líneas que nadie lee; la fantasía debe caber en 1 frase.
-- Copiar la galería de un juego famoso píxel a píxel (riesgo de imitación; componer original).
+- Made-up stats that don't match real balance and generate complaints.
+- Preview with 8 simultaneous `ViewportFrame`s tanking mobile FPS.
+- Letting a locked pick through by manipulating the local UI (missing server validation).
+- Offset-only cards that clip on tablet or shrink tiny on PC.
+- 4-line role texts nobody reads; the fantasy must fit in 1 sentence.
+- Copying a famous game's gallery pixel by pixel (imitation risk; compose original).
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Elección + confirmación completas en ≤30 s en prueba con usuarios nuevos.
-- [ ] Stats y requisitos coinciden con los datos reales del juego.
-- [ ] Bloqueados no seleccionables aunque se manipule el cliente (validado en servidor).
-- [ ] 60 fps con el preview activo en PC y sin tirones graves en móvil.
-- [ ] Legible en PC, tablet y móvil sin solapes ni truncados.
-- [ ] Dirección de arte propia, sin copias de diseños protegidos.
+- [ ] Pick + confirm completed in ≤30 s in new-user testing.
+- [ ] Stats and requirements match real game data.
+- [ ] Locked picks unselectable even under client manipulation (server-validated).
+- [ ] 60 fps with preview active on PC and no major hitches on mobile.
+- [ ] Readable on PC, tablet, and mobile with no overlaps or truncation.
+- [ ] Own art direction, no copies of protected designs.
 
-## Herramientas
+## Tools
 
-- Studio: editor de UI, prueba de `ViewportFrame` con modelos reales, simulador móvil.
-- MCP Studio (si disponible): capturas de galería + preview en 3 resoluciones, `Output` ante modelos ausentes.
-- Rojo: roster (nombres, stats, requisitos) como datos editables.
-- Selene: lint del controlador de selección y del debounce de Confirmar.
+- Studio: UI editor, `ViewportFrame` test with real models, mobile simulator.
+- Studio MCP (if available): gallery + preview captures at 3 resolutions, `Output` on missing models.
+- Rojo: roster (names, stats, requirements) as editable data.
+- Selene: lint of the selection controller and Confirm debounce.
 
-## Limitaciones
+## Limitations
 
-- No crea los personajes ni su balance; solo la pantalla que los presenta.
-- El `ViewportFrame` tiene coste y límites (verificar en create.roblox.com/docs); un modelo pesado debe simplificarse para preview.
-- Desbloqueos por pago dependen de la tienda y el servidor (`roblox-shop-ui`).
-- La accesibilidad de la comparativa exige no depender solo del color (usa números y etiquetas).
+- Does not create the characters or their balance; only the screen presenting them.
+- `ViewportFrame` has cost and limits (check create.roblox.com/docs); heavy models must be simplified for preview.
+- Paid unlocks depend on shop and server (`roblox-shop-ui`).
+- Accessible comparison must not rely on color alone (use numbers and labels).

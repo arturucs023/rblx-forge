@@ -1,60 +1,60 @@
 ---
 name: roblox-parkour-traversal
-description: Parkour y traversal (vault, climb, wallrun, slide, stamina). Úsala cuando añadas trepar, deslizarte o correr por paredes con validación anti-vuelo.
+description: Parkour and traversal (vault, climb, wallrun, slide, stamina). Use it when adding climbing, sliding, or wall-running with anti-fly validation.
 ---
 
-# Parkour y Traversal
+# Parkour and Traversal
 
-## Objetivo
+## Objective
 
-Añadir movimiento fluido sobre obstáculos —vault, climb, wallrun, slide— con detección de bordes robusta, costes de stamina claros y validación de servidor que permite fluidez sin regalar vuelo.
+Add fluid obstacle movement — vault, climb, wallrun, slide — with robust edge detection, clear stamina costs, and server validation that allows fluidity without giving away flight.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre traversal a pie más allá del controlador base: detección, ejecución, cancelación, stamina y anti-exploit.
+Covers on-foot traversal beyond the base controller: detection, execution, cancellation, stamina, and anti-exploit.
 
-**Qué NO hace:**
+**What it does NOT do:**
 
-- NO cubre ciclo de vida respawn-safe: lo cubre `roblox-characters`.
-- NO cubre el controlador base (walk/jump/coyote): lo cubre `roblox-character-controller` (esta skill lo extiende, no lo sustituye).
-- NO cubre clips de locomoción base: lo cubre `roblox-locomotion-animation` (aquí solo clips específicos vault/climb/slide).
-- NO cubre vehículos: ver `roblox-land-vehicles`, `roblox-air-vehicles`, `roblox-water-vehicles`.
-- NO cubre NPCs con parkour: lo cubre `roblox-npcs`.
-- NO cubre cámaras de traversal: lo cubre `camera-systems`.
+- It does NOT cover respawn-safe lifecycle: covered by `roblox-characters`.
+- It does NOT cover the base controller (walk/jump/coyote-time): covered by `roblox-character-controller` (this skill extends it, it does not replace it).
+- It does NOT cover base locomotion clips: covered by `roblox-locomotion-animation` (here only vault/climb/slide-specific clips).
+- It does NOT cover vehicles: see `roblox-land-vehicles`, `roblox-air-vehicles`, `roblox-water-vehicles`.
+- It does NOT cover NPCs with parkour: covered by `roblox-npcs`.
+- It does NOT cover traversal cameras: covered by `camera-systems`.
 
-## Casos de uso
+## Use cases
 
-1. Trepar muretes bajos con vault fluido en vez de saltar.
-2. Escalar muros marcados con subida animada y coste.
-3. Wallrun corto en paredes lisas para atajos.
-4. Slide bajo obstáculos con ventana de cancelación.
-5. Stamina que evita spam infinito de climb.
-6. Jugadores que usan climb para volar fuera del mapa.
+1. Vaulting low walls fluidly instead of jumping.
+2. Climbing marked walls with an animated climb and cost.
+3. Short wallruns on smooth walls for shortcuts.
+4. Sliding under obstacles with a cancel window.
+5. Stamina that prevents infinite climb spam.
+6. Players using climb to fly out of the map.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Fija el vocabulario del juego.** Elige 2–4 movimientos (ej. vault + climb + slide). Cada uno con: altura/longitud máxima, coste de stamina, cooldown, si conserva momento. Más de 4 sin tutorial = nadie los usa.
-2. **Etiqueta el mundo.** Con `CollectionService` marca: `Vaultable` (0.8–1.5 m), `Climbable` (muros concretos), `Wallrun` (lisas y rectas), `SlideUnder` (huecos). Lo no etiquetado nunca activa parkour.
-3. **Implementa detección por delante, no por tacto.** Para vault/climb: sonda a la altura de cadera/cabeza en la dirección de movimiento del `HumanoidRootPart`. Requiere: velocidad mínima, ángulo de aproximación (<45°) y borde libre arriba. Sin las tres, no se dispara.
-4. **Define ejecución como estado con fin.** Cada movimiento es un estado temporal: inicio (0.1 s) → desplazamiento guiado → salida con velocidad pactada. Duración máxima hardcodeada (vault ~0.4 s, wallrun ~1.2 s). Sin fin garantizado hay vuelos.
-5. **Sincroniza clip con desplazamiento.** El clip (ver locomoción) dura lo que el desplazamiento: vault de 0.4 s sobre murete de 1 m. Si el arte y el movimiento discrepan, ajusta primero el desplazamiento pactado, luego el clip.
-6. **Añade stamina como economía.** Vault barato, climb caro por segundo, wallrun con drenaje, slide gratis pero con cooldown. Sin stamina el jugador escala el rascacielos a base de saltos encadenados.
-7. **Diseña cancelaciones.** Todo movimiento se cancela por: daño, salto (wallrun→salto de pared), fin de stamina, pérdida de superficie. Cada cancelación deja velocidad coherente, nunca cero seco en el aire.
-8. **Valida en servidor.** El servidor conoce etiquetas, posiciones y stamina: acepta el parkour solo si hay superficie etiquetada cerca, altura dentro de rango y stamina suficiente. El cliente propone ("quiero vault"), el servidor autoriza el desplazamiento.
-9. **Prueba la ruta dorada y la rota.** Diseña una ruta que encadena tus 3 movimientos y una ruta de exploit (intento de escalar fuera del mapa). La primera debe fluir; la segunda debe ser rechazada sin kicks falsos a jugadores con lag.
-10. **Tutorializa en el mundo.** Un murete obvio + indicación la primera vez; el resto se descubre. Sin enseñanza, el parkour no existe para el jugador.
+1. **Fix the game's vocabulary.** Pick 2–4 moves (e.g. vault + climb + slide). Each with: max height/length, stamina cost, cooldown, whether it preserves momentum. More than 4 with no tutorial = nobody uses them.
+2. **Label the world.** With `CollectionService` tag: `Vaultable` (0.8–1.5 m), `Climbable` (specific walls), `Wallrun` (smooth straight walls), `SlideUnder` (gaps). The untagged never triggers parkour.
+3. **Implement forward detection, not touch.** For vault/climb: probe at hip/head height in the `HumanoidRootPart` movement direction. Requires: minimum speed, approach angle (<45°), and free edge above. Without all three, it does not fire.
+4. **Define execution as a state with an end.** Each move is a temporary state: start (0.1 s) → guided displacement → exit with agreed velocity. Hardcoded max duration (vault ~0.4 s, wallrun ~1.2 s). With no guaranteed end there are flights.
+5. **Sync clip with displacement.** The clip (see locomotion) lasts as long as the displacement: 0.4 s vault over a 1 m wall. If art and movement disagree, adjust the agreed displacement first, then the clip.
+6. **Add stamina as economy.** Cheap vault, costly climb per second, wallrun drain, free slide but with cooldown. Without stamina the player climbs the skyscraper on chained jumps.
+7. **Design cancellations.** Every move cancels on: damage, jump (wallrun→wall jump), stamina out, surface loss. Every cancellation leaves coherent velocity, never a flat zero mid-air.
+8. **Validate on the server.** The server knows tags, positions, and stamina: it accepts parkour only if there is a tagged surface nearby, height is within range, and stamina suffices. The client proposes ("I want to vault"), the server authorizes the displacement.
+9. **Test the golden route and the broken one.** Design one route chaining your 3 moves and one exploit route (attempt to climb out of the map). The first must flow; the second must be rejected with no false kicks for laggy players.
+10. **Teach it in the world.** One obvious low wall + prompt the first time; the rest is discovered. Without teaching, parkour does not exist for the player.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- **Detección:** sondas (rayos/volúmenes) desde el `HumanoidRootPart` o `Humanoid`: altura de obstáculo, espacio libre encima, normal de pared. La normal decide: suelo = caminar, pared vertical = wallrun/climb, borde bajo = vault.
-- **`HumanoidRootPart` guiado:** durante vault/climb el desplazamiento sigue una curva pactada (no física libre). Al terminar se devuelve el control al controlador base con la velocidad de salida documentada.
-- **Wallrun:** requiere pared continua, velocidad mínima de entrada y temporizador máximo; la gravedad se reduce, no se elimina. Sin pared o sin velocidad, cae.
-- **Slide:** estado bajo con fricción reducida y hitbox visual agachada; cancela al saltar o al chocar. Útil bajo obstáculos `SlideUnder`.
-- **Stamina:** recurso 0–100 con regen solo en suelo quieto o caminando. Toda acción de parkour declara coste; el servidor es la autoridad del saldo.
-- **`CollectionService`:** única fuente de verdad de qué es escalable. Preguntar por etiqueta evita que un renombrado abra un exploit.
-- **Anti-vuelo:** límites duros: ganancia máxima de altura por movimiento, duración máxima, cooldown entre climbs. El servidor corrige (snap suave) en vez de expulsar ante discrepancias pequeñas por lag.
+- **Detection:** probes (rays/volumes) from the `HumanoidRootPart` or `Humanoid`: obstacle height, free space above, wall normal. The normal decides: floor = walk, vertical wall = wallrun/climb, low edge = vault.
+- **Guided `HumanoidRootPart`:** during vault/climb the displacement follows an agreed curve (not free physics). At the end, control returns to the base controller with the documented exit velocity.
+- **Wallrun:** requires a continuous wall, minimum entry speed, and a max timer; gravity is reduced, not removed. Without wall or speed, it falls.
+- **Slide:** low state with reduced friction and a crouched visual hitbox; cancels on jump or impact. Useful under `SlideUnder` obstacles.
+- **Stamina:** 0–100 resource with regen only when grounded and still or walking. Every parkour action declares a cost; the server owns the balance.
+- **`CollectionService`:** single source of truth for what is climbable. Asking by tag prevents a rename from opening an exploit.
+- **Anti-fly:** hard limits: max height gain per move, max duration, cooldown between climbs. The server corrects (smooth snap) instead of kicking on small lag discrepancies.
 
-Ejemplo ilustrativo (puerta de entrada con triple condición, no código final):
+Illustrative example (entry gate with triple condition, not final code):
 
 ```luau
 -- Ilustrativo: el vault exige etiqueta, altura y velocidad mínima.
@@ -64,45 +64,45 @@ if etiqueta == "Vaultable" and alturaBorde <= 1.5 and velocidadHumanoide >= 8 th
 end
 ```
 
-## Buenas prácticas
+## Best practices
 
-- El cliente propone, el servidor valida: etiquetas, distancia a la superficie, stamina y cooldown se comprueban en servidor; el cliente solo predice el inicio visual.
-- Un movimiento nuevo = una etiqueta + un coste + un límite. Sin excepciones.
-- Conserva el momento en la salida: vault mantiene velocidad, wallrun→salto la convierte en impulso lateral pactado.
-- Todo parkour funciona con mando y táctil (un botón de salto contextual); nada de combos de 3 teclas.
-- Registra intentos rechazados por el servidor para detectar spots de exploit y falsos positivos por lag.
-- Coordina fades con `roblox-animation-systems` y `roblox-locomotion-animation`: el parkour es un estado más de la matriz.
+- The client proposes, the server validates: tags, distance to the surface, stamina, and cooldown are checked on the server; the client only predicts the visual start.
+- One new move = one tag + one cost + one limit. No exceptions.
+- Preserve momentum on exit: vault keeps speed, wallrun→jump converts it into agreed lateral impulse.
+- All parkour works with gamepad and touch (one contextual jump button); no 3-key combos.
+- Log server-rejected attempts to spot exploit spots and lag false positives.
+- Coordinate fades with `roblox-animation-systems` and `roblox-locomotion-animation`: parkour is one more state in the matrix.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Parkour por contacto:** activarse al rozar cualquier parte. Exige etiqueta + ángulo + velocidad.
-2. **Climb infinito:** sin coste ni cooldown se escala todo. Stamina + cooldown + altura máxima por intento.
-3. **Wallrun eterno:** sin temporizador el jugador cruza el mapa por la pared. Máximo ~1 s + velocidad mínima.
-4. **Salida a velocidad cero en el aire:** cancelar wallrun y quedarse flotando. Toda salida deja velocidad pactada o caída inmediata.
-5. **Servidor que confía:** aceptar "estoy en climb" sin comprobar superficie cercana = vuelo libre. Valida etiqueta y distancia.
-6. **Detección solo visual:** el clip dice vault pero el cuerpo atraviesa el murete. Desplazamiento pactado + colisión real, no solo animación.
-7. **Parkour que rompe cámaras:** giros bruscos que pelean con `camera-systems`. Fija velocidad de giro durante estados guiados.
+1. **Contact parkour:** triggering on touching any part. Require tag + angle + speed.
+2. **Infinite climb:** with no cost or cooldown everything gets climbed. Stamina + cooldown + max height per attempt.
+3. **Eternal wallrun:** with no timer the player crosses the map on the wall. ~1 s max + minimum speed.
+4. **Zero-velocity exit mid-air:** cancelling wallrun and floating. Every exit leaves agreed velocity or immediate fall.
+5. **Trusting server:** accepting "I'm climbing" without checking a nearby surface = free flight. Validate tag and distance.
+6. **Visual-only detection:** the clip says vault but the body crosses the wall. Agreed displacement + real collision, not just animation.
+7. **Parkour breaking cameras:** sharp turns fighting `camera-systems`. Fix turn speed during guided states.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] 2–4 movimientos con ficha (rango, coste, cooldown, velocidad de salida).
-- [ ] Etiquetas `CollectionService` colocadas y documentadas; nada funciona sin etiqueta.
-- [ ] Detección triple (etiqueta + geometría + velocidad) verificada en banco de pruebas.
-- [ ] Stamina con costes y regen medidos; imposible escalar spots de test sin pausa.
-- [ ] Validación de servidor rechaza vuelo/exploits en prueba adversaria sin falsos positivos con 150 ms.
-- [ ] Ruta dorada completable por jugador nuevo tras una sola indicación.
-- [ ] Transiciones registradas en la matriz de `roblox-animation-systems`.
+- [ ] 2–4 moves with datasheet (range, cost, cooldown, exit velocity).
+- [ ] `CollectionService` tags placed and documented; nothing works without a tag.
+- [ ] Triple detection (tag + geometry + speed) verified on the test bench.
+- [ ] Stamina with measured costs and regen; test spots impossible to climb without pausing.
+- [ ] Server validation rejects flight/exploits in adversarial testing with no false positives at 150 ms.
+- [ ] Golden route completable by a new player after a single prompt.
+- [ ] Transitions registered in the `roblox-animation-systems` matrix.
 
-## Herramientas
+## Tools
 
-- Banco de obstáculos (muretes 0.8/1.2/1.5 m, muro climbable, pared wallrun, túnel slide).
-- Ficha de movimiento estándar + tabla de etiquetas del mundo.
-- Cliente de prueba de exploits (intentos de climb en pared no marcada, wallrun infinito).
-- Ruta dorada cronometrada para calibrar fluidez.
+- Obstacle bench (0.8/1.2/1.5 m low walls, climbable wall, wallrun wall, slide tunnel).
+- Standard move datasheet + world tag table.
+- Exploit test client (climb attempts on untagged walls, infinite wallrun).
+- Timed golden route to calibrate fluidity.
 
-## Limitaciones
+## Limitations
 
-- No cubre ganchos, dash aéreo ni teleports (son habilidades, otra disciplina).
-- No cubre física de cuerdas ni ragdoll.
-- No sustituye al controlador base: lo extiende.
-- APIs fuera de la lista estable: "(verificar en create.roblox.com/docs)".
+- Does not cover hooks, air dash, or teleports (they are abilities, another discipline).
+- Does not cover ropes physics or ragdoll.
+- Does not replace the base controller: it extends it.
+- APIs outside the stable list: "(check create.roblox.com/docs)".

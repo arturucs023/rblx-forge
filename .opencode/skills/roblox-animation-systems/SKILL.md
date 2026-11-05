@@ -1,60 +1,60 @@
 ---
 name: roblox-animation-systems
-description: Máquinas de estados, capas, prioridades y replicación de animación. Úsala cuando montes el sistema que decide qué clip se reproduce y cómo se ve en otros clientes.
+description: Animation state machines, layers, priorities, and replication. Use it when building the system that decides which clip plays and how it looks on other clients.
 ---
 
-# Sistemas de Animación
+# Animation Systems
 
-## Objetivo
+## Objective
 
-Montar el sistema que decide qué animación se reproduce, cuándo y cómo: máquina de estados, capas por cuerpo, prioridades, transiciones con fade y replicación coherente a otros clientes sin pops ni desyncs.
+Build the system that decides which animation plays, when, and how: state machine, body layers, priorities, faded transitions, and replication that stays coherent on other clients with no pops or desyncs.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre arquitectura: estados, transiciones, capas, prioridades, `Animator`/`AnimationTrack` y replicación visual.
+Covers architecture: states, transitions, layers, priorities, `Animator`/`AnimationTrack`, and visual replication.
 
-**Qué NO hace:**
+**What it does NOT cover:**
 
-- NO cubre ciclo de vida respawn-safe (reconstruir `Animator` al reaparecer): lo cubre `roblox-characters`; aquí se asume que el `Animator` existe y es único.
-- NO cubre creación de rigs: lo cubre `roblox-rigging`.
-- NO cubre dirección visual: lo cubre `roblox-character-design`.
-- NO es el contenido de los clips (eso está en `roblox-locomotion-animation`, `roblox-combat-animation`, `roblox-expressive-animation`); aquí el sistema que los gobierna.
-- NO cubre IA de NPCs: lo cubre `roblox-npcs` (pueden reutilizar este sistema como reproductor).
-- NO cubre cámaras: lo cubre `camera-systems`.
+- Does NOT cover respawn-safe lifecycle (rebuilding the `Animator` on respawn): covered by `roblox-characters`; here the `Animator` is assumed to exist and be unique.
+- Does NOT cover rig creation: covered by `roblox-rigging`.
+- Does NOT cover visual direction: covered by `roblox-character-design`.
+- Is NOT the content of the clips (that lives in `roblox-locomotion-animation`, `roblox-combat-animation`, `roblox-expressive-animation`); here the system that governs them.
+- Does NOT cover NPC AI: covered by `roblox-npcs` (which may reuse this system as a player).
+- Does NOT cover cameras: covered by `camera-systems`.
 
-## Casos de uso
+## Use cases
 
-1. Nuevo proyecto que necesita el controlador central de animación del jugador.
-2. Pops y cortes al cambiar de correr a saltar a atacar.
-3. Ataques que no interrumpen el walk o emotes que pisan el hit-react.
-4. Otros jugadores que se ven congelados o con animación equivocada.
-5. Añadir capa de torso para apuntar/disparar sin romper piernas.
-6. Migrar de "reproducir clips sueltos" a sistema con estados.
+1. New project needing the player's central animation controller.
+2. Pops and cuts when switching from run to jump to attack.
+3. Attacks that don't interrupt walk, or emotes stomping hit-react.
+4. Other players looking frozen or playing the wrong animation.
+5. Adding a torso layer for aiming/shooting without breaking legs.
+6. Migrating from "playing loose clips" to a state-based system.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Inventaria clips y clasifícalos.** Lista todo: locomoción, combate, expresivos, hit-react, muerte. Asigna a cada uno: capa (piernas / torso / cara / full-body), prioridad y si es loop o one-shot. Sin inventario, el sistema es parche sobre parche.
-2. **Define estados mínimos.** Ejemplo: Idle, Locomoción, Aire, Ataque, HitReact, Muerto, Emote. Cada estado declara: qué capas controla, qué estados pueden interrumpirlo y con qué fade. Menos estados bien definidos valen más que 20 ambiguos.
-3. **Dibuja la matriz de transiciones.** Tabla estado_origen × evento → estado_destino + fade. Prohíbe transiciones imposibles (Muerto→Ataque, Emote→HitReact sin pasar por base). Todo "corte raro" nace de una transición no diseñada.
-4. **Asigna prioridades por capa.** Base: locomoción en piernas + idle de torso. Media: emotes y apuntado en torso/brazos. Alta: ataque. Máxima breve: hit-react. Muerte: full-body y bloquea todo. Documenta la escala numérica usada.
-5. **Implementa el reproductor único.** Un solo módulo por `Character` que posee el `Animator` y expone `CruzarA(estado)` con fade. Nadie más llama a `Play()` directamente: todo pasa por el reproductor para evitar tracks peleando.
-6. **Gestiona `AnimationTrack` con higiene.** Al entrar a un estado: `Play(fade)` del nuevo, fade-out del anterior, detén tracks huérfanos pasado el fade. Limita tracks simultáneos (típico: 1 por capa + 1 transitorio). Registra qué track pertenece a qué capa.
-7. **Separa lógica y presentación.** La lógica (velocidad, en aire, atacando) vive en el controlador; el sistema de animación solo lee ese estado y elige clips. Nunca midas física dentro del reproductor.
-8. **Diseña la replicación.** El jugador local predice inmediato (reproduce al pulsar); el servidor valida el estado real (posición, velocidad, atacando) y los demás clientes reproducen según el estado replicado. La animación nunca es prueba de nada: es espejo del estado validado.
-9. **Añade telemetría mínima.** Contadores: transiciones por segundo, tracks simultáneos, tiempo en cada estado. Si hay más de ~10 transiciones/s en un jugador, algo oscila (típico: umbral de velocidad sin histéresis).
-10. **Prueba la matriz completa.** Recorre cada transición de la tabla con latencia simulada y verifica fades, interrupciones y replicación en un segundo cliente. Congela la matriz como contrato.
+1. **Inventory clips and classify them.** List everything: locomotion, combat, expressives, hit-react, death. Assign each: layer (legs / torso / face / full-body), priority, and whether it loops or is one-shot. Without an inventory, the system is patch over patch.
+2. **Define minimal states.** Example: Idle, Locomotion, Air, Attack, HitReact, Dead, Emote. Each state declares: which layers it controls, which states can interrupt it, and with what fade. Fewer well-defined states beat 20 ambiguous ones.
+3. **Draw the transition matrix.** Table of source-state × event → destination-state + fade. Forbid impossible transitions (Dead→Attack, Emote→HitReact without going through base). Every weird cut is born from an undesigned transition.
+4. **Assign priorities per layer.** Base: locomotion on legs + torso idle. Mid: emotes and torso/arm aiming. High: attack. Brief max: hit-react. Death: full-body, blocks everything. Document the numeric scale used.
+5. **Implement the single player.** One module per `Character` that owns the `Animator` and exposes `CruzarA(state)` with fade. Nobody else calls `Play()` directly: everything goes through the player to avoid fighting tracks.
+6. **Manage `AnimationTrack` with hygiene.** On entering a state: `Play(fade)` the new one, fade out the old one, stop orphan tracks past the fade. Limit simultaneous tracks (typical: 1 per layer + 1 transient). Record which track belongs to which layer.
+7. **Separate logic and presentation.** Logic (speed, airborne, attacking) lives in the controller; the animation system only reads that state and picks clips. Never measure physics inside the player.
+8. **Design replication.** The local player predicts immediately (plays on press); the server validates the real state (position, speed, attacking) and other clients play per the replicated state. Animation is never proof of anything: it mirrors validated state.
+9. **Add minimal telemetry.** Counters: transitions per second, simultaneous tracks, time in each state. More than ~10 transitions/s on one player means something oscillates (typical: speed threshold with no hysteresis).
+10. **Test the full matrix.** Walk each table transition with simulated latency and verify fades, interruptions, and replication on a second client. Freeze the matrix as a contract.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- **`Animator` único por `Humanoid`:** todos los `AnimationTrack` cuelgan de él. Dos reproductores sobre el mismo `Animator` generan peleas de peso impredecibles.
-- **`Animation` vs `AnimationTrack`:** el `Animation` es el asset; `LoadAnimation` devuelve un `Track` con peso, velocidad, longitud y eventos. Reutiliza tracks para loops frecuentes en vez de recargar.
-- **Pesos y fades:** un crossfade es bajar peso del viejo mientras sube el nuevo durante el fade. Sin fade (fade 0) hay pop salvo que las poses coincidan.
-- **Capas:** se implementan separando qué articulaciones (`Motor6D`) gobierna cada track por prioridad. Piernas para locomoción + torso para acción es el split más rentable.
-- **Histéresis en umbrales:** si walk→run cambia a velocidad 12, run→walk debe volver a 10.5, no a 12, o el sistema parpadea entre ambos.
-- **One-shots vs loops:** los one-shots (ataque, land) necesitan evento de fin o duración conocida para devolver el control; los loops (idle, run) necesitan condición de salida.
-- **Replicación:** el estado (no los frames) es lo que viaja; cada cliente reproduce localmente el clip del estado. Así se evitan desyncs de frames con jitter.
+- **Single `Animator` per `Humanoid`:** every `AnimationTrack` hangs off it. Two players on the same `Animator` fight with unpredictable weights.
+- **`Animation` vs `AnimationTrack`:** the `Animation` is the asset; `LoadAnimation` returns a `Track` with weight, speed, length, and events. Reuse tracks for frequent loops instead of reloading.
+- **Weights and fades:** a crossfade lowers the old track's weight while raising the new one's over the fade. With no fade (fade 0) there is a pop unless poses match.
+- **Layers:** implemented by separating which joints (`Motor6D`) each track governs per priority. Legs for locomotion + torso for action is the highest-value split.
+- **Hysteresis on thresholds:** if walk→run switches at speed 12, run→walk must return at 10.5, not 12, or the system flickers between both.
+- **One-shots vs loops:** one-shots (attack, land) need an end event or known duration to hand control back; loops (idle, run) need an exit condition.
+- **Replication:** state (not frames) is what travels; each client plays the state's clip locally. This avoids frame desyncs under jitter.
 
-Ejemplo ilustrativo (reproductor único, no código final):
+Illustrative example (single player, not final code):
 
 ```luau
 -- Ilustrativo: todo cambio de animación pasa por una sola función con fade.
@@ -69,45 +69,45 @@ function SistemaAnim.CruzarA(self, estadoNuevo, fade)
 end
 ```
 
-## Buenas prácticas
+## Best practices
 
-- El cliente propone el estado visual, el servidor valida el estado real: un cliente puede pedir "ataque", pero solo el estado confirmado por servidor se replica a los demás.
-- Un solo dueño del `Animator` por personaje; prohíbe `Play()` dispersos por el código.
-- Toda transición lleva fade explícito; el fade 0 requiere justificación escrita.
-- Histéresis en cada umbral numérico; sin excepción.
-- Muerte bloquea todo y detiene tracks de forma ordenada; reaparición resetea el sistema (coordina con `roblox-characters`).
-- Registra la matriz de transiciones como documento vivo; cada clip nuevo debe encajar en ella o la matriz se actualiza explícitamente.
+- The client proposes visual state, the server validates real state: a client may request "attack", but only server-confirmed state replicates to others.
+- Single owner of the `Animator` per character; forbid scattered `Play()` calls across code.
+- Every transition carries an explicit fade; fade 0 requires written justification.
+- Hysteresis on every numeric threshold; no exceptions.
+- Death blocks everything and stops tracks in order; respawn resets the system (coordinate with `roblox-characters`).
+- Keep the transition matrix as a living document; every new clip must fit it or the matrix is explicitly updated.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **`Play()` desde 5 scripts distintos:** tracks peleando, prioridades aleatorias. Centraliza en el reproductor.
-2. **Sin histéresis:** parpadeo walk/run a velocidad límite. Doble umbral siempre.
-3. **Tracks huérfanos:** one-shot que nunca se detiene y sigue pesando 1.0 bajo el siguiente. Limpieza al salir del estado.
-4. **Replicar frames en vez de estado:** intentar sincronizar tiempo exacto del clip por red; con jitter es imposible. Replica estado, reproduce local.
-5. **Muerte que no bloquea:** el muerto sigue reproduciendo run al deslizarse el cuerpo. Muerto = full-body + bloqueo.
-6. **Prioridades planas:** todo en la misma prioridad y el resultado depende del orden de llamada. Jerarquía explícita por capa.
-7. **Lógica de física dentro del animador:** el reproductor decide por velocidad medida por él mismo y diverge del controlador. El animador solo lee estado.
+1. **`Play()` from 5 different scripts:** fighting tracks, random priorities. Centralize in the player.
+2. **No hysteresis:** walk/run flicker at the limit speed. Double threshold always.
+3. **Orphan tracks:** a one-shot that never stops and keeps weighing 1.0 underneath the next one. Clean up on state exit.
+4. **Replicating frames instead of state:** trying to sync exact clip time over the network; impossible with jitter. Replicate state, play locally.
+5. **Death that doesn't block:** the dead body keeps playing run as it slides. Dead = full-body + block.
+6. **Flat priorities:** everything at the same priority and the result depends on call order. Explicit hierarchy per layer.
+7. **Physics logic inside the animator:** the player measures speed itself and diverges from the controller. The animator only reads state.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Matriz de transiciones completa y sin transiciones indefinidas.
-- [ ] Reproductor único; cero `Play()` fuera de él (verificado por búsqueda).
-- [ ] Todas las transiciones con fade explícito y medido (sin pops en prueba ciega).
-- [ ] Histéresis en todos los umbrales; sin oscilación a velocidad límite.
-- [ ] Replicación verificada con 2 clientes + latencia: el observador ve el estado correcto.
-- [ ] Telemetría con transiciones/s y tracks simultáneos dentro de límites.
-- [ ] Muerte y reaparición resetean el sistema limpiamente.
+- [ ] Complete transition matrix with no undefined transitions.
+- [ ] Single player; zero `Play()` outside it (verified by search).
+- [ ] All transitions with explicit, measured fade (no pops in blind test).
+- [ ] Hysteresis on all thresholds; no oscillation at limit speed.
+- [ ] Replication verified with 2 clients + latency: the observer sees the correct state.
+- [ ] Telemetry with transitions/s and simultaneous tracks within limits.
+- [ ] Death and respawn reset the system cleanly.
 
-## Herramientas
+## Tools
 
-- Matriz de transiciones (tabla origen × evento → destino + fade).
-- Reproductor único por `Character` + inventario de clips con capa/prioridad/loop.
-- Escena de 2 clientes con latencia simulada para validar replicación.
-- Contadores de transiciones y tracks para detectar oscilaciones.
+- Transition matrix (source × event → destination + fade table).
+- Single player per `Character` + clip inventory with layer/priority/loop.
+- 2-client scene with simulated latency to validate replication.
+- Transition and track counters to detect oscillation.
 
-## Limitaciones
+## Limitations
 
-- No crea clips ni dirige arte; gobierna clips existentes.
-- No resuelve predicción/rollback de red; solo la presentación coherente.
-- No cubre IK en tiempo real más allá de su hueco en capas (el IK concreto vive en locomoción/combate).
-- APIs fuera de la lista estable: "(verificar en create.roblox.com/docs)".
+- Does not create clips or direct art; governs existing clips.
+- Does not solve network prediction/rollback; only coherent presentation.
+- Does not cover real-time IK beyond its slot in layers (concrete IK lives in locomotion/combat).
+- APIs outside the stable list: "(check create.roblox.com/docs)".

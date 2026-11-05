@@ -1,58 +1,58 @@
 ---
-name: Menú de Pausa Roblox
-description: Pausa con reanudar, ajustes rápidos y salir con confirmación. Úsala cuando crees la pausa en partida, el panel ESC, opciones rápidas o el flujo de abandono seguro.
+name: Roblox Pause Menu
+description: Pause with resume, quick settings, and exit with confirmation. Use it when creating the in-match pause, ESC panel, quick options, or the safe-quit flow.
 ---
 
-# Menú de Pausa Roblox
+# Roblox Pause Menu
 
-## Objetivo
+## Objective
 
-Pausar la partida de forma legible y segura: el jugador entiende que el juego está detenido (o protegido), ajusta lo esencial sin salir, y abandona solo con confirmación. La pausa nunca debe regalar ventaja ni permitir acciones que el servidor no validaría en juego normal.
+Pause the match legibly and safely: the player understands the game is stopped (or protected), adjusts the essentials without leaving, and quits only with confirmation. Pause must never grant an advantage or allow actions the server would not validate during normal play.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre: overlay de pausa, botones Reanudar/Ajustes rápidos/Ayuda/Abandonar, diálogo de confirmación de salida, comportamiento con el menú del sistema Roblox, y reglas anti-exploit específicas de la pausa.
+Covers: pause overlay, Resume/Quick settings/Help/Quit buttons, quit-confirmation dialog, behavior with the Roblox system menu, and pause-specific anti-exploit rules.
 
-NO hace:
+Does NOT do:
 
-- Mecánica genérica responsiva: lo cubren `roblox-ui` y `roblox-user-interfaces`.
-- Diseño UX previo: lo cubre `roblox-game-ux`; esta skill implementa.
-- Panel completo de ajustes con rebind y perfiles: lo cubre `roblox-settings-ui` (aquí solo ajustes rápidos).
-- HUD en partida: lo cubre `roblox-hud`.
-- Notificaciones globales del juego: lo cubre `roblox-notifications-ui`.
+- Generic responsive mechanics: covered by `roblox-ui` and `roblox-user-interfaces`.
+- Prior UX design: covered by `roblox-game-ux`; this skill implements.
+- Full settings panel with rebind and profiles: covered by `roblox-settings-ui` (here only quick settings).
+- In-match HUD: covered by `roblox-hud`.
+- Global game notifications: covered by `roblox-notifications-ui`.
 
-## Casos de uso
+## Use cases
 
-- Pausa con ESC/botón que oscurece el juego y muestra 4 opciones.
-- Ajuste rápido de volumen y calidad sin abrir el panel completo.
-- "¿Abandonar partida? Perderás el progreso no guardado" con Confirmar/Cancelar.
-- Pausa automática al perder foco en móvil con mensaje claro.
-- Bloqueo de movimiento e interacciones mientras la pausa está abierta.
+- Pause with ESC/button that darkens the game and shows 4 options.
+- Quick volume and quality adjustment without opening the full panel.
+- "Quit match? You will lose unsaved progress" with Confirm/Cancel.
+- Automatic pause on focus loss on mobile with a clear message.
+- Blocking movement and interactions while pause is open.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define qué significa pausar en tu juego.** Un jugador: congela localmente. Multijugador: normalmente no se detiene el mundo; la pausa es overlay + bloqueo de input propio. Escríbelo en 1 frase y píntalo en la UI ("Partida en pausa" vs "Juego en segundo plano").
-2. **Construye el overlay.** `ScreenGui` en `PlayerGui` → `Frame` a pantalla completa semitransparente + `Frame` tarjeta centrada (50% ancho PC, 88% móvil) con `UIListLayout` vertical: título, `TextButton` Reanudar, Ajustes rápidos, Ayuda, Abandonar.
-3. **Gestiona apertura/cierre.** Abre con tecla ESC o `TextButton` en HUD (táctil). Cierra con Reanudar, ESC de nuevo o botón cerrar. Usa `UserInputService.InputBegan` para la tecla y debounce de 0.2 s para evitar parpadeo.
-4. **Bloquea input de juego.** Mientras está abierta, ignora movimiento/ataque/interacción en tus controladores locales y muestra el cursor. Al cerrar, restaura el estado exacto. Nunca confíes solo en ocultar botones: desactiva la lógica.
-5. **Añade ajustes rápidos.** Volumen (slider simple con `TextButton` - / + o barra), calidad (Baja/Media/Alta), silenciar. Cambios inmediatos y reversibles; el panel completo vive en `roblox-settings-ui` vía botón "Más ajustes".
-6. **Implementa abandono con confirmación.** Abandonar abre modal secundario: explica consecuencia + `TextButton` Confirmar (destructivo, rojo) + Cancelar (foco por defecto). Confirmar ejecuta la salida (teleport/salida según proyecto; verificar en create.roblox.com/docs). Doble confirmación si hay progreso sin guardar.
-7. **Aplica reglas anti-exploit.** La pausa no detiene temporizadores del servidor, no cancela daño ya validado, no permite curarse/equipar/comerciar desde el menú, y no oculta al jugador de otros. Toda acción sensible se revalida en servidor.
-8. **Anima y prueba.** Entrada: oscurecido 0.2 s + tarjeta con subida leve vía `TweenService`. Salida inversa. Prueba: abrir en combate, abrir sin conexión, spamear ESC, rotar el móvil, abrir menú Roblox del sistema encima.
-9. **Respeta el menú del sistema.** No intentes bloquear ni suplantar el menú de Roblox; tu pausa coexiste. Usa `GuiService` solo para lectura de estados si lo necesitas.
+1. **Define what pausing means in your game.** Single player: freezes locally. Multiplayer: the world normally does not stop; pause is an overlay + own-input lock. Write it in 1 sentence and paint it in the UI ("Match paused" vs "Game in background").
+2. **Build the overlay.** `ScreenGui` in `PlayerGui` → full-screen semi-transparent `Frame` + centered card `Frame` (50% width PC, 88% mobile) with vertical `UIListLayout`: title, `TextButton` Resume, Quick settings, Help, Quit.
+3. **Handle open/close.** Open with the ESC key or a `TextButton` in the HUD (touch). Close with Resume, ESC again, or a close button. Use `UserInputService.InputBegan` for the key and a 0.2 s debounce to avoid flicker.
+4. **Lock game input.** While open, ignore movement/attack/interact in your local controllers and show the cursor. On close, restore the exact state. Never rely only on hiding buttons: disable the logic.
+5. **Add quick settings.** Volume (simple slider with `TextButton` - / + or bar), quality (Low/Medium/High), mute. Immediate reversible changes; the full panel lives in `roblox-settings-ui` behind a "More settings" button.
+6. **Implement quit with confirmation.** Quitting opens a secondary modal: explain the consequence + `TextButton` Confirm (destructive, red) + Cancel (default focus). Confirm runs the exit (teleport/exit per project; check create.roblox.com/docs). Double confirmation if there is unsaved progress.
+7. **Apply anti-exploit rules.** Pause does not stop server timers, does not cancel already-validated damage, does not allow healing/equipping/trading from the menu, and does not hide the player from others. Every sensitive action is revalidated on the server.
+8. **Animate and test.** Entry: 0.2 s darken + card sliding up slightly via `TweenService`. Reverse exit. Test: open in combat, open offline, spam ESC, rotate the phone, open the Roblox system menu on top.
+9. **Respect the system menu.** Do not attempt to block or impersonate the Roblox menu; your pause coexists. Use `GuiService` only for reading state if needed.
 
-### Identidad visual de esta skill (original, no copiar)
+### Visual identity of this skill (original, do not copy)
 
-- Dirección "cabina sobria": overlay negro 60% + tarjeta grafito (#1C2233) con borde fino claro; acento verde reanudar (#3DDC84) y rojo abandono (#FF5A5A).
-- Tipografía: título 24 semibold, opciones 17 regular, notas 13 gris. Botones de altura 48 (PC) / 56 (táctil) con `UITextSizeConstraint`.
-- Composición: tarjeta centrada, 1 columna, icono + texto por fila, separadores de 1 px. Abandonar separado visualmente al final con espacio extra.
-- Espaciado: `UIPadding` 20, gap 10 entre botones, `UICorner` 12, `UIStroke` 1 px en la tarjeta.
-- Estados: hover aclara 6%, pressed escala 0.98, disabled gris, loading solo en Abandonar-confirmar (spinner breve), foco visible en Cancelar por defecto en el modal.
-- Animación: solo fundido + subida 8 px, 0.2-0.25 s. En pausa la moderación es obligatoria: nada que distraiga.
+- "Sober cockpit" direction: 60% black overlay + graphite card (#1C2233) with thin light border; resume green accent (#3DDC84) and quit red (#FF5A5A).
+- Typography: title 24 semibold, options 17 regular, notes 13 gray. Button height 48 (PC) / 56 (touch) with `UITextSizeConstraint`.
+- Composition: centered card, 1 column, icon + text per row, 1 px separators. Quit visually separated at the end with extra spacing.
+- Spacing: `UIPadding` 20, 10 gap between buttons, `UICorner` 12, 1 px `UIStroke` on the card.
+- States: hover lightens 6%, pressed 0.98 scale, disabled gray, loading only on confirm-quit (brief spinner), visible focus on Cancel by default in the modal.
+- Animation: only fade + 8 px rise, 0.2-0.25 s. In pause, restraint is mandatory: nothing distracting.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Estructura mínima (clases estables):
+- Minimal structure (stable classes):
 
   ```luau
   -- Ejemplo ilustrativo: alternar la pausa
@@ -66,49 +66,49 @@ NO hace:
   end
   ```
 
-- `ScreenGui.Enabled` para mostrar/ocultar todo el bloque; `DisplayOrder` alto pero por debajo de modales críticos y del chat del sistema.
-- `UserInputService` para ESC/tecla dedicada; en móvil un `TextButton` de pausa en el HUD (mínimo 48x48) que abre este menú.
-- `TweenService` solo para el overlay y la tarjeta; congela tweens de juego si tu diseño los detiene en pausa.
-- Teclas y gamepad: la navegación debe funcionar sin ratón; prueba el orden de foco antes de publicar (verificar en create.roblox.com/docs para detalles de selección).
-- Ninguna decisión de inventario, daño o economía se toma en este menú; si aparece un botón así, es un error de diseño.
+- `ScreenGui.Enabled` to show/hide the whole block; high `DisplayOrder` but below critical modals and system chat.
+- `UserInputService` for ESC/dedicated key; on mobile a pause `TextButton` in the HUD (minimum 48x48) that opens this menu.
+- `TweenService` only for the overlay and card; freeze game tweens if your design stops them in pause.
+- Keys and gamepad: navigation must work without a mouse; test focus order before publishing (check create.roblox.com/docs for selection details).
+- No inventory, damage, or economy decision is made in this menu; if such a button appears, it is a design bug.
 
-## Buenas prácticas
+## Best practices
 
-- Reanudar es la acción primaria y la más grande; Abandonar siempre la última y en estilo destructivo.
-- Explica la consecuencia de abandonar en 1 línea honesta, sin chantaje emocional.
-- Ajustes rápidos con efecto inmediato y sin botón Guardar.
-- Coherencia total con menú principal y ajustes: mismos botones, mismos iconos, mismos radios.
-- En multijugador deja claro que el mundo sigue: "Los demás jugadores continúan".
-- Registra aperturas de pausa y abandonos para detectar puntos de frustración (analítica del proyecto).
+- Resume is the primary and largest action; Quit always last and in destructive style.
+- Explain the consequence of quitting in 1 honest line, no emotional blackmail.
+- Quick settings with immediate effect and no Save button.
+- Total consistency with main menu and settings: same buttons, same icons, same radii.
+- In multiplayer make clear the world goes on: "Other players continue".
+- Log pause opens and quits to detect frustration points (project analytics).
 
-## Errores frecuentes
+## Common mistakes
 
-- Pausa que solo oculta la UI pero deja al personaje moviéndose o recibiendo input.
-- Abandonar sin confirmación y pérdida de progreso con queja posterior.
-- Intentar pausar el servidor desde el cliente o congelar a otros jugadores.
-- Permitir equipar/curar/comerciar desde la pausa saltándose validaciones.
-- Overlay que tapa el menú del sistema Roblox o lo imita para engañar.
-- Textos ambiguos ("Salir" sin decir si es al menú o fuera del juego).
+- Pause that only hides the UI but leaves the character moving or receiving input.
+- Quitting without confirmation and later complaints about lost progress.
+- Trying to pause the server from the client or freeze other players.
+- Allowing equip/heal/trade from pause while skipping validations.
+- Overlay covering the Roblox system menu or mimicking it to deceive.
+- Ambiguous texts ("Exit" without saying whether it is to the menu or out of the game).
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Abrir/cerrar 20 veces seguidas (spam ESC) sin estados rotos ni duplicados.
-- [ ] Sin ventaja: temporizadores, daño y economía se comportan igual con la pausa abierta.
-- [ ] Abandonar exige confirmación y explica la consecuencia.
-- [ ] Legible en PC, móvil y tablet con tamaños `Scale` y botones táctiles suficientes.
-- [ ] Sin errores en consola y sin input fantasma al reanudar.
-- [ ] Coherente visualmente con el resto de menús del juego.
+- [ ] Open/close 20 times in a row (ESC spam) with no broken or duplicated states.
+- [ ] No advantage: timers, damage, and economy behave the same with pause open.
+- [ ] Quitting requires confirmation and explains the consequence.
+- [ ] Legible on PC, mobile, and tablet with `Scale` sizes and sufficient touch buttons.
+- [ ] No console errors and no ghost input on resume.
+- [ ] Visually consistent with the rest of the game's menus.
 
-## Herramientas
+## Tools
 
-- Studio: Play solo y con servidor, simulador móvil, `Output` para inputs duplicados.
-- MCP Studio (si disponible): captura del overlay sobre gameplay real, verificación de orden de capas.
-- Rojo: textos del menú como datos para revisión y traducción futura.
-- Selene: lint del controlador de apertura/cierre y del debounce.
+- Studio: solo and server play, mobile simulator, `Output` for duplicated inputs.
+- MCP Studio (if available): capture of the overlay over real gameplay, layer-order check.
+- Rojo: menu texts as data for review and future translation.
+- Selene: lint the open/close controller and debounce.
 
-## Limitaciones
+## Limitations
 
-- En multijugador no existe "pausa real del mundo" desde el cliente; es overlay + bloqueo local.
-- No sustituye el panel de ajustes completo (`roblox-settings-ui`) ni el HUD (`roblox-hud`).
-- Comportamientos del menú del sistema Roblox pueden variar por plataforma (verificar en create.roblox.com/docs).
-- La protección anti-exploit real vive en el servidor; esta UI solo no la bloquea.
+- In multiplayer there is no "real world pause" from the client; it is overlay + local lock.
+- Does not replace the full settings panel (`roblox-settings-ui`) or the HUD (`roblox-hud`).
+- Roblox system menu behaviors may vary per platform (check create.roblox.com/docs).
+- Real anti-exploit protection lives on the server; this UI alone does not block it.

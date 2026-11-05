@@ -1,49 +1,49 @@
 ---
 name: roblox-component-systems
-description: Componentes reutilizables con CollectionService, Tags y Attributes. Úsala cuando varios objetos comparten comportamiento sin herencia.
+description: Reusable components with CollectionService, Tags, and Attributes. Use it when several objects share behavior without inheritance.
 ---
 
-# Sistemas de Componentes en Roblox
+# Component Systems in Roblox
 
-## Objetivo
-Construir comportamientos reutilizables (dañable, interactuable, giratorio, coleccionable) como componentes desacoplados sobre `CollectionService`/`Tags`/`Attributes`, con ciclo de vida claro y sin frameworks inventados.
+## Objective
+Build reusable behaviors (damageable, interactable, spinning, collectible) as decoupled components on top of `CollectionService`/`Tags`/`Attributes`, with a clear lifecycle and no invented frameworks.
 
-## Alcance y límites
-Diferenciación: `luau-core`, `luau-types`, `roblox-core` y `roblox-datastores` cubren lenguaje, modelo cliente-servidor y persistencia; esta skill cubre ingeniería de composición (entidades + componentes con ciclo de vida). `roblox-state-machines` cubre el cerebro interno; aquí se cubre cómo se adhiere comportamiento a instancias.
+## Scope and limits
+Differentiation: `luau-core`, `luau-types`, `roblox-core`, and `roblox-datastores` cover language, client-server model, and persistence; this skill covers composition engineering (entities + components with lifecycle). `roblox-state-machines` covers the internal brain; here we cover how behavior is attached to instances.
 
-Qué NO hace:
+What it does NOT do:
 
-- NO crea un framework ECS externo ni dependencias nuevas.
-- NO gestiona réplica (eso lo cubre `roblox-networking`); el componente decide qué es local y qué pide al servidor.
-- NO refactoriza sistemas legacy completos (eso lo cubre `roblox-code-maintenance-refactor` instalada).
+- Does NOT create an external ECS framework or new dependencies.
+- Does NOT handle replication (that is covered by `roblox-networking`); the component decides what is local and what asks the server.
+- Does NOT refactor full legacy systems (that is covered by the installed `roblox-code-maintenance-refactor`).
 
-## Casos de uso
-1. "Todo lo que tenga Tag `Damageable` recibe daño igual".
-2. Interactuables: Tag `Interactable` + atributo `PromptText`.
-3. Efectos ambientales: Tag `Spin` con velocidad por atributo.
-4. Coleccionables: Tag `Pickup` + `Attributes.Rarity`.
-5. Puertas/plataformas: Tag + atributos de configuración sin código por instancia.
+## Use cases
+1. "Everything with the `Damageable` Tag takes the same damage".
+2. Interactables: `Interactable` Tag + `PromptText` attribute.
+3. Ambient effects: `Spin` Tag with speed from an attribute.
+4. Collectibles: `Pickup` Tag + `Attributes.Rarity`.
+5. Doors/platforms: Tag + configuration attributes with no per-instance code.
 
-## Proceso paso a paso
-1. Define el contrato del componente: Tag, atributos requeridos con tipos y valores por defecto, y eventos que emite.
-2. Crea un `ModuleScript` por componente con API fija: `start()`, `stop()`, `onAdded(instance)`, `onRemoved(instance)`.
-3. En `start`, suscríbete a `CollectionService:GetInstanceAddedSignal(tag)` y `GetInstanceRemovedSignal(tag)`; procesa también los ya etiquetados con `GetTagged(tag)`.
-4. En `onAdded`, valida atributos con asserts útiles (nombre, tipo, rango). Falla alto y con mensaje que diga qué Tag/atributo falta.
-5. Guarda estado por instancia en una tabla del componente (`[instance] = state`), nunca como globales sueltos ni como hijos `ValueBase` salvo depuración.
-6. En `onRemoved`, limpia conexiones, timers y entradas de la tabla. Verifica que no quede referencia.
-7. Configura por `Attributes` (diseñador ajusta sin tocar código); lee atributos una vez al añadir y suscríbete a cambios solo si el diseño lo exige.
-8. Separa cliente/servidor: el componente de servidor decide (daño, recolección); el de cliente solo presenta. No dupliques autoridad.
-9. Escribe test por componente: añadir → comportarse → quitar → sin fugas (ver `roblox-testez`, con mocks de `CollectionService` si hace falta).
+## Step-by-step process
+1. Define the component contract: Tag, required attributes with types and defaults, and events it emits.
+2. Create one `ModuleScript` per component with a fixed API: `start()`, `stop()`, `onAdded(instance)`, `onRemoved(instance)`.
+3. In `start`, subscribe to `CollectionService:GetInstanceAddedSignal(tag)` and `GetInstanceRemovedSignal(tag)`; also process already-tagged ones with `GetTagged(tag)`.
+4. In `onAdded`, validate attributes with useful asserts (name, type, range). Fail fast with a message stating which Tag/attribute is missing.
+5. Store per-instance state in the component's table (`[instance] = state`), never as loose globals or `ValueBase` children except for debugging.
+6. In `onRemoved`, clean up connections, timers, and table entries. Verify no reference remains.
+7. Configure via `Attributes` (designer tweaks without touching code); read attributes once on add and subscribe to changes only if the design requires it.
+8. Separate client/server: the server component decides (damage, collection); the client one only presents. Don't duplicate authority.
+9. Write a test per component: add → behave → remove → no leaks (see `roblox-testez`, with `CollectionService` mocks if needed).
 
-## Conocimientos técnicos
-- `CollectionService`: `GetTagged`, `GetInstanceAddedSignal`, `GetInstanceRemovedSignal`, `HasTag`, `AddTag`, `RemoveTag`. Es el pegamento del sistema.
-- `Tags` + `Attributes`: el Tag dice "qué comportamiento", los atributos dicen "con qué parámetros". Ambos visibles en Studio para diseñadores.
-- Ciclo de vida: `start` (suscribir) → `onAdded` (validar + conectar) → `update` opcional → `onRemoved` (limpiar) → `stop` (desconectar señales globales).
-- Estado por instancia: tabla débil opcional o limpieza manual. Si usas weak tables, documenta por qué; si no, `onRemoved` debe hacer `state[inst] = nil`.
-- `BindableEvent` para que componentes se comuniquen en el mismo contexto (ej. Pickup publica `Collected`, Score escucha). Evita `require` cruzado entre componentes.
-- Rendimiento: un update global por componente con lista de activos rinde mejor que un bucle por instancia; mide con MicroProfiler si hay cientos de activos.
+## Technical knowledge
+- `CollectionService`: `GetTagged`, `GetInstanceAddedSignal`, `GetInstanceRemovedSignal`, `HasTag`, `AddTag`, `RemoveTag`. It is the glue of the system.
+- `Tags` + `Attributes`: the Tag says "which behavior", attributes say "with which parameters". Both visible in Studio for designers.
+- Lifecycle: `start` (subscribe) → `onAdded` (validate + connect) → optional `update` → `onRemoved` (clean up) → `stop` (disconnect global signals).
+- Per-instance state: optional weak table or manual cleanup. If you use weak tables, document why; otherwise `onRemoved` must do `state[inst] = nil`.
+- `BindableEvent` for components to communicate in the same context (e.g. Pickup publishes `Collected`, Score listens). Avoid cross-`require` between components.
+- Performance: one global update with an active list performs better than one loop per instance; measure with MicroProfiler if there are hundreds of actives.
 
-Ejemplo ilustrativo (esqueleto de componente):
+Illustrative example (component skeleton):
 
 ```luau
 -- ModuleScript: SpinComponent (ilustrativo)
@@ -83,7 +83,7 @@ end
 return SpinComponent
 ```
 
-Ejemplo ilustrativo (lectura segura de atributos):
+Illustrative example (safe attribute read):
 
 ```luau
 -- Ilustrativo
@@ -97,38 +97,38 @@ local function readSpeed(inst: Instance): number
 end
 ```
 
-## Buenas prácticas
-- Un Tag, un componente, un `ModuleScript`. Nada de "ComponentManager" gigante.
-- Valida siempre atributos al añadir; mensaje de error con Tag + atributo + instancia.
-- Atributos configurables, código estable: el diseñador no debe pedirte cambio de código para ajustar un número.
-- Limpieza total en `onRemoved`; compruébalo con conteo de conexiones.
-- Prefiere composición (varios Tags por instancia) a jerarquías profundas.
+## Best practices
+- One Tag, one component, one `ModuleScript`. No giant "ComponentManager".
+- Always validate attributes on add; error message with Tag + attribute + instance.
+- Configurable attributes, stable code: the designer should not need a code change to tune a number.
+- Full cleanup in `onRemoved`; verify with connection counting.
+- Prefer composition (several Tags per instance) over deep hierarchies.
 
-## Errores frecuentes
-1. Olvidar procesar los ya etiquetados al iniciar: funciona al añadir en runtime pero no al cargar el mapa. Itera `GetTagged` en `start`.
-2. Guardar estado como hijos de la instancia sin limpiar: duplicados tras re-uso. Centraliza en tabla del componente.
-3. Leer atributo sin validar tipo: `Speed` string rompe aritmética. Usa `typeof` + assert/warn.
-4. No desconectar señales globales en `stop`: tests que contaminan el siguiente. Desconecta y limpia tabla.
-5. Componente cliente con autoridad (da daño local): explotable. El cliente presenta; el servidor decide (ver `roblox-networking`).
-6. Suscribirse a cambios de atributo por defecto sin necesitarlo: costo por instancia. Solo si el diseño lo pide.
-7. Doble registro del mismo Tag en dos componentes distintos que pelean: define dueño único por Tag.
+## Common mistakes
+1. Forgetting to process already-tagged instances on start: works when added at runtime but not when the map loads. Iterate `GetTagged` in `start`.
+2. Storing state as instance children without cleanup: duplicates after reuse. Centralize in the component table.
+3. Reading attributes without type validation: string `Speed` breaks arithmetic. Use `typeof` + assert/warn.
+4. Not disconnecting global signals in `stop`: tests that contaminate the next one. Disconnect and clear the table.
+5. Client component with authority (deals damage locally): exploitable. The client presents; the server decides (see `roblox-networking`).
+6. Subscribing to attribute changes by default without needing it: cost per instance. Only if the design asks for it.
+7. Double-registering the same Tag in two different components that fight: define a single owner per Tag.
 
-## Criterios de calidad y terminado
-- [ ] Contrato escrito por componente: Tag, atributos (nombre/tipo/defecto), eventos.
-- [ ] `start` procesa etiquetados existentes + suscribe señales; `stop` limpia todo.
-- [ ] `onRemoved` deja cero referencias (verificable: añadir/quitar N veces no crece memoria ni conexiones).
-- [ ] Atributos inválidos producen error/aviso accionable con nombre de instancia.
-- [ ] Test añadir → actuar → quitar en verde por cada componente.
-- [ ] Ningún componente cruza autoridad cliente-servidor sin justificación.
+## Quality and done criteria
+- [ ] Written contract per component: Tag, attributes (name/type/default), events.
+- [ ] `start` processes existing tagged instances + subscribes signals; `stop` cleans everything.
+- [ ] `onRemoved` leaves zero references (verifiable: add/remove N times doesn't grow memory or connections).
+- [ ] Invalid attributes produce an actionable error/warning with instance name.
+- [ ] Add → act → remove test green for each component.
+- [ ] No component crosses client-server authority without justification.
 
-## Herramientas
-- `CollectionService` / `Tags` / `Attributes` como base.
-- `BindableEvent` / `BindableFunction` para comunicación intra-contexto.
-- `ModuleScript` + `require` para cada componente.
-- `TestService` + TestEZ para ciclo de vida (ver `roblox-testez`).
-- MicroProfiler / ScriptProfiler si hay cientos de instancias activas.
+## Tools
+- `CollectionService` / `Tags` / `Attributes` as the base.
+- `BindableEvent` / `BindableFunction` for intra-context communication.
+- `ModuleScript` + `require` for each component.
+- `TestService` + TestEZ for lifecycle (see `roblox-testez`).
+- MicroProfiler / ScriptProfiler if there are hundreds of active instances.
 
-## Limitaciones
-- No inventa frameworks ni añade dependencias; todo con APIs de plataforma.
-- No cubre réplica ni persistencia; deriva a `roblox-networking` y `roblox-datastores`.
-- Ante duda de firmas, anota `(verificar en create.roblox.com/docs)` y confirma antes de producción.
+## Limitations
+- Does not invent frameworks or add dependencies; everything with platform APIs.
+- Does not cover replication or persistence; see `roblox-networking` and `roblox-datastores`.
+- When in doubt about signatures, note "(verificar en create.roblox.com/docs)" and confirm before production.

@@ -1,93 +1,93 @@
 ---
 name: roblox-props-creation
-description: Creación de props con presupuesto de instancias, colliders simples y LOD manual. Úsala cuando necesites mobiliario, decoración o sets temáticos que rindan bien y se lean a distancia.
+description: Prop creation with instance budget, simple colliders, and manual LOD. Use it when you need furniture, decoration, or themed sets that perform well and read at a distance.
 ---
 
-# Creación de Props
+# Prop Creation
 
-## Objetivo
+## Objective
 
-Crear props (mobiliario, decoración, objetos interactivos visuales) que se lean bien a distancia de juego, cuesten pocas instancias, colisionen de forma simple y funcionen como sets temáticos coherentes reutilizables en varios lugares.
+Create props (furniture, decoration, visual interactive objects) that read well at gameplay distance, cost few instances, collide simply, and work as coherent themed sets reusable in several places.
 
-## Alcance y límites
+## Scope and limits
 
-Qué NO hace ni cubre esta skill:
+What this skill does NOT do or cover:
 
-- NO diseña QUÉ props necesita cada zona (temática, estilo, lista de set): eso lo diseñan `roblox-world-building` (generalista) y `roblox-exterior-architecture`, `roblox-interior-design`, `roblox-city-settlements`, `roblox-terrain-sculpting`, `roblox-vegetation-landscaping`, `roblox-materials-surfaces`, `roblox-props-decoration` (propias, en curso).
-- NO cubre construcción de vehículos: eso lo cubre `roblox-vehicle-construction`.
-- NO cubre geometría avanzada con `MeshPart` ni CSG compleja: eso lo cubre `roblox-meshparts-geometry`.
-- NO cubre organización global ni versionado: eso lo cubren `roblox-model-organization` y `roblox-rojo` (sync).
+- It does NOT design WHICH props each zone needs (theme, style, set list): that is designed by `roblox-world-building` (generalist) and `roblox-exterior-architecture`, `roblox-interior-design`, `roblox-city-settlements`, `roblox-terrain-sculpting`, `roblox-vegetation-landscaping`, `roblox-materials-surfaces`, `roblox-props-decoration` (own, in progress).
+- It does NOT cover vehicle construction: that is covered by `roblox-vehicle-construction`.
+- It does NOT cover advanced geometry with `MeshPart` or complex CSG: that is covered by `roblox-meshparts-geometry`.
+- It does NOT cover global organization or versioning: that is covered by `roblox-model-organization` and `roblox-rojo` (sync).
 
-Diferenciación declarada: `roblox-world-building` (instalada, generalista fina) y las skills propias (`roblox-exterior-architecture` / `roblox-interior-design` / `roblox-city-settlements` / `roblox-terrain-sculpting` / `roblox-vegetation-landscaping` / `roblox-materials-surfaces` / `roblox-props-decoration`) diseñan QUÉ construir; esta skill explica CÓMO construirlo (técnica de props). `roblox-rojo` cubre el sync; esta skill cubre la técnica de modelado.
+Declared differentiation: `roblox-world-building` (installed, fine generalist) and the own skills (`roblox-exterior-architecture` / `roblox-interior-design` / `roblox-city-settlements` / `roblox-terrain-sculpting` / `roblox-vegetation-landscaping` / `roblox-materials-surfaces` / `roblox-props-decoration`) design WHAT to build; this skill explains HOW to build it (prop technique). `roblox-rojo` covers sync; this skill covers modeling technique.
 
-## Casos de uso
+## Use cases
 
-- Mobiliario interior (mesas, sillas, estanterías) para varias habitaciones.
-- Decoración exterior (farolas, cajas, barriles, señales) repetida por una ciudad.
-- Set temático coherente (taberna medieval, laboratorio, tienda) con paleta y materiales comunes.
-- Objetos de evento que deben rendir bien aunque haya decenas en pantalla.
+- Interior furniture (tables, chairs, shelves) for several rooms.
+- Exterior decoration (lampposts, crates, barrels, signs) repeated across a city.
+- Coherent themed set (medieval tavern, laboratory, shop) with a common palette and materials.
+- Event objects that must perform well even with dozens on screen.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define el presupuesto.** Fija tope de instancias por prop (p. ej. pequeño ≤8, mediano ≤20) y tope por escena; anótalo en la carpeta del set.
-2. **Bloquea silueta con `Part`.** Modela primero el volumen legible a distancia (caja, cilindro) y valida que se reconoce desde la `Camera` de juego antes de detallar.
-3. **Valida escala avatar.** Comprueba altura de uso (mesa, mostrador, silla) contra avatar; pasos y accesos cercanos ~2x avatar donde aplique.
-4. **Simplifica colliders.** Envuelve el prop en 1–2 cajas de colisión simples; los detalles (patas finas, adornos) no colisionan individualmente.
-5. **Detalla barato.** Añade detalle con `Decal`/`Texture`, `SurfaceGui` simple o `SpecialMesh` básico en lugar de docenas de `Part` pequeñas.
-6. **Crea LOD manual.** Para props repetidos, prepara versión completa y versión lejana simplificada (menos piezas) y decide a qué distancia se intercambian en tu nivel.
-7. **Agrupa el set temático.** Reutiliza paleta y `MaterialVariant` (vía `MaterialService`) coherentes en todo el set; verifica coherencia con dudas en create.roblox.com/docs si algo no está claro.
-8. **Empaqueta como `Model`.** Cada prop es un `Model` con `Pivot` útil (base centrada para apoyar en suelo) y nombre descriptivo (`Prop_Mesa_Taberna`).
-9. **Etiqueta con Tags/`Attributes`.** Marca set y rol (`Prop`, `Set="Taberna"`, `ColliderSimple="true"`, `LOD="Cerca/Lejos"`) con `CollectionService` para gestión por script.
-10. **Prueba en masa.** Coloca la cantidad real que habrá en escena, recorre a pie, choca contra los props y verifica rendimiento y legibilidad a distancia.
+1. **Define the budget.** Set an instance cap per prop (e.g. small ≤8, medium ≤20) and a per-scene cap; write it down in the set folder.
+2. **Block the silhouette with `Part`.** Model the distance-legible volume first (box, cylinder) and validate it reads from the gameplay `Camera` before detailing.
+3. **Validate avatar scale.** Check usage height (table, counter, chair) against the avatar; nearby steps and accesses ~2x avatar where applicable.
+4. **Simplify colliders.** Wrap the prop in 1–2 simple collision boxes; details (thin legs, ornaments) do not collide individually.
+5. **Detail cheaply.** Add detail with `Decal`/`Texture`, a simple `SurfaceGui`, or a basic `SpecialMesh` instead of dozens of small `Part`s.
+6. **Create manual LOD.** For repeated props, prepare a full version and a simplified far version (fewer pieces) and decide at which distance they swap in your level.
+7. **Group the themed set.** Reuse a coherent palette and `MaterialVariant` (via `MaterialService`) across the set; check create.roblox.com/docs if anything is unclear.
+8. **Package as a `Model`.** Each prop is a `Model` with a useful `Pivot` (centered base to rest on the floor) and a descriptive name (`Prop_Mesa_Taberna`).
+9. **Label with Tags/`Attributes`.** Tag set and role (`Prop`, `Set="Taberna"`, `ColliderSimple="true"`, `LOD="Cerca/Lejos"`) with `CollectionService` for scripted management.
+10. **Test in bulk.** Place the real count the scene will hold, walk it on foot, bump into the props, and verify performance and distance legibility.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Presupuesto de instancias: cada `Part`/`MeshPart` suma; decenas de props × decenas de piezas escalan rápido. Menos piezas por prop = escenas más sanas.
-- Colliders simples: 1–2 cajas por prop evitan atascos y cuestan poco; colisionar con cada pata o adorno es la causa típica de enganches.
-- LOD manual: versión lejana con silueta pero sin detalle interior; se usa cuando el prop está lejos de la `Camera` y el detalle no se aprecia.
-- Escala avatar: un prop "bonito" pero inutilizable (silla donde el avatar no cabe, mostrador que tapa la cámara) falla su función.
-- `MaterialService` / `MaterialVariant`: reutilizar variantes del set mantiene coherencia y evita materiales únicos por prop (verificar nombres exactos en create.roblox.com/docs si dudas).
-- `Terrain`, `Lighting`, `Workspace`/`StreamingEnabled`: valida props bajo la iluminación real y con streaming, porque el color y la visibilidad cambian entre editor y juego.
-- `SurfaceGui`/`Decal`/`Texture`: detalle visual barato frente a geometría; ideal para etiquetas, pantallas, vetas o carteles.
-- Jerarquías: `Model` por prop dentro de un `Folder` por set (`Set_Taberna`) para localizar y reutilizar sin duplicar.
+- Instance budget: each `Part`/`MeshPart` adds up; dozens of props × dozens of pieces scale fast. Fewer pieces per prop = healthier scenes.
+- Simple colliders: 1–2 boxes per prop avoid snags and cost little; colliding with every leg or ornament is the typical snag cause.
+- Manual LOD: far version with silhouette but no interior detail; used when the prop is far from the `Camera` and detail is not visible.
+- Avatar scale: a "pretty" but unusable prop (a chair the avatar does not fit, a counter blocking the camera) fails its function.
+- `MaterialService` / `MaterialVariant`: reusing set variants keeps coherence and avoids unique materials per prop (check exact names at create.roblox.com/docs if in doubt).
+- `Terrain`, `Lighting`, `Workspace`/`StreamingEnabled`: validate props under real lighting and with streaming, because color and visibility change between editor and game.
+- `SurfaceGui`/`Decal`/`Texture`: cheap visual detail versus geometry; ideal for labels, screens, grain, or posters.
+- Hierarchies: one `Model` per prop inside one `Folder` per set (`Set_Taberna`) to locate and reuse without duplicating.
 
-## Buenas prácticas
+## Best practices
 
-- Un prop = un `Model` = un `Pivot` en la base; facilita colocar decenas sin ajustes.
-- Reutiliza patas, asas y remates entre props del mismo set como micro-kit.
-- Prefiere texturas/decals a geometría para detalles menores de ~0.5 studs.
-- Nombra con set incluido (`Prop_Taberna_Silla01`) para filtrar por set.
-- Documenta el presupuesto real (instancias por prop) junto al set.
+- One prop = one `Model` = one base `Pivot`; makes placing dozens easy with no tweaks.
+- Reuse legs, handles, and trims across props of the same set as a micro-kit.
+- Prefer textures/decals over geometry for details smaller than ~0.5 studs.
+- Name with the set included (`Prop_Taberna_Silla01`) to filter by set.
+- Document the real budget (instances per prop) next to the set.
 
-## Errores frecuentes
+## Common mistakes
 
-- Silla de 40 piezas que al repetirse 30 veces hunde el rendimiento. Causa: sin presupuesto. Solución: tope de instancias y detalle barato.
-- Avatar enganchado en patas de mesa. Causa: cada pata colisiona. Solución: una caja envolvente simple.
-- Props que flotan o se hunden. Causa: `Pivot` fuera de la base. Solución: pivot en base centrada y prueba de apoyo.
-- Set incoherente (5 maderas distintas en la misma taberna). Causa: materiales por prop. Solución: paleta y `MaterialVariant` compartidos.
-- Detalle invisible en juego. Causa: modelar mirando de cerca en editor. Solución: validar siempre desde la `Camera` y distancia reales.
-- Duplicar props renombrándolos a mano hasta perder la cuenta. Causa: sin `Tags`/`Attributes`. Solución: etiquetar set y rol desde el inicio.
-- Sync Rojo que pisa props ajenos. Causa: editar ficheros compartidos sin coordinar. Solución: sets por carpeta y sync según `roblox-rojo`.
+- 40-piece chair that tanks performance when repeated 30 times. Cause: no budget. Fix: instance cap and cheap detail.
+- Avatar snagged on table legs. Cause: every leg collides. Fix: one simple wrapping box.
+- Floating or sinking props. Cause: `Pivot` off the base. Fix: pivot on centered base and rest test.
+- Incoherent set (5 different woods in the same tavern). Cause: per-prop materials. Fix: shared palette and `MaterialVariant`.
+- Detail invisible in game. Cause: modeling zoomed-in in the editor. Fix: always validate from the real `Camera` and distance.
+- Duplicating props by hand-renaming until count is lost. Cause: no `Tags`/`Attributes`. Fix: label set and role from the start.
+- Rojo sync overwriting other people's props. Cause: editing shared files without coordination. Fix: sets per folder and sync per `roblox-rojo`.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Cada prop cumple su presupuesto de instancias declarado.
-- [ ] Colliders simples (1–2 cajas) verificados chocando a pie, sin enganches.
-- [ ] Escala avatar validada en props de uso (sentarse, apoyar, rodear).
-- [ ] Versión LOD lejana lista para props repetidos en masa.
-- [ ] Set temático coherente en paleta y materiales, empaquetado en `Folder` por set.
-- [ ] Props como `Model` con `Pivot` en base, nombres con set y `Tags`/`Attributes`.
-- [ ] Prueba en masa (cantidad real en escena) superada a distancia de `Camera` real.
+- [ ] Each prop meets its declared instance budget.
+- [ ] Simple colliders (1–2 boxes) verified by bumping on foot, no snags.
+- [ ] Avatar scale validated on use props (sit, lean, walk around).
+- [ ] Far LOD version ready for mass-repeated props.
+- [ ] Thematically coherent set in palette and materials, packaged in a per-set `Folder`.
+- [ ] Props as `Model` with base `Pivot`, set names, and `Tags`/`Attributes`.
+- [ ] Bulk test (real in-scene count) passed at real `Camera` distance.
 
-## Herramientas
+## Tools
 
-- `Part`, `MeshPart`, `SpecialMesh`, `Model`, `Folder` para modelar y empaquetar.
-- `Decal`, `Texture`, `SurfaceGui` para detalle barato.
-- `MaterialService` / `MaterialVariant` para coherencia de materiales del set.
-- `CollectionService` / Tags, `Attributes` para marcar set, rol y LOD.
-- `Workspace` / `StreamingEnabled`, `Lighting`, `Camera`, `Terrain` para validación en condiciones reales.
+- `Part`, `MeshPart`, `SpecialMesh`, `Model`, `Folder` to model and package.
+- `Decal`, `Texture`, `SurfaceGui` for cheap detail.
+- `MaterialService` / `MaterialVariant` for set material coherence.
+- `CollectionService` / Tags, `Attributes` to tag set, role, and LOD.
+- `Workspace` / `StreamingEnabled`, `Lighting`, `Camera`, `Terrain` for validation under real conditions.
 
-Ejemplo Luau ilustrativo (organización por script):
+Illustrative Luau example (organization by script):
 
 ```luau
 -- Ilustrativo: marcar todos los props de un set.
@@ -101,8 +101,8 @@ for _, prop in set:GetDescendants() do
 end
 ```
 
-## Limitaciones
+## Limitations
 
-- No diseña la temática del set; solo la técnica de construcción eficiente.
-- No implementa intercambio automático de LOD por script; solo prepara las versiones.
-- No configura sync Rojo ni versionado global (ver `roblox-rojo` y `roblox-model-organization`); si dudas de una clase o servicio, verifícalo en create.roblox.com/docs.
+- Does not design the set theme; only the efficient construction technique.
+- Does not implement automatic LOD swapping by script; only prepares the versions.
+- Does not configure Rojo sync or global versioning (see `roblox-rojo` and `roblox-model-organization`); if in doubt about a class or service, check create.roblox.com/docs.

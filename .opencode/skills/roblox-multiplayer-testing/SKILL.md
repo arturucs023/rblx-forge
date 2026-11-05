@@ -1,50 +1,50 @@
 ---
 name: roblox-multiplayer-testing
-description: Pruebas multijugador con 2+ clientes (réplica, races, red pobre). Úsala cuando valides autoridad, concurrencia o device matrix antes de release.
+description: Multiplayer testing with 2+ clients (replication, races, poor network). Use it when validating authority, concurrency, or device matrix before release.
 ---
 
-# Pruebas Multijugador
+# Multiplayer Testing
 
-## Objetivo
-Validar el juego con 2+ clientes reales antes del release: autoridad del servidor, réplica mínima, condiciones de carrera y comportamiento en red pobre y dispositivos distintos, con escenarios reproducibles y criterios de pasa/falla.
+## Objective
+Validate the game with 2+ real clients before release: server authority, minimal replication, race conditions, and behavior on poor networks and different devices, with reproducible scenarios and pass/fail criteria.
 
-## Alcance y límites
-Diferenciación: `roblox-testing` (instalada) define QA general y `roblox-testez` cubre unitarias con mocks; esta skill es práctica dedicada multicliente (2+ clientes, races, red). `roblox-networking` diseña la réplica; aquí se verifica. `roblox-ui-testing` verifica pantallas; aquí se verifica concurrencia.
+## Scope and limits
+Differentiation: `roblox-testing` (installed) defines general QA and `roblox-testez` covers unit tests with mocks; this skill is hands-on multi-client practice (2+ clients, races, network). `roblox-networking` designs replication; here it is verified. `roblox-ui-testing` verifies screens; here concurrency is verified.
 
-Qué NO hace:
+What it does NOT do:
 
-- NO diseña el protocolo de red (ver `roblox-networking`).
-- NO sustituye unitarias (ver `roblox-testez`).
-- NO automatiza device farm externa; define la matriz mínima ejecutable desde Studio/dispositivos disponibles.
+- It does NOT design the networking protocol (see `roblox-networking`).
+- It does NOT replace unit tests (see `roblox-testez`).
+- It does NOT automate an external device farm; it defines the minimum matrix runnable from Studio/available devices.
 
-## Casos de uso
-1. Dos jugadores recogen el mismo pickup a la vez: solo uno lo obtiene.
-2. Compra simultánea con fondos justos: sin duplicar moneda ni items.
-3. Jugador que se une tarde recibe estado consistente (ronda, inventario).
-4. Red pobre (latencia/pérdida simulada): sin teleports ni ventajas.
-5. Join/leave masivo en intermission sin romper la ronda.
+## Use cases
+1. Two players grab the same pickup at once: only one gets it.
+2. Simultaneous purchase with barely enough funds: no currency or item duplication.
+3. Player who joins late receives consistent state (round, inventory).
+4. Poor network (simulated latency/loss): no teleports or advantages.
+5. Massive join/leave during intermission without breaking the round.
 
-## Proceso paso a paso
-1. Define escenarios con oracle: estado inicial, acciones por cliente con tiempos, resultado esperado exacto (quién obtiene qué, qué ve cada uno).
-2. Levanta sesión con 1 servidor + 2-4 clientes (playtest local multi o dispositivos). Asigna roles: A actúa, B compite/observa, C entra tarde.
-3. Ejecuta races deliberadas: misma acción en el mismo tick (pickup, compra, voto). Repite 10 veces; el resultado debe ser determinista en ganador único.
-4. Verifica autoridad: intenta trampa desde cliente (montos, posiciones) y confirma rechazo + log. Ningún cliente decide economía o daño.
-5. Prueba join tardío y rejoin: entra a mitad de ronda, sal y vuelve; compara su estado contra el oracle (inventario, pity, ronda).
-6. Simula red pobre (throttling/latencia donde la herramienta lo permita) y repite 2 escenarios críticos; registra desyncs visibles y tiempo de convergencia.
-7. Corre device matrix mínima: PC + móvil (o calidades baja/alta). Verifica FPS jugable, UI legible y mismos resultados de escenarios.
-8. Registra evidencia por escenario: pasa/falla, logs de servidor relevantes, captura si hay divergencia visible.
-9. Convierte cada fallo en regresión: primero repro en `roblox-testez` si es unitarizable; si es race pura, deja escenario escrito + fix + re-run 10x.
+## Step-by-step process
+1. Define scenarios with an oracle: initial state, actions per client with timing, exact expected result (who gets what, what each one sees).
+2. Spin up a session with 1 server + 2-4 clients (multi local playtest or devices). Assign roles: A acts, B competes/observes, C joins late.
+3. Run deliberate races: same action on the same tick (pickup, purchase, vote). Repeat 10 times; the result must be deterministic with a single winner.
+4. Verify authority: attempt cheating from a client (amounts, positions) and confirm rejection + log. No client decides economy or damage.
+5. Test late join and rejoin: join mid-round, leave and come back; compare their state against the oracle (inventory, pity, round).
+6. Simulate poor network (throttling/latency where the tool allows it) and repeat 2 critical scenarios; record visible desyncs and convergence time.
+7. Run the minimum device matrix: PC + mobile (or low/high quality). Verify playable FPS, legible UI, and identical scenario results.
+8. Record evidence per scenario: pass/fail, relevant server logs, capture if there is visible divergence.
+9. Turn each failure into a regression: first repro in `roblox-testez` if it is unit-testable; if it is a pure race, leave a written scenario + fix + 10x re-run.
 
-## Conocimientos técnicos
-- Autoridad: el servidor es la única fuente de verdad en economía, inventario y daño. El cliente predice/presenta; el servidor confirma o corrige.
-- Races típicas: doble pickup, doble compra, doble canje de pity/duplicado. La solución es operación atómica en servidor (comprobar + descontar + otorgar sin hueco).
-- `MemoryStoreService` para locks/contadores cross-servidor cuando el diseño lo use; verifica expiración y liberación en tests.
-- `MessagingService` para eventos cross-servidor: verifica entrega degradada (puede perderse) y que el juego sigue consistente.
-- `DataStoreService`/`OrderedDataStore` bajo concurrencia: usa update transaccional donde aplique (ver `roblox-datastores`) y `pcall` + reintento (ver `roblox-error-handling`).
-- Ventanas de join: el servidor debe enviar snapshot completo al entrar tarde, no solo deltas. Verifica snapshot en cada escenario tardío.
-- Observabilidad: log de transiciones y de decisiones de autoridad con marcas temporales para ordenar eventos en disputa.
+## Technical knowledge
+- Authority: the server is the single source of truth for economy, inventory, and damage. The client predicts/presents; the server confirms or corrects.
+- Typical races: double pickup, double purchase, double pity/duplicate redeem. The fix is an atomic server-side operation (check + charge + grant with no gap).
+- `MemoryStoreService` for cross-server locks/counters when the design uses it; verify expiration and release in tests.
+- `MessagingService` for cross-server events: verify degraded delivery (it can be lost) and that the game stays consistent.
+- `DataStoreService`/`OrderedDataStore` under concurrency: use transactional updates where applicable (see `roblox-datastores`) and `pcall` + retry (see `roblox-error-handling`).
+- Join windows: the server must send a full snapshot on late join, not just deltas. Verify the snapshot in each late scenario.
+- Observability: log transitions and authority decisions with timestamps to order disputed events.
 
-Ejemplo ilustrativo (oracle de doble pickup):
+Illustrative example (double-pickup oracle):
 
 ```text
 Escenario PICKUP-RACE (ilustrativo)
@@ -55,7 +55,7 @@ Esperado: exactamente 1 ganador por repetición, perdedor recibe
 Falla si: ambos obtienen, ninguno obtiene, o P sigue visible tras otorgar.
 ```
 
-Ejemplo ilustrativo (checklist de autoridad):
+Illustrative example (authority checklist):
 
 ```luau
 -- Ilustrativo: qué verificar en cada acción de cliente
@@ -65,37 +65,37 @@ Ejemplo ilustrativo (checklist de autoridad):
 -- 4. Log con jugador, acción, resultado
 ```
 
-## Buenas prácticas
-- Escenarios cortos y repetibles (10x) mejor que "jugar 20 min a ver si sale".
-- Un oracle escrito antes de ejecutar; sin oracle no hay falla objetiva.
-- Roles fijos por cliente para reproducir; rota roles para cubrir sesgos.
-- Evidencia mínima por escenario: resultado, logs, versión/build testeado.
-- Automatiza lo repetible (scripts de acciones simultáneas) y deja manual lo exploratorio.
+## Best practices
+- Short repeatable scenarios (10x) beat "play 20 min and see if it shows up".
+- A written oracle before running; without an oracle there is no objective failure.
+- Fixed roles per client for reproduction; rotate roles to cover biases.
+- Minimum evidence per scenario: result, logs, tested build/version.
+- Automate the repeatable (simultaneous-action scripts) and keep the exploratory manual.
 
-## Errores frecuentes
-1. Probar solo con 1 cliente: las races no aparecen hasta producción. Mínimo 2 + join tardío.
-2. Confiar en orden de llegada de red como corrección: el orden no es garantía. Atomicidad en servidor.
-3. Estado solo con deltas sin snapshot: el que entra tarde ve un mundo roto. Snapshot completo al join.
-4. Ignorar red pobre "porque en LAN va bien": el jugador real sufre. Simula degradación en 2 escenarios.
-5. Logs solo en cliente para disputas: imposible ordenar eventos. Log autoritativo en servidor.
-6. Device matrix sin móvil/baja calidad: el 60% del público descubre el bug. Incluye gama baja.
-7. Race que "casi nunca sale" sin fix: en producción sale siempre. 10/10 determinista o no se mergea.
+## Common mistakes
+1. Testing with only 1 client: races do not appear until production. Minimum 2 + late join.
+2. Trusting network arrival order as correctness: order is no guarantee. Atomicity on the server.
+3. State with deltas only and no snapshot: late joiners see a broken world. Full snapshot on join.
+4. Ignoring poor network "because it runs fine on LAN": the real player suffers. Simulate degradation in 2 scenarios.
+5. Logs only on the client for disputes: impossible to order events. Authoritative logging on the server.
+6. Device matrix without mobile/low quality: 60% of the audience finds the bug. Include low end.
+7. A race that "almost never happens" left unfixed: in production it always happens. 10/10 deterministic or it does not merge.
 
-## Criterios de calidad y terminado
-- [ ] Escenarios race (pickup, compra, canje) 10/10 con ganador único y estado consistente.
-- [ ] Intentos de trampa desde cliente rechazados + logueados (evidencia adjunta).
-- [ ] Join tardío y rejoin convergen al snapshot correcto (inventario, ronda, pity).
-- [ ] 2 escenarios críticos repetidos en red pobre sin desync permanente.
-- [ ] Device matrix mínima (PC + móvil/baja) con FPS y resultados verificados.
-- [ ] Cada fallo tiene regresión (test o escenario escrito) y re-run verde.
+## Quality and done criteria
+- [ ] Race scenarios (pickup, purchase, redeem) 10/10 with a single winner and consistent state.
+- [ ] Client cheating attempts rejected + logged (evidence attached).
+- [ ] Late join and rejoin converge to the correct snapshot (inventory, round, pity).
+- [ ] 2 critical scenarios repeated on poor network with no permanent desync.
+- [ ] Minimum device matrix (PC + mobile/low) with verified FPS and results.
+- [ ] Each failure has a regression (test or written scenario) and a green re-run.
 
-## Herramientas
-- Playtest multi de Studio / dispositivos para 2+ clientes.
-- `TestService` + TestEZ para lo unitarizable (ver `roblox-testez`).
-- `MemoryStoreService` / `MessagingService` / `DataStoreService` como superficies a estresar.
-- MicroProfiler / ScriptProfiler si la concurrencia degrada rendimiento.
+## Tools
+- Studio multi playtest / devices for 2+ clients.
+- `TestService` + TestEZ for what is unit-testable (see `roblox-testez`).
+- `MemoryStoreService` / `MessagingService` / `DataStoreService` as surfaces to stress.
+- MicroProfiler / ScriptProfiler if concurrency degrades performance.
 
-## Limitaciones
-- No garantiza cobertura de miles de jugadores; es validación pre-release, no test de carga masiva.
-- No diseña red ni datos; deriva a `roblox-networking` y `roblox-datastores`.
-- Si dudas de límites o firmas, anota `(verificar en create.roblox.com/docs)`.
+## Limitations
+- Does not guarantee coverage of thousands of players; it is pre-release validation, not a massive load test.
+- Does not design networking or data; defers to `roblox-networking` and `roblox-datastores`.
+- If limits or signatures are in doubt, note `(check create.roblox.com/docs)`.

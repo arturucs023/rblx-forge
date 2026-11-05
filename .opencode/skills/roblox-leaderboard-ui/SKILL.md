@@ -1,49 +1,49 @@
 ---
-name: Leaderboards Roblox
-description: Tablas de clasificación, tabs global/amigos y paginación. Úsala cuando crees rankings, estadísticas de jugador, top semanal o anti-spoof visual.
+name: Roblox Leaderboards
+description: Ranking tables, global/friends tabs, and pagination. Use it when building rankings, player stats, weekly tops, or visual anti-spoof.
 ---
 
-# Leaderboards Roblox
+# Roblox Leaderboards
 
-## Objetivo
+## Objective
 
-Mostrar quién va ganando de forma creíble y motivadora: rankings legibles, tabs global/amigos/temporada, paginación que no miente y la posición propia siempre visible. La tabla informa, nunca inventa ni expone datos sensibles.
+Show who is winning in a credible, motivating way: readable rankings, global/friends/season tabs, pagination that doesn't lie, and your own position always visible. The table informs, never invents or exposes sensitive data.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre: tabla de clasificación, tabs (Global/Amigos/Temporada), paginación y scroll virtualizado ligero, fila propia destacada, podium top-3, y reglas anti-spoof visuales.
+Covers: ranking table, tabs (Global/Friends/Season), pagination and light virtualized scroll, highlighted own row, top-3 podium, and visual anti-spoof rules.
 
-NO hace:
+Does NOT do:
 
-- Mecánica genérica responsiva: lo cubren `roblox-ui` y `roblox-user-interfaces`.
-- Diseño UX previo: lo cubre `roblox-game-ux`; esta skill implementa.
-- Cálculo real de ranking o anti-cheat: vive en el servidor (verificar en create.roblox.com/docs); aquí solo presentación honesta.
-- HUD en partida: lo cubre `roblox-hud`.
-- Perfil completo de jugador o inventario: `roblox-inventory-ui` y pantallas de perfil.
+- Generic responsive mechanics: covered by `roblox-ui` and `roblox-user-interfaces`.
+- Prior UX design: covered by `roblox-game-ux`; this skill implements.
+- Real ranking computation or anti-cheat: lives on the server (see create.roblox.com/docs); here only honest presentation.
+- In-game HUD: covered by `roblox-hud`.
+- Full player profile or inventory: `roblox-inventory-ui` and profile screens.
 
-## Casos de uso
+## Use cases
 
-- Top 100 semanal con tabs Global / Amigos / Mi posición.
-- Podium 1-2-3 con avatares + tabla 4-50 con scroll.
-- Fila propia fija abajo "Tú · #47 · 12.400 pts" aunque estés fuera del top visible.
-- Temporada "Termina en 6 días" con recompensas por tramo.
-- Estado "Sin datos de amigos todavía. Invita y compite." en vez de tabla vacía.
+- Weekly top 100 with Global / Friends / My position tabs.
+- 1-2-3 podium with avatars + 4-50 table with scroll.
+- Own row pinned at the bottom "You · #47 · 12,400 pts" even outside the visible top.
+- Season "Ends in 6 days" with bracket rewards.
+- "No friend data yet. Invite and compete." state instead of an empty table.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define qué rankeas.** 1 métrica por tabla (Copas, Victorias, Puntos de temporada). Nada de "ranking misterioso" con fórmula oculta; si hay fórmula, explícala en 1 línea.
-2. **Maqueta tabs + tabla.** Cabecera con tabs (`TextButton`s Global/Amigos/Temporada) + temporada/temporizador; podium opcional arriba; `ScrollingFrame` con filas; pie con fila propia fija. Móvil: tabs arriba, podium compacto, tabla a ancho completo.
-3. **Construye la fila.** `Frame` + `TextLabel` posición (#1) + `ImageLabel` avatar (o inicial) + `TextLabel` nombre (truncado) + `TextLabel` valor tabular + cambio (▲2/▽1/=) con forma además de color. Fila propia con fondo acento.
-4. **Podium top-3.** Tres columnas con alturas 1º > 2º > 3º, avatar + nombre + valor. Sin coronas copiadas de juegos famosos: componer medalla propia (círculo + número + color oro/plata/bronce sobrio).
-5. **Paginación honesta.** Página de 20-50 con "Cargar más" o scroll paginado; muestra "Top 100 · mostrando 1-20" y total real. Nunca inventes filas de relleno ni repitas nombres para "llenar".
-6. **Fila propia siempre visible.** Aunque estés #4.217, el pie muestra tu posición y la de tus vecinos (±2) con botón "Ir a mi posición". Sin posición (nuevo jugador), "Juega tu primera partida para entrar".
-7. **Anti-spoof visual.** Nombres truncados con tooltip completo, sin HTML ni imágenes arbitrarias en nombres (el servidor sanea; verificar en create.roblox.com/docs para filtrado), valores con formato consistente ("12.400", no "12400" mezclado), y marca de "datos de hace X s".
-8. **Temporada y recompensas.** Si hay temporada: nombre, fin exacto, tramos con recompensa visible ("Top 10: marco dorado"). Al terminar: estado "Finalizada · resultados en revisión" en vez de congelar números sin explicación.
-9. **Verifica con datos extremos.** Nombres larguísimos, 500 filas, sin amigos, empate en puntos, pérdida de conexión. En 3 resoluciones, sin solapes y con scroll fluido.
+1. **Define what you rank.** 1 metric per table (Cups, Wins, Season points). No "mystery ranking" with a hidden formula; if there is a formula, explain it in 1 line.
+2. **Mock up tabs + table.** Header with tabs (`TextButton`s Global/Friends/Season) + season/timer; optional podium on top; `ScrollingFrame` with rows; footer with own pinned row. Mobile: tabs on top, compact podium, full-width table.
+3. **Build the row.** `Frame` + `TextLabel` position (#1) + `ImageLabel` avatar (or initial) + `TextLabel` name (truncated) + `TextLabel` tabular value + change (up 2/down 1/flat) with shape as well as color. Own row with accent background.
+4. **Top-3 podium.** Three columns with heights 1st > 2nd > 3rd, avatar + name + value. No crowns copied from famous games: compose your own medal (circle + number + sober gold/silver/bronze color).
+5. **Honest pagination.** 20-50 page with "Load more" or paged scroll; show "Top 100 · showing 1-20" and the real total. Never invent filler rows or repeat names to "fill up".
+6. **Own row always visible.** Even at #4,217, the footer shows your position and neighbors (±2) with a "Go to my position" button. With no position (new player), "Play your first match to enter".
+7. **Visual anti-spoof.** Names truncated with full tooltip, no arbitrary HTML or images in names (the server sanitizes; see create.roblox.com/docs for filtering), values with consistent format ("12,400", not mixed "12400"), and a "data from X s ago" mark.
+8. **Season and rewards.** If there is a season: name, exact end, bracket with visible reward ("Top 10: golden frame"). At the end: "Finished · results under review" state instead of freezing numbers with no explanation.
+9. **Verify with extreme data.** Very long names, 500 rows, no friends, tied points, lost connection. On 3 resolutions, no overlaps and smooth scroll.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Fila de ranking (clases estables):
+- Ranking row (stable classes):
 
   ```luau
   -- Ejemplo ilustrativo: pintar una fila del leaderboard
@@ -60,58 +60,58 @@ NO hace:
   -- Avatar (ImageLabel), nombre y valor siguen el mismo patrón Scale.
   ```
 
-- `ScrollingFrame` + `UIListLayout` con reutilización simple (pool de filas) si hay 100+; `UIPadding`, `UICorner` 8, `UIStroke` tenue en fila propia.
-- Tabs: alternan fuente de datos y re-pintan; guardan la tab activa y la posición de scroll por tab.
-- Datos desde el servidor o configuración del proyecto (verificar en create.roblox.com/docs); la UI define timeout (3 s), reintento y marca de frescura ("actualizado hace 12 s").
-- Formato numérico consistente en un único helper local; fechas/temporizadores con texto explícito, sin jerga.
-- `TweenService` solo para entrada de podium y resaltado de fila propia; la tabla no anima cada fila al hacer scroll.
+- `ScrollingFrame` + `UIListLayout` with simple reuse (row pool) for 100+; `UIPadding`, `UICorner` 8, faint `UIStroke` on own row.
+- Tabs: switch data source and repaint; keep the active tab and scroll position per tab.
+- Data from the server or project configuration (see create.roblox.com/docs); the UI defines timeout (3 s), retry, and freshness mark ("updated 12 s ago").
+- Consistent numeric format in a single local helper; dates/timers with explicit text, no jargon.
+- `TweenService` only for podium entrance and own-row highlight; the table doesn't animate every row on scroll.
 
-### Identidad visual de esta skill (original, no copiar)
+### Visual identity of this skill (original, do not copy)
 
-- Dirección "estadio sobrio": fondo noche (#10182E), tabla en filas alternas sutiles, oro/plata/bronce solo en top-3 (#FFD166/#C9D4E3/#E0A173), acento cian para "tú" (#38E1FF).
-- Tipografía: posición 16 extra-negrita tabular, nombre 14 semibold, valor 15 negrita tabular a la derecha, cambio 12 con símbolo + color. Todo con `UITextSizeConstraint`.
-- Composición: podium 3 columnas arriba (PC) o compacto horizontal (móvil), tabla con columnas 10% / 15% / 50% / 25%. `UIPadding` 12, gap 6.
-- Espaciado: filas 52-60 px equivalentes, podium con 16 de aire. Nombres truncados con "…" + tooltip.
-- Estados: tú (fondo cian 12% + borde), top-3 (medalla propia), subiendo/bajando (▲/▽ + verde/rojo + texto, no solo color), cargando (skeleton de filas), vacío (ilustración textual + acción), error (banda + Reintentar).
-- Animación: entrada del podium 0.3 s, resaltado de fila propia con pulso único. La tabla no parpadea al refrescar: actualiza valores, no reconstruye todo.
+- "Sober stadium" direction: night background (#10182E), table in subtle alternating rows, gold/silver/bronze only on top-3 (#FFD166/#C9D4E3/#E0A173), cyan accent for "you" (#38E1FF).
+- Typography: position 16 extra-bold tabular, name 14 semibold, value 15 bold tabular right-aligned, change 12 with symbol + color. All with `UITextSizeConstraint`.
+- Composition: 3-column podium on top (PC) or compact horizontal (mobile), table with 10% / 15% / 50% / 25% columns. `UIPadding` 12, gap 6.
+- Spacing: 52-60 px-equivalent rows, podium with 16 air. Names truncated with "…" + tooltip.
+- States: you (12% cyan background + border), top-3 (own medal), rising/falling (up/down + green/red + text, not color alone), loading (row skeletons), empty (textual illustration + action), error (band + Retry).
+- Animation: 0.3 s podium entrance, single own-row highlight pulse. The table doesn't flicker on refresh: update values, don't rebuild everything.
 
-## Buenas prácticas
+## Best practices
 
-- Una métrica por tabla con explicación de 1 línea ("Puntos de temporada · +10 por victoria").
-- Tu posición siempre visible, incluso fuera del top.
-- Frescura visible ("hace 12 s") y Reintentar ante error; sin números congelados sin aviso.
-- Nombres seguros: truncar, sanear y nunca ejecutar formato arbitrario.
-- Coherencia con el resto: mismos avatares, mismos números, mismos colores de cambio.
-- Temporadas con inicio/fin y recompensas explícitas; sin "pronto" eterno.
+- One metric per table with a 1-line explanation ("Season points · +10 per win").
+- Your position always visible, even outside the top.
+- Visible freshness ("12 s ago") and Retry on error; no frozen numbers without warning.
+- Safe names: truncate, sanitize, and never execute arbitrary formatting.
+- Consistent with the rest: same avatars, same numbers, same change colors.
+- Seasons with explicit start/end and rewards; no eternal "soon".
 
-## Errores frecuentes
+## Common mistakes
 
-- Inventar filas o repetir jugadores para que la tabla "se vea llena".
-- Mostrar posición propia calculada en cliente y distinta de la real del servidor.
-- Tabla sin paginación que instancia 1.000 filas y congela el móvil.
-- Nombres larguísimos que rompen columnas por usar solo `Offset`.
-- Cambios solo por color (▲ sin símbolo ni texto) ilegibles para daltónicos.
-- Exponer IDs, datos personales o estadísticas sensibles en la fila.
+- Inventing rows or repeating players so the table "looks full".
+- Showing own position computed on the client and different from the server's.
+- Table with no pagination that instantiates 1,000 rows and freezes mobile.
+- Very long names breaking columns from `Offset`-only use.
+- Changes by color only (up/down with no symbol or text) unreadable for color-blind players.
+- Exposing IDs, personal data, or sensitive stats in the row.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Tabs Global/Amigos/Temporada con estados lleno/vacío/error probados.
-- [ ] Tu fila visible y coherente con el servidor en prueba multicliente.
-- [ ] 200+ filas con scroll fluido en móvil gama media (pool o paginación).
-- [ ] Nombres extremos, empates y desconexión manejados sin romper el layout.
-- [ ] Legible en 3 resoluciones con números tabulares alineados.
-- [ ] Sin datos inventados ni exposición de información sensible.
+- [ ] Global/Friends/Season tabs with full/empty/error states tested.
+- [ ] Own row consistent with the server in a multi-client test.
+- [ ] 200+ rows with smooth scroll on mid-range mobile (pool or pagination).
+- [ ] Extreme names, ties, and disconnects handled without breaking layout.
+- [ ] Readable on 3 resolutions with aligned tabular numbers.
+- [ ] No invented data or sensitive information exposure.
 
-## Herramientas
+## Tools
 
-- Studio: Play con varios clientes, simulador móvil, `Output` para datos ausentes.
-- MCP Studio (si disponible): capturas de podium + tabla en 3 resoluciones.
-- Rojo: textos, métricas y tramos de temporada como datos editables.
-- Selene: lint del pintado de filas y de la paginación.
+- Studio: Play with several clients, mobile simulator, `Output` for missing data.
+- Studio MCP (if available): captures of podium + table on 3 resolutions.
+- Rojo: texts, metrics, and season brackets as editable data.
+- Selene: lint row painting and pagination.
 
-## Limitaciones
+## Limitations
 
-- El ranking real, el anti-cheat y la persistencia viven en el servidor (verificar en create.roblox.com/docs).
-- Avatares y nombres dependen de los servicios de la plataforma; prevé fallback con inicial.
-- El tiempo real de actualización lo define el backend; la UI solo declara la frescura.
-- No incluye perfil detallado de jugador ni historial de partidas.
+- Real ranking, anti-cheat, and persistence live on the server (see create.roblox.com/docs).
+- Avatars and names depend on platform services; plan an initial fallback.
+- Real update timing is defined by the backend; the UI only states freshness.
+- No detailed player profile or match history.

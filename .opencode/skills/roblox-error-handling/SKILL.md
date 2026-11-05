@@ -1,50 +1,50 @@
 ---
 name: roblox-error-handling
-description: Errores y logging en Luau (pcall/xpcall, asserts, categorías, telemetría). Úsala cuando llamadas a datos fallen en silencio o necesites degradación elegante.
+description: Errors and logging in Luau (pcall/xpcall, asserts, categories, telemetry). Use it when data calls fail silently or you need graceful degradation.
 ---
 
-# Manejo de Errores y Logging en Roblox
+# Error Handling and Logging in Roblox
 
-## Objetivo
-Que ningún fallo rompa al jugador en silencio ni tumbe el servidor: errores categorizados, `pcall`/`xpcall` con reintentos donde toca, asserts que fallan alto en desarrollo y degradación elegante en producción con telemetría accionable.
+## Objective
+Keep any failure from silently breaking the player or crashing the server: categorized errors, `pcall`/`xpcall` with retries where appropriate, asserts that fail fast in development, and graceful degradation in production with actionable telemetry.
 
-## Alcance y límites
-Diferenciación: `luau-core` y `roblox-core` cubren sintaxis y ubicación del código; esta skill cubre ingeniería de fallos (categorías, reintentos, logging, degradación). `roblox-datastores` cubre el diseño de datos; aquí se cubre qué hacer cuando esos datos fallan. `roblox-code-review` exige el `pcall`; aquí se define cómo escribirlo.
+## Scope and limits
+Differentiation: `luau-core` and `roblox-core` cover syntax and code placement; this skill covers failure engineering (categories, retries, logging, degradation). `roblox-datastores` covers data design; here we cover what to do when that data fails. `roblox-code-review` requires `pcall`; here we define how to write it.
 
-Qué NO hace:
+What it does NOT do:
 
-- NO diseña esquemas de datos ni migraciones (ver `roblox-datastores`).
-- NO sustituye tests de fallo (ver `roblox-testez` para inyectar errores).
-- NO envía datos a servicios externos de analítica; solo a `DataStoreService`/analítica interna del juego.
+- Does NOT design data schemas or migrations (see `roblox-datastores`).
+- Does NOT replace failure tests (see `roblox-testez` for injecting errors).
+- Does NOT send data to external analytics services; only to `DataStoreService`/in-game internal analytics.
 
-## Casos de uso
-1. `DataStoreService`/`OrderedDataStore` con throttling o caída: reintentar + degradar a caché.
-2. `MemoryStoreService`/`MessagingService` no disponibles: funcionar en modo degradado.
-3. Validación de entrada de cliente o de atributos con mensajes útiles.
-4. Logging con categorías para depurar en vivo sin spam.
-5. Fallo de subsistema no crítico (cosméticos, rarezas) sin bloquear gameplay.
+## Use cases
+1. `DataStoreService`/`OrderedDataStore` with throttling or outage: retry + degrade to cache.
+2. `MemoryStoreService`/`MessagingService` unavailable: run in degraded mode.
+3. Validation of client or attribute input with useful messages.
+4. Logging with categories for live debugging without spam.
+5. Non-critical subsystem failure (cosmetics, rarities) without blocking gameplay.
 
-## Proceso paso a paso
-1. Clasifica cada error en 3 cubos: Transitorio (reintentar: throttling, red), Permanente (no reintentar: dato corrupto, permiso), Programación (assert: invariante rota).
-2. Envuelve todo borde externo (`DataStoreService`, `OrderedDataStore`, `MemoryStoreService`, `MessagingService`) en `pcall`/`xpcall` con reintento acotado (3 intentos, backoff 1s/2s/4s) y jitter si hay contención.
-3. Escribe asserts útiles en entradas internas: `assert(cond, "contexto: qué se esperaba, qué llegó, Tag/atributo implicado")`. Falla alto en desarrollo.
-4. Implementa degradación por subsistema: define modo degradado (caché en memoria, valores por defecto, funcionalidad desactivada con aviso) y el criterio para entrar/salir.
-5. Centraliza logging en un `ModuleScript Logger` con niveles (DEBUG/INFO/WARN/ERROR) y categorías (Data, Net, Economy, UI). Nada de `print` suelto en producción.
-6. Añade contexto a cada log: jugador, sistema, operación, intento, latencia. Un log sin contexto no se puede accionar.
-7. Telemetría mínima: cuenta errores por categoría en memoria y vuelca agregado a `DataStoreService` u hoja interna (muestreo si hay volumen). Nunca datos personales.
-8. Testea los 3 cubos: mock que falla 2 veces y luego ok (transitorio), fallo permanente (degrada), invariante rota (assert dispara en test).
-9. Revisa en `roblox-code-review`: todo borde con `pcall`, ningún `pcall` que trague el error sin log.
+## Step-by-step process
+1. Classify each error into 3 buckets: Transient (retry: throttling, network), Permanent (don't retry: corrupt data, permission), Programming (assert: broken invariant).
+2. Wrap every external boundary (`DataStoreService`, `OrderedDataStore`, `MemoryStoreService`, `MessagingService`) in `pcall`/`xpcall` with bounded retry (3 attempts, 1s/2s/4s backoff) and jitter if there is contention.
+3. Write useful asserts on internal inputs: `assert(cond, "context: what was expected, what arrived, Tag/attribute involved")`. Fail fast in development.
+4. Implement per-subsystem degradation: define degraded mode (in-memory cache, defaults, feature disabled with notice) and entry/exit criteria.
+5. Centralize logging in a `ModuleScript` Logger with levels (DEBUG/INFO/WARN/ERROR) and categories (Data, Net, Economy, UI). No stray `print` in production.
+6. Add context to every log: player, system, operation, attempt, latency. A log without context can't be acted on.
+7. Minimal telemetry: count errors by category in memory and flush aggregates to `DataStoreService` or an internal sheet (sample if volume is high). Never personal data.
+8. Test the 3 buckets: mock that fails twice then succeeds (transient), permanent failure (degrades), broken invariant (assert fires in test).
+9. Review in `roblox-code-review`: every boundary with `pcall`, no `pcall` swallowing the error without logging.
 
-## Conocimientos técnicos
-- `pcall(f, ...)` retorna `(ok, resultado|mensaje)`; `xpcall(f, handler)` permite enriquecer el traceback. Usa `xpcall` con `debug.traceback` (verificar firma exacta en create.roblox.com/docs) en puntos críticos.
-- Reintento solo para transitorios. Reintentar un permanente (llave inválida, dato corrupto) multiplica el daño y el throttling.
-- Backoff exponencial + límite: evita reintentar en bucle caliente; cede con `task.wait`.
-- `assert` para programador, `warn`+degradación para jugador. Nunca muestres stack traces al jugador; muestra mensaje accionable ("tu inventario se cargó en modo temporal").
-- Categorías: permiten silenciar por sistema (ej. `LogLevel.Economy = WARN`) sin recompilar.
-- `MessagingService`/`MemoryStoreService` pueden no estar disponibles en Studio o con throttling: el código debe arrancar igual en modo local.
-- Costo: loguear cada frame o cada evento masivo satura Output y oculta lo importante; muestrea o agrega.
+## Technical knowledge
+- `pcall(f, ...)` returns `(ok, result|message)`; `xpcall(f, handler)` enriches the traceback. Use `xpcall` with `debug.traceback` (verify exact signature at create.roblox.com/docs) at critical points.
+- Retry transients only. Retrying a permanent error (bad key, corrupt data) multiplies damage and throttling.
+- Exponential backoff + limit: avoid retrying in a hot loop; yield with `task.wait`.
+- `assert` for the programmer, `warn`+degradation for the player. Never show stack traces to the player; show an actionable message ("your inventory loaded in temporary mode").
+- Categories: let you mute by system (e.g. `LogLevel.Economy = WARN`) without recompiling.
+- `MessagingService`/`MemoryStoreService` may be unavailable in Studio or under throttling: code must still start in local mode.
+- Cost: logging every frame or every mass event floods Output and hides what matters; sample or aggregate.
 
-Ejemplo ilustrativo (reintento acotado):
+Illustrative example (bounded retry):
 
 ```luau
 -- ModuleScript: Retry (ilustrativo)
@@ -66,7 +66,7 @@ end
 return Retry
 ```
 
-Ejemplo ilustrativo (logger con categorías):
+Illustrative example (categorized logger):
 
 ```luau
 -- ModuleScript: Logger (ilustrativo)
@@ -80,44 +80,44 @@ end
 return Logger
 ```
 
-Ejemplo ilustrativo (assert útil):
+Illustrative example (useful assert):
 
 ```luau
 -- Ilustrativo
 assert(typeof(speed) == "number", "SpinComponent.onAdded: atributo 'Speed' debe ser number, llegó " .. typeof(speed))
 ```
 
-## Buenas prácticas
-- Un punto de entrada de error por subsistema (no 5 formas de reintentar datos).
-- Mensajes para humanos: qué pasó, qué se hizo (reintento/degradado), qué sigue.
-- Niveles coherentes: ERROR = hay que mirar hoy; WARN = degradado conocido; INFO = hito; DEBUG = solo desarrollo.
-- Muestrea telemetría si el volumen es alto; guarda agregados, no cada evento.
-- Documenta el modo degradado en el README del sistema para soporte.
+## Best practices
+- One error entry point per subsystem (not 5 ways to retry data).
+- Human messages: what happened, what was done (retry/degraded), what comes next.
+- Coherent levels: ERROR = look today; WARN = known degraded; INFO = milestone; DEBUG = development only.
+- Sample telemetry if volume is high; store aggregates, not every event.
+- Document degraded mode in the system README for support.
 
-## Errores frecuentes
-1. `pcall` que traga el error (`if not ok then end` vacío): fallo silencioso imposible de depurar. Siempre log + categoría.
-2. Reintento infinito sin backoff: convierte un throttling en caída. Acota intentos y espera.
-3. Reintentar errores permanentes: llave/permiso mal y se reintenta 10 veces. Clasifica antes de reintentar.
-4. `assert` en ruta de jugador en producción para algo recuperable: expulsa al jugador por un cosmético. Usa degradación, no assert, en bordes.
-5. `print` por todas partes sin niveles: el Output es ruido y nadie mira. Centraliza en Logger.
-6. Log sin contexto (solo "falló"): no accionable. Incluye sistema, operación, intento y jugador/sesión anonimizada.
-7. Telemetría con datos personales o cada evento individual: riesgo de privacidad y costo. Agrega y muestrea.
+## Common mistakes
+1. `pcall` swallowing the error (`if not ok then end` empty): impossible-to-debug silent failure. Always log + category.
+2. Infinite retry without backoff: turns throttling into an outage. Bound attempts and wait.
+3. Retrying permanent errors: bad key/permission retried 10 times. Classify before retrying.
+4. `assert` on a player path in production for something recoverable: kicks the player over a cosmetic. Use degradation, not assert, on boundaries.
+5. `print` everywhere with no levels: Output is noise and nobody watches. Centralize in Logger.
+6. Log with no context (just "failed"): not actionable. Include system, operation, attempt, and anonymized player/session.
+7. Telemetry with personal data or every single event: privacy and cost risk. Aggregate and sample.
 
-## Criterios de calidad y terminado
-- [ ] Todos los bordes externos con `pcall`/`xpcall` + reintento acotado + log categorizado.
-- [ ] Matriz de degradación escrita: subsistema → modo degradado → criterio de salida.
-- [ ] Cero `print` sueltos; todo pasa por Logger con nivel y categoría.
-- [ ] Tests de los 3 cubos (transitorio/permanente/programación) en verde.
-- [ ] Telemetría agregada verificable (contadores por categoría visibles en prueba).
-- [ ] Revisión (`roblox-code-review`) confirma que ningún error se traga en silencio.
+## Quality and done criteria
+- [ ] All external boundaries with `pcall`/`xpcall` + bounded retry + categorized log.
+- [ ] Degradation matrix written: subsystem → degraded mode → exit criterion.
+- [ ] Zero stray `print`s; everything goes through Logger with level and category.
+- [ ] Tests for the 3 buckets (transient/permanent/programming) green.
+- [ ] Aggregated telemetry verifiable (category counters visible in test).
+- [ ] Review (`roblox-code-review`) confirms no error is swallowed silently.
 
-## Herramientas
-- `pcall` / `xpcall` + `task.wait` para reintentos.
-- `ModuleScript` Logger y Retry reutilizables.
-- `DataStoreService` / `OrderedDataStore` / `MemoryStoreService` / `MessagingService` como bordes a proteger.
-- `TestService` + TestEZ con mocks que fallan (ver `roblox-testez`).
+## Tools
+- `pcall` / `xpcall` + `task.wait` for retries.
+- Reusable `ModuleScript` Logger and Retry.
+- `DataStoreService` / `OrderedDataStore` / `MemoryStoreService` / `MessagingService` as boundaries to protect.
+- `TestService` + TestEZ with failing mocks (see `roblox-testez`).
 
-## Limitaciones
-- No implementa backends externos ni promete entrega garantizada de telemetría bajo caída total.
-- No cubre diseño de datos; deriva a `roblox-datastores`.
-- Si dudas de firmas (`debug.traceback`, límites de reintento de un servicio), anota `(verificar en create.roblox.com/docs)`.
+## Limitations
+- Does not implement external backends or guarantee telemetry delivery under total outage.
+- Does not cover data design; see `roblox-datastores`.
+- If you doubt signatures (`debug.traceback`, retry limits of a service), note "(verificar en create.roblox.com/docs)".

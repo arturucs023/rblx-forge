@@ -1,65 +1,65 @@
 ---
-name: UI de Mascotas Roblox
-description: Colección, equipar, hatch, fusión y showcase de pets. Úsala cuando necesites inventario de mascotas, huevos con reveal, fusión shiny o boosts visibles.
+name: Roblox Pet UI
+description: Pet collection, equip, hatch, fusion, and showcase. Use it when you need pet inventory, eggs with reveal, shiny fusion, or visible boosts.
 ---
 
 # roblox-pets-ui
 
-## Objetivo
-Hacer legible y emocionante la colección de mascotas: ver, equipar, conseguir
-y mejorar pets con feedback de rareza en cada paso.
+## Objective
+Make the pet collection legible and exciting: view, obtain, equip,
+and upgrade pets with rarity feedback at every step.
 
-## Alcance y límites
-Cubre la UI de pets (colección, hatch, fusión, equipados, boosts). NO cubre
-la economía de pets ni los rolls (eso es `roblox-pets-systems`, servidor).
-NO cubre modelos/VFX de las pets (`roblox-props-creation`,
+## Scope and limits
+Covers pet UI (collection, hatch, fusion, equipped, boosts). Does NOT cover
+the pet economy or rolls (that is `roblox-pets-systems`, server).
+Does NOT cover pet models/VFX (`roblox-props-creation`,
 `roblox-animation-audio-feedback`).
 
-## Casos de uso
-- Huevo con animación de reveal y tiers de rareza.
-- Inventario de pets con equipar/desequipar y boosts sumados.
-- Máquina de fusión (3 iguales → shiny) con preview del resultado.
-- Showcase/index de colección con % completado.
+## Use cases
+- Egg with reveal animation and rarity tiers.
+- Pet inventory with equip/unequip and summed boosts.
+- Fusion machine (3 identical → shiny) with result preview.
+- Collection showcase/index with % completion.
 
-## Proceso paso a paso
-1. Replica el estado de pets del servidor (lista + equipados + pity) a un
-   módulo cliente de solo lectura; la UI nunca decide rolls.
-2. Colección: grid por rareza (común→legendario con marco y color), contador
-   xN, filtro por equipados, buscador si >30.
-3. Hatch: botón grande, animación de reveal por fases (shake → flash → reveal),
-   skip comprable; el resultado lo dicta el servidor.
-4. Fusión: slots de entrada validados (misma especie+rareza), preview del
-   resultado con odds visibles, confirmación.
-5. Equipados: slots 1–N con drag o tap-to-equip, boost total sumado y visible
-   en HUD (`roblox-hud` para el chip de boost).
-6. Progresión: barra de pity, % de índice, siguiente desbloqueo visible.
+## Step-by-step process
+1. Replicate server pet state (list + equipped + pity) to a
+   read-only client module; the UI never decides rolls.
+2. Collection: grid by rarity (common→legendary with frame and color), xN
+   counter, filter by equipped, search if >30.
+3. Hatch: big button, staged reveal animation (shake → flash → reveal),
+   purchasable skip; the result is dictated by the server.
+4. Fusion: validated input slots (same species+rarity), preview of the
+   result with visible odds, confirmation.
+5. Equipped: slots 1–N with drag or tap-to-equip, total boost summed and visible
+   in the HUD (`roblox-hud` for the boost chip).
+6. Progression: pity bar, index %, next unlock visible.
 
-## Conocimientos técnicos
-- Replicación de inventario vía `Attributes`/carpeta de valores + remotes;
-  reveals sincronizados por timestamp de servidor.
-- Rarity tiers con colores consistentes en todo el juego.
+## Technical knowledge
+- Inventory replication via `Attributes`/value folder + remotes;
+  reveals synchronized by server timestamp.
+- Rarity tiers with consistent colors across the game.
 
-## Buenas prácticas
-- Las odds siempre visibles antes de pagar (exigencia de `roblox-policy-compliance`).
-- Reveal skipeable; nunca bloquees el juego en una animación.
-- Sonido + flash proporcionales a la rareza (juice medido, ver feedback skills).
+## Best practices
+- Odds always visible before paying (`roblox-policy-compliance` requirement).
+- Skippable reveal; never lock the game in an animation.
+- Sound + flash proportional to rarity (measured juice, see feedback skills).
 
-## Errores frecuentes
-1. UI que muestra un pet antes de que el servidor lo confirme (dupe visual).
-2. Odds ocultas o engañosas → baneo/mala review.
-3. Fusión sin confirmación con pets equipados dentro.
-4. Grid sin paginar con 200+ pets (lag de layout).
+## Common mistakes
+1. UI showing a pet before the server confirms it (visual dupe).
+2. Hidden or misleading odds → ban/bad review.
+3. Fusion with no confirmation while equipped pets are inside.
+4. Unpaginated grid with 200+ pets (layout lag).
 
-## Criterios de calidad y terminado
-- [ ] Hatch→reveal→colección funciona con el servidor como única verdad.
-- [ ] Odds y pity visibles y correctos contra la config del servidor.
-- [ ] Fusión bloquea pets equipados salvo confirmación explícita doble.
-- [ ] Grid de 200 pets abre en <1 s en móvil medio.
+## Quality and done criteria
+- [ ] Hatch→reveal→collection works with the server as the single truth.
+- [ ] Odds and pity visible and correct against the server config.
+- [ ] Fusion blocks equipped pets without explicit double confirmation.
+- [ ] 200-pet grid opens in <1 s on a mid mobile.
 
-## Herramientas
-MCP: playtest con input real en hatch y fusión; `get_runtime_logs` para
-errores de réplica.
+## Tools
+MCP: playtest with real input on hatch and fusion; `get_runtime_logs` for
+replication errors.
 
-## Limitaciones
-- No diseña la economía de drops (eso es `roblox-pets-systems`); esta skill
-  solo la presenta con honestidad.
+## Limitations
+- Does not design the drop economy (that is `roblox-pets-systems`); this skill
+  only presents it honestly.

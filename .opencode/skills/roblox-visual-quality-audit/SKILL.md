@@ -1,86 +1,86 @@
 ---
-name: Auditoría de Calidad Visual Roblox
-description: Pasa gates visuales con capturas en un build Roblox. Úsala en pases de arte pre-release, regresión tras cambios de lighting/materiales y legibilidad de UI.
+name: Roblox Visual Quality Audit
+description: Pass visual gates with captures in a Roblox build. Use it for pre-release art passes, regression after lighting/material changes, and UI legibility.
 ---
 
 # roblox-visual-quality-audit
 
-El equivalente visual del QA de playtest: encuadra, captura, inspecciona,
-puntúa, corrige, re-captura. Complementarias: `roblox-visual-design`,
+The visual equivalent of playtest QA: frame, capture, inspect,
+score, fix, re-capture. Complementary: `roblox-visual-design`,
 `roblox-art-direction`, `roblox-mobile-playtest`, `roblox-performance-audit`
-(para la mitad de coste gráfico).
+(for the graphic-cost half).
 
-## Objetivo
+## Objective
 
-Puntuar un build en: coherencia artística, composición, escala, iluminación,
-materiales, legibilidad de UI y rendimiento gráfico. Suspender en voz alta,
-con capturas adjuntas.
+Score a build on: artistic coherence, composition, scale, lighting,
+materials, UI legibility, and graphic performance. Fail out loud,
+with captures attached.
 
-## Alcance y límites
+## Scope and limits
 
-- Cubre: planificación de shots, captura, scoring 0–2 por dimensión con
-  evidencia, matriz de dispositivos y bucle de corrección.
-- NO corrige gameplay ni lógica (eso es QA funcional) ni mide FPS finos
-  (eso es `roblox-performance-audit`): aquí se puntúa lo visible.
-- Un 0 no siempre bloquea: puede registrarse como riesgo aceptado.
+- Covers: shot planning, capture, 0–2 scoring per dimension with
+  evidence, device matrix, and fix loop.
+- Does NOT fix gameplay or logic (that's functional QA) nor measure fine
+  FPS (that's `roblox-performance-audit`): here we score what's visible.
+- A 0 doesn't always block: it can be logged as accepted risk.
 
-## Casos de uso
+## Use cases
 
-- Pase de arte pre-release.
-- Regresión tras cambiar lighting/materiales/UI.
-- Decidir si un área está lista para captura promocional.
+- Pre-release art pass.
+- Regression after changing lighting/materials/UI.
+- Deciding whether an area is ready for a promo capture.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Planifica shots.** 3–6 vistas nombradas (spawn, landmark, interior,
-   momento con UI densa, noche si aplica). Encuadra cada una con
-   `selection view` sobre un part o la instancia exacta.
-2. **Captura.** `capture_screenshot` (png para cheques de legibilidad de
-   texto) durante playtest para verdad runtime; capturas en Edit solo para
-   geometría cruda.
-3. **Puntúa cada shot 0–2** por dimensión con una línea de evidencia:
-   - Coherencia vs dirección (gates de paleta/material/tipo).
-   - Composición (foco, frente/medio/fondo, sin clutter accidental).
-   - Escala (referenciada al avatar: puertas ~2x altura, barandillas, escalones).
-   - Iluminación (mood correcto, caras/HUD legibles, sin zonas negras jugables).
-   - Materiales (sin extensiones de un solo material, trims donde se juntan).
-   - UI (sizing por escala, safe insets, contraste sobre 3D, mínimos en móvil).
-   - Coste gráfico (top de `get_scene_analysis` para la zona del shot).
-4. **Dispositivos.** Repite shots clave con `capture_device_matrix` (presets
-   phone + tablet); fallos de UI en pantallas pequeñas bloquean release.
-5. **Bucle de fix.** Peor dimensión primero, un cambio, re-captura el MISMO shot.
+1. **Plan shots.** 3–6 named views (spawn, landmark, interior,
+   moment with dense UI, night if applicable). Frame each with
+   `selection view` on the exact part or instance.
+2. **Capture.** `capture_screenshot` (png for text-legibility checks)
+   during playtest for runtime truth; captures in Edit only for
+   raw geometry.
+3. **Score each shot 0–2** per dimension with one line of evidence:
+   - Coherence vs direction (palette/material/type gates).
+   - Composition (focus, foreground/mid/background, no accidental clutter).
+   - Scale (avatar-referenced: doors ~2x height, railings, steps).
+   - Lighting (right mood, faces/HUD legible, no pitch-black playable zones).
+   - Materials (no single-material expanses, trims where they meet).
+   - UI (sizing by scale, safe insets, contrast over 3D, minimums on mobile).
+   - Graphic cost (top `get_scene_analysis` for the shot zone).
+4. **Devices.** Repeat key shots with `capture_device_matrix` (phone
+   + tablet presets); UI failures on small screens block release.
+5. **Fix loop.** Worst dimension first, one change, re-capture the SAME shot.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Lectura de capturas: píxeles, no memoria. Legibilidad de texto en 1x.
-- Gates de la dirección de arte como rubric.
+- Reading captures: pixels, not memory. Text legibility at 1x.
+- Art-direction gates as rubric.
 
-## Buenas prácticas
+## Best practices
 
-- Planifica los shots por escrito antes de capturar.
-- Una dimensión por iteración; mismo shot para comparar.
+- Plan shots in writing before capturing.
+- One dimension per iteration; same shot for comparison.
 
-## Errores frecuentes
+## Common mistakes
 
-- Auditar capturas de Edit y perder issues solo-runtime (escalado de
-  `PlayerGui`, streaming pop-in, lighting nocturno en play).
-- Puntuar de memoria en vez de los píxeles capturados; aprobar legibilidad
-  desde un preview reducido.
+- Auditing Edit captures and missing runtime-only issues (scaled
+  `PlayerGui`, streaming pop-in, night lighting in play).
+- Scoring from memory instead of captured pixels; approving legibility
+  from a downscaled preview.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Todos los shots planificados capturados, inspeccionados y puntuados con evidencia.
-- [ ] Cada item con 0 corregido y re-capturado, o registrado como riesgo aceptado.
-- [ ] Los shots de UI en preset phone pasan legibilidad.
-- Verificación: cita puntuaciones + evidencia por shot; adjunta antes/después
-  en los fixes. Si la sesión no puede mostrar imágenes: marca como NOT VERIFIED.
+- [ ] All planned shots captured, inspected, and scored with evidence.
+- [ ] Each 0 item fixed and re-captured, or logged as accepted risk.
+- [ ] UI shots on phone preset pass legibility.
+- Verification: cite scores + evidence per shot; attach before/after
+  on fixes. If the session can't display images: mark as NOT VERIFIED.
 
-## Herramientas
+## Tools
 
 - MCP: `selection`/`view`, `capture_screenshot`, `capture_device_matrix`,
-  `get_scene_analysis`; `docs/ART_DIRECTION.md` como rubric.
+  `get_scene_analysis`; `docs/ART_DIRECTION.md` as rubric.
 
-## Limitaciones
+## Limitations
 
-- No sustituye al profiler para números de rendimiento.
-- Requiere Studio abierto con el place; sin él no hay shots.
+- Not a substitute for the profiler on hard numbers.
+- Requires Studio open with the place; no shots without it.

@@ -1,61 +1,61 @@
 ---
 name: roblox-dynamic-music
-description: Diseña música adaptativa por capas según el estado del juego. Úsala cuando necesites música que cambie entre exploración, tensión y combate con loops sin cortes.
+description: Design adaptive layered music by game state. Use it when you need music that shifts between exploration, tension, and combat with seamless loops.
 ---
 
-# Música dinámica por capas y estados
+# Layered state-driven dynamic music
 
-## Objetivo
+## Objective
 
-Construir un sistema de música que sigue al juego: capas instrumentales que
-entran y salen según el estado (exploración, tensión, combate, victoria,
-derrota), con transiciones musicales limpias y bucles que no se notan.
+Build a music system that follows the game: instrumental layers that
+fade in and out by state (exploration, tension, combat, victory,
+defeat), with clean musical transitions and loops that don't show.
 
-## Alcance y límites
+## Scope and limits
 
-**Diferenciación declarada:** la skill instalada `roblox-audio` cubre el motor
-de audio y el grafo moderno (`AudioPlayer`, `AudioEmitter`, `AudioListener`,
-`Wire`, efectos). Esta skill NO repite el motor: cubre diseño por dominio de
-música adaptativa (capas por estado, loops, transiciones). La skill instalada
-`roblox-animation-audio-feedback` cubre el *juice* general; esta skill no la
-repite (la referencia si un cambio musical necesita un acento de feel).
+**Stated differentiation:** the installed `roblox-audio` skill covers the engine
+and the modern graph (`AudioPlayer`, `AudioEmitter`, `AudioListener`,
+`Wire`, effects). This skill does NOT repeat the engine: it covers domain design of
+adaptive music (layers by state, loops, transitions). The installed skill
+`roblox-animation-audio-feedback` covers general *juice*; this skill doesn't
+repeat it (it references it if a musical change needs a feel accent).
 
-Esta skill NO hace:
+This skill does NOT do:
 
-- Ambientes no musicales por zonas → lo cubre `roblox-ambient-soundscapes`.
-- One-shots de UI, pasos o impactos → lo cubre `roblox-sfx-design`.
-- Mezcla global, ducking y presupuestos → lo cubre `roblox-audio-mixing`.
-- Efectos de motor de vehículos → lo cubre `roblox-vehicle-audio`.
+- Non-musical ambiences by zone → covered by `roblox-ambient-soundscapes`.
+- UI, footstep, or impact one-shots → covered by `roblox-sfx-design`.
+- Global mixing, ducking, and budgets → covered by `roblox-audio-mixing`.
+- Vehicle engine effects → covered by `roblox-vehicle-audio`.
 
-## Casos de uso
+## Use cases
 
-1. Explorar con pad suave que añade percusión al entrar en combate.
-2. Mazmorra con capa de tensión que crece por proximidad al jefe.
-3. Victoria con stinger de 3 s sobre la base, sin parar la música.
-4. Música que baja automáticamente en menús y cinemáticas.
-5. Biomas con temas distintos y puente musical entre ellos.
-6. Juego sin presupuesto de composición: dos capas bien usadas mejor que
-   cinco pistas mediocres.
+1. Exploring with a soft pad that adds percussion on entering combat.
+2. Dungeon with a tension layer that grows by boss proximity.
+3. Victory with a 3 s stinger over the base, without stopping the music.
+4. Music that ducks automatically in menus and cinematics.
+5. Biomes with different themes and a musical bridge between them.
+6. Game with no composition budget: two well-used layers beat
+   five mediocre tracks.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define 3–5 estados musicales.** No más al inicio: `Calma`, `Tension`,
-   `Combate`, más `Menu` y `Stinger` como casos especiales. Cada estado extra
-   multiplica el trabajo de transiciones.
-2. **Compón por capas apilables, no por pistas separadas.** Base armónica +
-   ritmo + melodía, todas al mismo tempo y tonalidad, para poder sumar o
-   restar sin disonancias. Pistas separadas por estado casi siempre chocan.
-3. **Garantiza loops sin cortes.** Cada capa con `Looped = true`, duración
-   múltiplo del compás y cola de reverberación recortada o incluida en el
-   loop. Prueba cada loop aislado 5 minutos: si el corte se nota, no sirve.
-4. **Centraliza el estado musical en el servidor.** El servidor valida lo
-   importante: si hay combate o no, si el jefe vive, si la partida terminó.
-   El cliente solo mezcla capas. Replica cambios con `RemoteEvent`.
-5. **Diseña la matriz de transiciones.** Por cada par de estados, decide:
-   fundido directo (2–4 s), espera al final del compás, o stinger puente.
-   Combate→Calma casi siempre pide fundido largo; Calma→Combate admite corte
-   con golpe de entrada.
-6. **Implementa fundidos por capa.** Ejemplo ilustrativo (simplificado):
+1. **Define 3–5 music states.** No more at the start: `Calm`, `Tension`,
+   `Combat`, plus `Menu` and `Stinger` as special cases. Each extra state
+   multiplies transition work.
+2. **Compose stackable layers, not separate tracks.** Harmonic base +
+   rhythm + melody, all at the same tempo and key, so you can add or
+   remove without dissonance. Separate tracks per state almost always clash.
+3. **Guarantee seamless loops.** Each layer with `Looped = true`, duration
+   a multiple of the bar, and reverb tail trimmed or included in the
+   loop. Test each loop isolated for 5 minutes: if the cut shows, it doesn't work.
+4. **Centralize music state on the server.** The server validates what matters
+   : whether there is combat, whether the boss lives, whether the match ended.
+   The client only mixes layers. Replicate changes with `RemoteEvent`.
+5. **Design the transition matrix.** For each pair of states, decide:
+   direct crossfade (2–4 s), wait for end of bar, or bridge stinger.
+   Combat→Calm almost always wants a long fade; Calm→Combat admits an entry-hit
+   cut.
+6. **Implement per-layer fades.** Illustrative example (simplified):
    ```luau
    -- Ilustrativo: subir la capa de percusión al entrar en combate.
    local TweenService = game:GetService("TweenService")
@@ -63,78 +63,78 @@ Esta skill NO hace:
    capaPercusion:Play()
    TweenService:Create(capaPercusion, info, { Volume = 0.7 }):Play()
    ```
-7. **Añade stingers para eventos puntuales.** Victoria, derrota, descubrimiento:
-   one-shot sobre la base sin detenerla. Un stinger tapa un fundido mediocre.
-8. **Reserva la banda de la voz y los SFX.** Música con menos medios-agudos
-   agresivos; el ducking fino (bajar música bajo voz/SFX) es de
-   `roblox-audio-mixing`, pero el diseño por capas ya debe dejar hueco.
-9. **Trata menús y cinemáticas.** Baja la música a 0.2–0.3 o cambia a capa
-   mínima; nunca la pares en seco salvo pantalla de título inicial.
-10. **Sincroniza cambios con gameplay, no con reloj.** El cambio a combate
-    debe dispararse por el evento real (daño, agro), no por temporizador.
-11. **Prueba secuencias completas.** Calma→Tensión→Combate→Victoria→Calma sin
-    pausas raras, solapes disonantes ni picos de volumen.
-12. **Congela el alcance.** Añadir un sexto estado a última hora rompe la
-    matriz de transiciones. Cierra estados antes de pulir.
+7. **Add stingers for one-off events.** Victory, defeat, discovery:
+   one-shot over the base without stopping it. A stinger hides a mediocre crossfade.
+8. **Reserve room for voice and SFX.** Music with fewer aggressive upper-mids;
+   fine ducking (lowering music under voice/SFX) belongs to
+   `roblox-audio-mixing`, but layer design must already leave room.
+9. **Handle menus and cinematics.** Lower music to 0.2–0.3 or switch to a minimal
+   layer; never stop it cold except on the initial title screen.
+10. **Sync changes to gameplay, not to the clock.** The switch to combat
+    must fire on the real event (damage, aggro), not on a timer.
+11. **Test full sequences.** Calm→Tension→Combat→Victory→Calm with no
+    odd pauses, dissonant overlaps, or volume spikes.
+12. **Freeze scope.** Adding a sixth state at the last minute breaks the
+    transition matrix. Lock states before polishing.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- El servidor valida lo importante: estado de combate, vida del jefe, fase de
-  partida. El cliente nunca decide solo "estamos en combate" si eso afecta a
-  otros sistemas.
-- Persistencia: guarda la preferencia de música del jugador (volumen, mute)
-  si el juego la ofrece; el estado musical vivo (capa actual) se recalcula al
-  entrar, nunca se restaura de un guardado.
-- Errores: si un asset de capa falla al cargar, sigue con las capas
-  disponibles y registra el fallo; jamás dejes al jugador en silencio total
-  por un asset caído. Usa `pcall` donde la carga sea externa.
-- Agrupa capas en un `SoundGroup` propio (`Music`) para control global de
-  volumen y mute con un solo ajuste.
-- `Sound` con `Looped = true` es la base fiable; si usas `AudioPlayer` del
-  grafo moderno, los detalles del grafo son de `roblox-audio`.
+- The server validates what matters: combat state, boss life, match phase.
+  The client never decides alone "we are in combat" if that affects
+  other systems.
+- Persistence: save the player's music preference (volume, mute)
+  if the game offers it; live music state (current layer) is recalculated on
+  join, never restored from a save.
+- Errors: if a layer asset fails to load, continue with the available
+  layers and log the failure; never leave the player in total silence
+  because of a dropped asset. Use `pcall` where loading is external.
+- Group layers in their own `SoundGroup` (`Music`) for global
+  volume and mute control with a single setting.
+- `Sound` with `Looped = true` is the reliable base; if you use `AudioPlayer` from the
+  modern graph, graph details belong to `roblox-audio`.
 
-## Buenas prácticas
+## Best practices
 
-- Mismo tempo y tonalidad en todas las capas apilables.
-- Fundidos de 2–4 s; cambios a combate pueden ser más rápidos (1–2 s).
-- Nombra por convención: `MUS_bosque_base_120bpm_v1`.
-- Documenta la matriz de transiciones en una tabla visible para todo el equipo.
-- Prueba a volumen bajo: si la música molesta bajita, molestará alta.
-- Un stinger bueno vale más que una quinta capa.
+- Same tempo and key across all stackable layers.
+- 2–4 s fades; switches to combat can be faster (1–2 s).
+- Name by convention: `MUS_bosque_base_120bpm_v1`.
+- Document the transition matrix in a table visible to the whole team.
+- Test at low volume: if the music annoys when quiet, it will annoy when loud.
+- One good stinger is worth more than a fifth layer.
 
-## Errores frecuentes
+## Common mistakes
 
-1. Pistas separadas por estado con distinto tempo → transición imposible.
-2. Parar y rearrancar música en cada cambio → baches y reinicios molestos.
-3. Dejar que el cliente decida el estado musical con efecto en gameplay.
-4. Loop con clic al cerrar → se nota cada 30 s durante horas.
-5. Música que compite con voz y SFX en la misma banda.
-6. Demasiados estados al inicio → matriz de transiciones inabarcable.
-7. No probar la secuencia completa, solo estados aislados.
+1. Separate tracks per state with different tempo → impossible transition.
+2. Stopping and restarting music on every change → gaps and annoying restarts.
+3. Letting the client decide music state with gameplay effects.
+4. Loop with a click at the seam → noticeable every 30 s for hours.
+5. Music competing with voice and SFX in the same band.
+6. Too many states at the start → unmanageable transition matrix.
+7. Not testing the full sequence, only isolated states.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] 3–5 estados definidos y matriz de transiciones documentada.
-- [ ] Todas las capas comparten tempo y tonalidad.
-- [ ] Cada loop aguanta 5 minutos aislado sin corte perceptible.
-- [ ] Secuencia completa Calma→Combate→Victoria sin baches ni disonancias.
-- [ ] Stingers de eventos clave implementados sin detener la base.
-- [ ] Menús y cinemáticas con tratamiento musical definido.
-- [ ] Preferencia de volumen/mute del jugador respetada.
+- [ ] 3–5 states defined and transition matrix documented.
+- [ ] All layers share tempo and key.
+- [ ] Each loop holds 5 minutes isolated with no perceptible cut.
+- [ ] Full Calm→Combat→Victory sequence with no gaps or dissonance.
+- [ ] Stingers for key events implemented without stopping the base.
+- [ ] Menus and cinematics with defined music treatment.
+- [ ] Player volume/mute preference respected.
 
-## Herramientas
+## Tools
 
-- `Sound`, `SoundGroup` (`Music`), `SoundService` para capas y control global.
-- `AudioPlayer`, `AudioEmitter`, `AudioListener`, `Wire` si el proyecto usa el
-  grafo moderno (motor: `roblox-audio`).
-- `RemoteEvent` para replicar cambios de estado musical desde el servidor.
-- Interpolación de `Volume` para fundidos (ver ejemplo ilustrativo).
+- `Sound`, `SoundGroup` (`Music`), `SoundService` for layers and global control.
+- `AudioPlayer`, `AudioEmitter`, `AudioListener`, `Wire` if the project uses the
+  modern graph (engine: `roblox-audio`).
+- `RemoteEvent` to replicate music state changes from the server.
+- `Volume` interpolation for fades (see illustrative example).
 
-## Limitaciones
+## Limitations
 
-- No compone música: asume assets compuestos o adquiridos legalmente.
-- No diseña ambientes ni SFX: deriva a `roblox-ambient-soundscapes` y
+- Does not compose music: assumes composed or legally acquired assets.
+- Does not design ambiences or SFX: see `roblox-ambient-soundscapes` and
   `roblox-sfx-design`.
-- No fija mezcla final ni ducking: deriva a `roblox-audio-mixing`.
-- No documenta el grafo moderno en profundidad: deriva a `roblox-audio`.
-- Verifica cualquier miembro de API dudoso en create.roblox.com/docs.
+- Does not set final mix or ducking: see `roblox-audio-mixing`.
+- Does not document the modern graph in depth: see `roblox-audio`.
+- Verify any doubtful API member at create.roblox.com/docs.

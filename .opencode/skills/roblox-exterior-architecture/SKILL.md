@@ -1,100 +1,100 @@
 ---
 name: roblox-exterior-architecture
-description: Diseña edificios exteriores legibles y escalados al avatar. Úsala cuando necesites fachadas, entradas, tejados, ritmo de vanos o masas de edificios.
+description: Design readable exterior buildings scaled to the avatar. Use it when you need facades, entrances, roofs, bay rhythm, or building masses.
 ---
 
-# Arquitectura exterior en Roblox
+# Exterior Architecture in Roblox
 
-## Objetivo
+## Objective
 
-Producir edificios exteriores que se lean bien a distancia, se recorran bien de cerca y estén escalados al avatar, con masas claras, fachadas con ritmo y entradas localizables en menos de 10 segundos.
+Produce exterior buildings that read well at distance, walk well up close, and are scaled to the avatar, with clear masses, rhythmic facades, and entrances locatable in under 10 seconds.
 
-## Alcance y límites
+## Scope and limits
 
-Hace: masas y proporciones de edificios, composición de fachada (vanos, ritmo, cornisas, zócalos), entradas y transiciones interior/exterior, tejados y remates, escalado respecto al avatar, repetición modular de fachadas.
+Does: building masses and proportions, facade composition (bays, rhythm, cornices, bases), entrances and interior/exterior transitions, roofs and caps, scaling to the avatar, modular facade repetition.
 
-NO hace:
+Does NOT do:
 
-- Interiores (zonas, mobiliario, circulación interna) → `roblox-interior-design`.
-- Trazado urbano (calles, distritos, zonificación) → `roblox-city-settlements`.
-- Terreno y biomas bajo el edificio → `roblox-terrain-sculpting`.
-- Vegetación perimetral → `roblox-vegetation-landscaping`.
-- Paleta de materiales y variantes → `roblox-materials-surfaces`.
-- Iluminación diurna/nocturna → `roblox-lighting-day-night`.
-- Decoración fina y señalética → `roblox-props-decoration`.
+- Interiors (zones, furniture, internal circulation) → `roblox-interior-design`.
+- Urban layout (streets, districts, zoning) → `roblox-city-settlements`.
+- Terrain and biomes under the building → `roblox-terrain-sculpting`.
+- Perimeter vegetation → `roblox-vegetation-landscaping`.
+- Material palette and variants → `roblox-materials-surfaces`.
+- Day/night lighting → `roblox-lighting-day-night`.
+- Fine decor and signage → `roblox-props-decoration`.
 
-Diferenciación declarada: `roblox-world-building` (instalada) es generalista y fina (154 líneas sin auxiliares); esta skill es su versión profunda por especialidad (solo exterior arquitectónico). `roblox-visual-design` y `robloflox-art-direction` —corrección: `roblox-visual-design` y `roblox-art-direction`— dirigen (deciden estilo y aprueban); esta skill ejecuta (construye el edificio).
+Stated differentiation: the installed `roblox-world-building` is a generalist and fine-grained (154 lines without aids); this skill is its deep version by specialty (exterior architecture only). `roblox-visual-design` and `roblox-art-direction` direct (they decide style and approve); this skill executes (it builds the building).
 
-## Casos de uso
+## Use cases
 
-1. Bloque de viviendas que se repite 6 veces en una manzana sin parecer clonado.
-2. Tienda con entrada que el jugador encuentra sin ayuda a 40 studs de distancia.
-3. Torre que funciona como landmark y no rompe la escala del barrio.
-4. Nave industrial reconvertida en zona jugable con ritmo de fachada claro.
-5. Reforma de fachada existente que se ve plana o desproporcionada.
+1. Housing block repeated 6 times on a block without looking cloned.
+2. Shop with an entrance the player finds unaided at 40 studs distance.
+3. Tower that works as a landmark without breaking neighborhood scale.
+4. Industrial warehouse converted into a playable zone with clear facade rhythm.
+5. Existing facade remodel that looks flat or out of proportion.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Fija programa y huella.** Anota: uso (vivienda/tienda/cívico), nº de plantas, huella en studs (ej. punto de partida: 24×16, no verdad). Bloquea la huella con Parts simples antes de detallar.
-2. **Define la masa en 3 volúmenes máximo.** Base (zócalo, 1 planta), cuerpo (repetición), remate (cornisa/tejado). Verifica: silueta legible en captura a 150 studs con niebla desactivada.
-3. **Escala al avatar.** Puerta punto de partida: 4 studs ancho × 7 studs alto. Ventana punto de partida: alféizar a 3 studs del forjado. Comprueba con un avatar R15 al lado: el dintel queda a ~1,5× la altura del avatar.
-4. **Compón la fachada con ritmo A-B-A.** Alterna vano/macizo con un módulo fijo (punto de partida: módulo de 4 studs). Regla verificable: ningún paño macizo supera 3 módulos sin una junta, cornisa o cambio de plano.
-5. **Marca la entrada.** Retranquea 2 studs, añade marquesina o pórtico, cambia material del marco y duplica la iluminación respecto al resto de fachada. Test: a 40 studs y de noche, la entrada es el punto más brillante.
-6. **Resuelve el tejado según clima del juego.** Plano con pretil (urbano), inclinado a dos aguas (rural), diente de sierra (industrial). El alero vuela 1–2 studs; verifica que no atraviesa la cámara en calles de menos de 12 studs.
-7. **Añade profundidad por capas.** Capa 1: plano base. Capa 2: recercos/jambas con 0,25–0,5 studs de relieve. Capa 3: balcones/cornisas puntuales. Límite: máximo 3 capas; más capas = ruido y overdraw.
-8. **Modulariza.** Convierte un tramo de fachada (punto de partida: 12 studs) en Model reutilizable con pivote en esquina. Nombra: `FAC_A_Ventana`, `FAC_B_Ciega`, `FAC_Entrada`. Reutiliza, no reconstruyas.
-9. **Integra con suelo y calle.** Zócalo de 1–2 studs con material resistente, acera perimetral de 4 studs mínimo, rampa donde haya escalón mayor de 1 stud.
-10. **Pasa QA de arquitectura.** Checklist en § Criterios; corrige y documenta variantes (color/material) en una carpeta `Variantes`.
+1. **Set program and footprint.** Note: use (housing/shop/civic), floor count, footprint in studs (e.g. starting point: 24×16, not truth). Block the footprint with simple Parts before detailing.
+2. **Define the mass in at most 3 volumes.** Base (base, 1 floor), body (repetition), cap (cornice/roof). Verify: silhouette readable in a capture at 150 studs with fog off.
+3. **Scale to the avatar.** Door starting point: 4 studs wide × 7 studs tall. Window starting point: sill at 3 studs from the slab. Check with an R15 avatar next to it: the lintel sits at ~1.5× avatar height.
+4. **Compose the facade with A-B-A rhythm.** Alternate solid/opening with a fixed module (starting point: 4-stud module). Verifiable rule: no solid panel exceeds 3 modules without a joint, cornice, or plane change.
+5. **Mark the entrance.** Set back 2 studs, add canopy or portico, change frame material, and double lighting vs the rest of the facade. Test: at 40 studs and at night, the entrance is the brightest point.
+6. **Solve the roof per the game's climate.** Flat with parapet (urban), gabled (rural), sawtooth (industrial). Eaves overhang 1–2 studs; verify it doesn't clip the camera on streets under 12 studs.
+7. **Add depth in layers.** Layer 1: base plane. Layer 2: trims/jambs with 0.25–0.5 studs of relief. Layer 3: selective balconies/cornices. Limit: 3 layers max; more layers = noise and overdraw.
+8. **Modularize.** Turn a facade bay (starting point: 12 studs) into a reusable Model with pivot at the corner. Name: `FAC_A_Window`, `FAC_B_Blind`, `FAC_Entrance`. Reuse, don't rebuild.
+9. **Integrate with ground and street.** 1–2 stud base with resistant material, 4+ stud perimeter sidewalk, ramp wherever a step exceeds 1 stud.
+10. **Pass architecture QA.** Checklist in § Criteria; fix and document variants (color/material) in a `Variants` folder.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Escala avatar: R15 ≈ 5 studs de alto. Puertas, barandillas (punto de partida: 3 studs) y peldaños (punto de partida: huella 2, contrahuella 0,6) derivan de ahí. Son puntos de partida, no verdad.
-- Profundidad con Parts: pilastras y cornisas como Parts finas separadas del muro dan sombra real barata sin Decal/Texture.
-- MeshPart y SpecialMesh: reserva MeshPart para remates repetidos (cornisas, capiteles); SpecialMesh solo para prototipado rápido, no para fachada final masiva.
-- Decal/Texture: solo para despieces sutiles (ladrillo, paneles) a densidad baja; si el patrón se repite visiblemente a 10 studs, aumenta el tamaño del tile o cambia a geometría.
-- MaterialService y MaterialVariant: un MaterialVariant por acabado de fachada (ladrillo, revoco, panel). No crees un variant por edificio.
-- Colisiones: muros y cornisas bajas con colisión; ornamentos por encima de 8 studs sin colisión (CanCollide off) para ahorrar física.
-- Cámara: en calles estrechas (<12 studs) evita voladizos a menos de 9 studs de altura; la cámara los atravesará.
+- Avatar scale: R15 ≈ 5 studs tall. Doors, railings (starting point: 3 studs), and steps (starting point: tread 2, riser 0.6) derive from it. They are starting points, not truth.
+- Depth with Parts: pilasters and cornices as thin Parts separated from the wall give cheap real shadow without Decal/Texture.
+- MeshPart and SpecialMesh: reserve MeshPart for repeated caps (cornices, capitals); SpecialMesh only for fast prototyping, not for final massive facade.
+- Decal/Texture: only for subtle jointing (brick, panels) at low density; if the pattern visibly repeats at 10 studs, increase tile size or switch to geometry.
+- MaterialService and MaterialVariant: one MaterialVariant per facade finish (brick, render, panel). Don't create one variant per building.
+- Collisions: walls and low cornices with collision; ornaments above 8 studs without collision (CanCollide off) to save physics.
+- Camera: on narrow streets (<12 studs) avoid overhangs below 9 studs high; the camera will clip through them.
 
-## Buenas prácticas
+## Best practices
 
-- Trabaja de lejos a cerca: silueta → masa → ritmo → detalle. Nunca detalles sin masa bloqueada.
-- Repite con variación: 3 tramos base combinados dan 6+ fachadas distintas rotando orden y color.
-- Contraste controlado: marco de vanos un tono más oscuro o un material distinto, nunca más de 2 materiales por fachada más el zócalo.
-- Entrada siempre en esquina visible o eje de simetría; jamás en paño ciego lateral.
-- Documenta el módulo (ej. "módulo 4, altura planta 8") en el nombre del Model para que otro constructor lo reutilice.
+- Work far to near: silhouette → mass → rhythm → detail. Never detail without blocked mass.
+- Repeat with variation: 3 base bays combined give 6+ distinct facades by rotating order and color.
+- Controlled contrast: opening frames one tone darker or one different material, never more than 2 materials per facade plus the base.
+- Entrance always on a visible corner or symmetry axis; never on a blind side panel.
+- Document the module (e.g. "module 4, floor height 8") in the Model name so another builder can reuse it.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Ventanas a escala de casa de muñecas.** Vanos de 2×2 en muros de 12 studs: el edificio parece maqueta. Corrección: vano mínimo punto de partida 3×4 por planta de 8 studs.
-2. **Fachada plana con textura.** Solo Decal de ladrillo sin relieve: de noche se ve cartón. Corrección: añade jambas con 0,5 studs de relieve.
-3. **Seis materiales en un edificio.** Ruido visual y draw calls. Corrección: reduce a 2+zócalo.
-4. **Entrada invisible.** Misma puerta que el resto sin marquesina ni luz. Corrección: retranqueo + cambio de material + PointLight cálido.
-5. **Tejado que atraviesa la cámara.** Aleros grandes en calle estrecha. Corrección: reduce vuelo o sube alero por encima de 9 studs.
-6. **Clones obvios.** Misma fachada 6 veces seguidas. Corrección: alterna 3 tramos y varía zócalo/cornisa.
-7. **Escala monumental accidental.** Plantas de 14 studs en vivienda: el avatar parece hormiga. Corrección: planta vivienda punto de partida 7–9 studs.
+1. **Dollhouse-scale windows.** 2×2 openings on 12-stud walls: the building looks like a model. Fix: minimum opening starting point 3×4 per 8-stud floor.
+2. **Flat facade with texture.** Brick Decal only with no relief: looks like cardboard at night. Fix: add jambs with 0.5 studs of relief.
+3. **Six materials on one building.** Visual noise and draw calls. Fix: reduce to 2+base.
+4. **Invisible entrance.** Same door as the rest with no canopy or light. Fix: setback + material change + warm PointLight.
+5. **Roof clipping the camera.** Large eaves on a narrow street. Fix: reduce overhang or raise eaves above 9 studs.
+6. **Obvious clones.** Same facade 6 times in a row. Fix: alternate 3 bays and vary base/cornice.
+7. **Accidental monumental scale.** 14-stud floors on housing: the avatar looks like an ant. Fix: housing floor starting point 7–9 studs.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Silueta legible a 150 studs (captura sin niebla).
-- [ ] Entrada localizable en ≤10 s a 40 studs de día y de noche.
-- [ ] Ningún paño macizo >3 módulos sin articulación.
-- [ ] Avatar de prueba junto a puerta: proporción creíble (foto de referencia guardada).
-- [ ] ≤3 materiales de fachada + zócalo; MaterialVariant nombrados.
-- [ ] Tramo modular guardado como Model reutilizable con pivote correcto.
-- [ ] Sin voladizos que bloqueen cámara en calles <12 studs (recorrido grabado).
-- [ ] Zócalo, acera y acceso sin escalones >1 stud sin rampa.
+- [ ] Silhouette readable at 150 studs (capture without fog).
+- [ ] Entrance locatable in ≤10 s at 40 studs by day and night.
+- [ ] No solid panel >3 modules without articulation.
+- [ ] Test avatar next to door: believable proportion (reference photo saved).
+- [ ] ≤3 facade materials + base; named MaterialVariants.
+- [ ] Modular bay saved as reusable Model with correct pivot.
+- [ ] No overhangs blocking the camera on streets <12 studs (recorded walkthrough).
+- [ ] Base, sidewalk, and access with no steps >1 stud without a ramp.
 
-## Herramientas
+## Tools
 
-- Parts y Models para bloqueo y modularidad; MeshPart para remates repetidos.
-- MaterialService / MaterialVariant para acabados de fachada.
-- Decal / Texture solo para despiece sutil (verificar densidad en create.roblox.com/docs si dudas del tiling).
-- PointLight / SpotLight para marcar entradas (detalles nocturnos con `roblox-lighting-day-night`).
+- Parts and Models for blocking and modularity; MeshPart for repeated caps.
+- MaterialService / MaterialVariant for facade finishes.
+- Decal / Texture only for subtle jointing (verify density at create.roblox.com/docs if unsure about tiling).
+- PointLight / SpotLight to mark entrances (night details with `roblox-lighting-day-night`).
 
-## Limitaciones
+## Limitations
 
-- No cubre cálculo estructural real ni normativa: las proporciones son visuales y jugables.
-- No genera interiores ni distribuye parcelas urbanas (ver skills enlazadas).
-- Si dudas de una propiedad de Lighting/Atmosphere al integrar el edificio, escribe "(verificar en create.roblox.com/docs)" en la nota y no la afirmes.
-- Distingue referencia visual (foto/boceto de inspiración) de asset importable: no afirmes que un modelo o textura existe sin crearlo o localizarlo en el proyecto.
+- Does not cover real structural engineering: proportions are visual and playable.
+- Does not generate interiors or distribute urban plots (see linked skills).
+- If you doubt a Lighting/Atmosphere property when integrating the building, write "(verificar en create.roblox.com/docs)" in the note and don't assert it.
+- Distinguish visual reference (inspiration photo/sketch) from importable asset: don't claim a model or texture exists without creating or locating it in the project.

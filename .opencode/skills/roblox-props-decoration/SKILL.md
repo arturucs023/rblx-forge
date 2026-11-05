@@ -1,98 +1,98 @@
 ---
 name: roblox-props-decoration
-description: Coloca props, decoración y señalética que guían sin saturar. Úsala cuando necesites amueblar escenas, crear letreros/flechas/landmarks de guía o vestir calles e interiores.
+description: Place props, decor, and signage that guide without cluttering. Use it when you need to furnish scenes, create guide signs/arrows/landmarks, or dress streets and interiors.
 ---
 
-# Props, decoración y señalética en Roblox
+# Props, Decoration, and Signage in Roblox
 
-## Objetivo
+## Objective
 
-Vestir escenas con props que cuentan historia y con señalética que guía: cada objeto tiene motivo, cada letrero se lee en marcha y ningún conjunto satura ni frena.
+Dress scenes with props that tell stories and signage that guides: every object has a reason, every sign reads while moving, and no set clutters or slows things down.
 
-## Alcance y límites
+## Scope and limits
 
-Hace: selección y colocación de props, composición de viñetas (storytelling estático), señalética y wayfinding (letreros, flechas, landmarks de guía), densidad y presupuestos, colisiones de decoración.
+Does: selection and placement of props, vignette composition (static storytelling), signage and wayfinding (signs, arrows, guide landmarks), density and budgets, decoration collisions.
 
-NO hace:
+Does NOT do:
 
-- Mobiliario estructural de interior (zonas, circulación) → `roblox-interior-design`.
-- Fachadas y masas → `roblox-exterior-architecture`.
-- Vegetación → `roblox-vegetation-landscaping`.
-- Materiales y variantes globales → `roblox-materials-surfaces`.
-- Efectos ambientales (polvo, hojas) → `roblox-ambient-effects`.
+- Structural interior furnishing (zones, circulation) → `roblox-interior-design`.
+- Facades and masses → `roblox-exterior-architecture`.
+- Vegetation → `roblox-vegetation-landscaping`.
+- Global materials and variants → `roblox-materials-surfaces`.
+- Ambient effects (dust, leaves) → `roblox-ambient-effects`.
 
-Diferenciación declarada: `roblox-world-building` (instalada) es generalista y fina (154 líneas sin auxiliares); esta skill es su versión profunda por especialidad (solo props/decoración/señalética). `roblox-visual-design` y `roblox-art-direction` dirigen (aprueban estilo y tono); esta skill ejecuta (coloca y rotula).
+Declared differentiation: `roblox-world-building` (installed) is a generalist and lean (154 lines without auxiliaries); this skill is its deep version by specialty (props/decoration/signage only). `roblox-visual-design` and `roblox-art-direction` direct (they approve style and tone); this skill executes (places and labels).
 
-## Casos de uso
+## Use cases
 
-1. Calle vacía que necesita vida sin perder legibilidad.
-2. Taberna con viñetas (mesa a medio recoger, tablón de encargos) que cuentan historia.
-3. Cruce donde los jugadores se pierden: sistema de letreros y flechas.
-4. Mercado con 30 puestos legibles y recorribles.
-5. Mapa saturado a 20 FPS por exceso de bibelots con colisión.
+1. Empty street that needs life without losing readability.
+2. Tavern with vignettes (half-cleared table, quest board) that tell stories.
+3. Crossroads where players get lost: sign and arrow system.
+4. Market with 30 readable, walkable stalls.
+5. Saturated map at 20 FPS from excess knick-knacks with collision.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Inventaría por familias.** Lista: estructurales (cajas, barriles), narrativos (cartas, herramientas), guía (letreros, flechas). Límite punto de partida: 3 familias por escena; todo lo demás sobra.
-2. **Fija presupuesto por escena.** Punto de partida: calle 40–60 props, habitación 15–25, plaza 30–50 (puntos de partida, no verdad). Cuenta y recorta lo invisible desde rutas antes que lo visible.
-3. **Compón viñetas de 3–5 objetos.** Regla: cada viñeta cuenta 1 frase ("el herrero cenó aquí"). Verifica: un tercero describe la frase sin ayuda. Sin frase = relleno, elimínalo.
-4. **Coloca de grande a pequeño.** Anclas (carro, puesto, estatua) → medios (cajas, barriles) → pequeños (papeles, tazas). Pequeños solo donde el jugador se detiene (mostradores, bancos), nunca en rutas de paso.
-5. **Señalética en 3 niveles.** Nivel 1: landmark/flecha grande a 60+ studs. Nivel 2: letrero de calle/destino a 20 studs. Nivel 3: placa de puerta a 5 studs. Verifica cada nivel desde su distancia con avatar en marcha.
-6. **Legibilidad de letreros.** Texto corto (≤3 palabras), alto de letra punto de partida ≥1 stud, contraste fondo/texto alto, SurfaceLight o SpotLight dedicada de noche. Test: se lee corriendo, no solo parado.
-7. **Flechas y líneas de guía.** Flechas en suelo (Decal/Texture) o Beams tenues en cruces; una dirección por cruce, nunca 3. Retira las de tutorial tras su uso o conviertelas en decoración.
-8. **Colisiones y cámara.** Solo anclas con colisión (una Part simple por grupo); pequeños y colgantes sin colisión. Nada a altura de cámara en pasillos <6 studs.
-9. **Reutiliza sets.** Guarda `PROP_PuestoMercado`, `PROP_Letrero_Calle`, `PROP_Vineta_Taberna` como Models. Varía rotación y 1 objeto por copia, no todo el set.
-10. **QA de saturación y guía.** Recorre con jugador nuevo: llega a 3 destinos solo con señales; cuenta FPS antes/después de vestir. Si el FPS cae >15%, aplica dieta (primero pequeños invisibles).
+1. **Inventory by families.** List: structural (crates, barrels), narrative (letters, tools), guide (signs, arrows). Starting-point limit: 3 families per scene; everything else is excess.
+2. **Set a per-scene budget.** Starting point: street 40–60 props, room 15–25, plaza 30–50 (starting points, not truth). Count and cut what is invisible from routes before what is visible.
+3. **Compose vignettes of 3–5 objects.** Rule: each vignette tells 1 sentence ("the blacksmith had dinner here"). Verify: a third party describes the sentence without help. No sentence = filler, remove it.
+4. **Place from large to small.** Anchors (cart, stall, statue) → medium (crates, barrels) → small (papers, mugs). Small items only where players stop (counters, benches), never on walk routes.
+5. **Signage in 3 levels.** Level 1: landmark/large arrow at 60+ studs. Level 2: street/destination sign at 20 studs. Level 3: door plaque at 5 studs. Verify each level from its distance with a moving avatar.
+6. **Sign readability.** Short text (≤3 words), starting-point letter height ≥1 stud, high text/background contrast, dedicated SurfaceLight or SpotLight at night. Test: it reads while running, not just while standing still.
+7. **Arrows and guide lines.** Floor arrows (Decal/Texture) or faint Beams at crossroads; one direction per crossroads, never 3. Remove tutorial ones after use or turn them into decoration.
+8. **Collisions and camera.** Only anchors with collision (one simple Part per group); small and hanging items without collision. Nothing at camera height in corridors <6 studs.
+9. **Reuse sets.** Save `PROP_MarketStall`, `PROP_Street_Sign`, `PROP_Tavern_Vignette` as Models. Vary rotation and 1 object per copy, not the whole set.
+10. **Saturation and guidance QA.** Walk through with a new player: reach 3 destinations using only signs; count FPS before/after dressing. If FPS drops >15%, apply a diet (invisible small items first).
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Parts/Models/MeshPart: MeshPart para props repetidos (barriles, cajas); Parts para letreros y soportes simples.
-- Decal/Texture: textos de letreros, pósters, flechas de suelo. Una Decal grande por letrero; texto como imagen nítida, no geometría de letras.
-- SurfaceLight: lava letreros de noche; SpotLight para focalizar estatua o tablón clave.
-- Highlight: solo guía temporal (objeto de misión); prohibido permanente en decoración.
-- Beam: líneas de guía temporales o haces decorativos contados (1–2 por escena).
-- ViewportFrame: vitrinas o cuadros con mini-escenas sin geometría extra (verificar en create.roblox.com/docs si dudas).
-- Colisiones: CanCollide off por defecto en decoración; una Part invisible por puesto/grupo sustituye 10 colisiones.
+- Parts/Models/MeshPart: MeshPart for repeated props (barrels, crates); Parts for simple signs and supports.
+- Decal/Texture: sign text, posters, floor arrows. One large Decal per sign; text as crisp image, not letter geometry.
+- SurfaceLight: washes signs at night; SpotLight to focus a statue or key board.
+- Highlight: guide temporary only (quest object); never permanent on decoration.
+- Beam: temporary guide lines or counted decorative beams (1–2 per scene).
+- ViewportFrame: display cases or paintings with mini-scenes without extra geometry (verify in create.roblox.com/docs if unsure).
+- Collisions: CanCollide off by default on decoration; one invisible Part per stall/group replaces 10 collisions.
 
-## Buenas prácticas
+## Best practices
 
-- Menos es más: 5 props con historia superan a 50 de relleno.
-- Señalética siempre en el lado de decisión (antes del cruce, no después).
-- Repite el mismo letrero-base en toda la ciudad (forma y color); cambia solo el texto.
-- Altura de ojos (punto de partida 4–6 studs) para letreros; por encima de 10 solo landmarks.
-- Nombra `PROP_*`, `SIGN_*`, `VIN_*` para dietas y búsquedas rápidas.
+- Less is more: 5 props with story beat 50 filler ones.
+- Signage always on the decision side (before the crossroads, not after).
+- Repeat the same base sign across the whole city (shape and color); change only the text.
+- Eye height (starting point 4–6 studs) for signs; above 10 only landmarks.
+- Name `PROP_*`, `SIGN_*`, `VIN_*` for quick diets and searches.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Relleno sin frase.** 50 tazas idénticas sin historia. Corrección: viñetas de 3–5 con frase legible.
-2. **Letrero ilegible en marcha.** Letra pequeña y sin luz. Corrección: ≥1 stud, contraste y luz dedicada.
-3. **Tres flechas por cruce.** El jugador se paraliza. Corrección: una dirección por cruce.
-4. **Todo con colisión.** Atasco entre puestos. Corrección: solo anclas; resto sin colisión.
-5. **Props en ruta.** Cajas en el centro del paso. Corrección: bordes; centro libre 4+ studs.
-6. **Estilos mezclados.** 5 sets distintos en una calle. Corrección: 1 set base + variación mínima.
-7. **Guía permanente con Highlight.** Todo brilla siempre. Corrección: Highlight solo temporal de misión.
+1. **Filler without a sentence.** 50 identical mugs with no story. Fix: 3–5-piece vignettes with a readable sentence.
+2. **Sign unreadable while moving.** Small letters and no light. Fix: ≥1 stud, contrast, and dedicated light.
+3. **Three arrows per crossroads.** The player freezes. Fix: one direction per crossroads.
+4. **Everything with collision.** Getting stuck between stalls. Fix: anchors only; rest without collision.
+5. **Props on the route.** Crates in the middle of the path. Fix: edges; center free 4+ studs.
+6. **Mixed styles.** 5 different sets on one street. Fix: 1 base set + minimal variation.
+7. **Permanent Highlight guidance.** Everything glows always. Fix: Highlight only for temporary quest guidance.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Presupuesto por escena cumplido y contado (calle/habitación/plaza).
-- [ ] Cada viñeta describe 1 frase reconocible por un tercero.
-- [ ] 3 niveles de señalética verificados a 60/20/5 studs en marcha.
-- [ ] Letreros legibles de día y de noche (fotos corriendo).
-- [ ] Una dirección por cruce; guías de tutorial retiradas o integradas.
-- [ ] Colisión solo en anclas (auditoría); pasillos y rutas libres.
-- [ ] Sets guardados como Models `PROP_*/SIGN_*` reutilizables.
-- [ ] FPS tras vestir dentro del objetivo (caída ≤15%).
+- [ ] Per-scene budget met and counted (street/room/plaza).
+- [ ] Each vignette conveys 1 sentence recognizable by a third party.
+- [ ] 3 signage levels verified at 60/20/5 studs while moving.
+- [ ] Signs readable by day and night (photos while running).
+- [ ] One direction per crossroads; tutorial guides removed or integrated.
+- [ ] Collision on anchors only (audit); corridors and routes clear.
+- [ ] Sets saved as reusable `PROP_*`/`SIGN_*` Models.
+- [ ] FPS after dressing within target (drop ≤15%).
 
-## Herramientas
+## Tools
 
-- Models/MeshPart para sets reutilizables; Parts para soportes.
-- Decal / Texture para textos, pósters y flechas de suelo.
-- SurfaceLight / SpotLight para letreros y focos nocturnos.
-- Highlight y Beam solo para guía temporal (retirar tras uso).
+- Models/MeshPart for reusable sets; Parts for supports.
+- Decal / Texture for text, posters, and floor arrows.
+- SurfaceLight / SpotLight for signs and night focal points.
+- Highlight and Beam only for temporary guidance (remove after use).
 
-## Limitaciones
+## Limitations
 
-- No cubre mobiliario estructural de interior ni fachadas (ver skills enlazadas).
-- Conteos por escena y tamaños de letra son puntos de partida, no verdad.
-- Si dudas de un límite (Decal, ViewportFrame), escribe "(verificar en create.roblox.com/docs)".
-- Distingue referencia visual (foto de mercado real) de asset importable: no afirmes que un set existe sin crearlo o localizarlo.
+- Does not cover structural interior furnishing or facades (see linked skills).
+- Per-scene counts and letter sizes are starting points, not truth.
+- If unsure about a limit (Decal, ViewportFrame), write "(verify in create.roblox.com/docs)".
+- Distinguish visual reference (photo of a real market) from importable asset: do not claim a set exists without creating or locating it.

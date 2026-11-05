@@ -1,53 +1,53 @@
 ---
 name: roblox-testez
-description: TestEZ en serio (specs, mocks, runner en Studio/CLI, qué testear). Úsala cuando añadas tests unitarios o de sistema en Roblox Luau.
+description: TestEZ done right (specs, mocks, runner in Studio/CLI, what to test). Use it when adding unit or system tests in Roblox Luau.
 ---
 
-# TestEZ en Serio
+# TestEZ Done Right
 
-## Objetivo
-Instalar una práctica de tests que atrape regresiones: specs organizadas, mocks de servicios (`DataStoreService`, `MemoryStoreService`, `CollectionService`), runner en Studio y CLI compartido, y criterio claro de qué testear por sistema.
+## Objective
+Install a test practice that catches regressions: organized specs, service mocks (`DataStoreService`, `MemoryStoreService`, `CollectionService`), a shared runner in Studio and CLI, and a clear criterion for what to test per system.
 
-## Alcance y límites
-Diferenciación: `roblox-testing` (instalada) es el paraguas QA (estrategia general); esta skill es la práctica dedicada de TestEZ (estructura, mocks, comandos). `luau-types` cubre tipos; aquí solo se exige que lo testeado tenga contrato verificable. Multijugador y UI tienen skills propias.
+## Scope and limits
+Differentiation: `roblox-testing` (installed) is the QA umbrella (general strategy); this skill is the dedicated TestEZ practice (structure, mocks, commands). `luau-types` covers types; here everything tested only needs a verifiable contract. Multiplayer and UI have their own skills.
 
-Qué NO hace:
+What it does NOT do:
 
-- NO cubre pruebas con 2+ clientes (ver `roblox-multiplayer-testing`).
-- NO cubre recorridos visuales por pantalla (ver `roblox-ui-testing`).
-- NO sustituye CI (ver `roblox-ci-cd`); le entrega el comando que el CI ejecuta.
+- Does NOT cover 2+ client tests (see `roblox-multiplayer-testing`).
+- Does NOT cover visual walkthroughs per screen (see `roblox-ui-testing`).
+- Does NOT replace CI (see `roblox-ci-cd`); it delivers the command that CI runs.
 
-## Casos de uso
-1. Testear un `ModuleScript` puro (loot, pity, máquina de estados).
-2. Testear componente con ciclo añadir/quitar sin fugas.
-3. Mockear `DataStoreService`/`MemoryStoreService` que fallan o throttean.
-4. Correr la suite en Studio antes del push y en CLI en CI.
-5. Fijar regresión: test que reproduce el bug antes del fix.
+## Use cases
+1. Test a pure `ModuleScript` (loot, pity, state machine).
+2. Test a component with add/remove lifecycle without leaks.
+3. Mock `DataStoreService`/`MemoryStoreService` that fail or throttle.
+4. Run the suite in Studio before push and in CI via CLI.
+5. Pin a regression: a test that reproduces the bug before the fix.
 
-## Proceso paso a paso
-1. Estructura: `specs/<Sistema>_<aspecto>.spec.lua` espejando `src/`. Un spec por comportamiento, nombre que dice qué verifica.
-2. Usa `describe/it/expect` canónicos de TestEZ; cada `it` verifica UNA cosa con nombre en presente ("retorna Epic al llegar a pity 50").
-3. Aísla con mocks: sustituye servicios por dobles inyectados (tablas con la misma interfaz). Nunca pegues a datos reales desde tests.
-4. Fija semilla de RNG en tests de probabilidad; las aserciones de distribución usan conteos, no un roll individual.
-5. Añade lifecycle hooks (`beforeEach/afterEach`) que limpien conexiones, tablas y Tags para que los specs no interfieran.
-6. Crea UN script runner de tests (`run-testez.sh` o equivalente) que use el mismo comando en local y en CI. Documenta cómo correr 1 spec y toda la suite.
-7. Ejecuta en Studio (`TestService`) durante desarrollo para iterar rápido; valida en CLI/headless para CI. Ambos deben dar el mismo resultado.
-8. Mide qué testear por sistema con la matriz: puros (100% ramas), componentes (ciclo + fugas), datos (reintento + degradación), UI-lógica (estados, no píxeles).
-9. Ante bug: escribe primero el test que falla, luego el fix, y deja el test como regresión. Sin test, el fix no se mergea.
+## Step-by-step process
+1. Structure: `specs/<System>_<aspect>.spec.lua` mirroring `src/`. One spec per behavior, with a name that says what it verifies.
+2. Use canonical TestEZ `describe/it/expect`; each `it` verifies ONE thing with a present-tense name ("returns Epic when reaching pity 50").
+3. Isolate with mocks: replace services with injected doubles (tables with the same interface). Never touch real data from tests.
+4. Pin the RNG seed in probability tests; distribution assertions use counts, not a single roll.
+5. Add lifecycle hooks (`beforeEach/afterEach`) that clean up connections, tables, and Tags so specs don't interfere.
+6. Create ONE test runner script (`run-testez.sh` or equivalent) that uses the same command locally and in CI. Document how to run 1 spec and the whole suite.
+7. Run in Studio (`TestService`) for fast iteration during development; validate in CLI/headless for CI. Both must give the same result.
+8. Measure what to test per system with the matrix: pure modules (100% branches), components (lifecycle + leaks), data (retry + degradation), UI logic (states, not pixels).
+9. On a bug: first write the failing test, then the fix, and keep the test as a regression. Without the test, the fix doesn't merge.
 
-## Conocimientos técnicos
-- TestEZ corre bajo `TestService`; los specs son `ModuleScript` que retornan función `describe`. El runner los descubre por convención de nombres.
-- Mocks: pasa dependencias por parámetro (constructor/`Init`) para poder inyectar dobles. El código no testeable suele ser código acoplado a globales.
-- `CollectionService` en tests: usa Tag temporal único por spec (ej. `Test_Spin_<id>`) y límpialo en `afterEach` para no contaminar Studio.
-- Servicios de datos: mock con modos (ok / falla N veces / throttling) para verificar reintentos de `roblox-error-handling`.
-- `BindableEvent` en tests mismo contexto: sirve para verificar que el sistema emite lo esperado sin red.
-- Cobertura útil > cobertura total: exige ramas de guardas, pity, reintentos y `onRemoved`; no persigas 100% de líneas cosméticas.
-- Tiempo: cada spec debe correr en ms; si un test necesita `task.wait` largos, es test de integración, sepáralo y márcalo.
+## Technical knowledge
+- TestEZ runs under `TestService`; specs are `ModuleScript`s returning a `describe` function. The runner discovers them by naming convention.
+- Mocks: pass dependencies as parameters (constructor/`Init`) so doubles can be injected. Code that can't be tested is usually code coupled to globals.
+- `CollectionService` in tests: use a unique temporary Tag per spec (e.g. `Test_Spin_<id>`) and clean it in `afterEach` so Studio isn't contaminated.
+- Data services: mock with modes (ok / fails N times / throttling) to verify `roblox-error-handling` retries.
+- `BindableEvent` in same-context tests: verifies the system emits what's expected without networking.
+- Useful coverage > total coverage: demand branches on guards, pity, retries, and `onRemoved`; don't chase 100% of cosmetic lines.
+- Timing: each spec should run in ms; if a test needs long `task.wait`s, it's an integration test — separate it and label it.
 
-Ejemplo ilustrativo (spec de pity):
+Illustrative example (pity spec):
 
 ```luau
--- specs/Loot_pity.spec.lua (ilustrativo)
+-- specs/Loot_pity.spec.lua (illustrative)
 return function()
 	local Loot = require(game.ReplicatedStorage.src.LootConfig)
 
@@ -63,7 +63,7 @@ return function()
 end
 ```
 
-Ejemplo ilustrativo (mock de datastore con fallos):
+Illustrative example (mock datastore with failures):
 
 ```luau
 -- Ilustrativo: doble que falla 2 veces
@@ -80,46 +80,46 @@ local function flakyStore(failures: number)
 end
 ```
 
-Ejemplo ilustrativo (runner único):
+Illustrative example (single runner):
 
 ```bash
-# run-testez.sh (ilustrativo)
+# run-testez.sh (illustrativo)
 set -e
 rojo build default.project.json -o build/test.rbxlx
 run-in-roblox --place build/test.rbxlx --run TestService # adapta a tu runner CLI
 ```
 
-## Buenas prácticas
-- Un `it`, una aserción conceptual. Nombres que leídos en lista cuentan la especificación.
-- Tests deterministas: semilla fija, sin red, sin tiempo real salvo marcado.
-- Limpieza obsesiva en `afterEach`: conexiones, Tags, tablas globales de test.
-- Fija el bug con test primero; documenta el ID del bug en el spec si ayuda.
-- Suite rápida (<2 min). Lo lento va a nightly, no al PR.
+## Best practices
+- One `it`, one conceptual assertion. Names that read as a list tell the specification.
+- Deterministic tests: pinned seed, no network, no real time except when labeled.
+- Obsessive cleanup in `afterEach`: connections, Tags, global test tables.
+- Pin the bug with a test first; document the bug ID in the spec if it helps.
+- Fast suite (<2 min). Slow stuff goes to nightly, not the PR.
 
-## Errores frecuentes
-1. Pegar a `DataStoreService` real desde tests: datos corruptos y tests flaky. Siempre mock.
-2. RNG sin semilla: test que pasa 9/10 veces. Fija semilla y aserta distribución, no un caso.
-3. Specs que comparten estado global: orden-dependientes. `beforeEach` crea, `afterEach` destruye.
-4. Tags de test que quedan en el place: contaminan siguientes runs. Limpia en `afterEach`.
-5. Solo tests "felices": el pity, el reintento y el `onRemoved` sin cubrir. Testea bordes y fallos.
-6. Runner distinto en local y CI: "aquí pasa". Un único script compartido.
-7. Tests lentos con `task.wait(5)` en el path del PR: todos evitan correrlos. Sepáralos como integración.
+## Common mistakes
+1. Hitting real `DataStoreService` from tests: corrupt data and flaky tests. Always mock.
+2. Unseeded RNG: a test that passes 9/10 times. Pin the seed and assert distribution, not one case.
+3. Specs sharing global state: order-dependent. `beforeEach` creates, `afterEach` destroys.
+4. Test Tags left in the place: contaminate later runs. Clean in `afterEach`.
+5. Only "happy" tests: pity, retry, and `onRemoved` uncovered. Test edges and failures.
+6. Different runner locally vs CI: "works here". One shared script.
+7. Slow tests with `task.wait(5)` in the PR path: everyone avoids running them. Separate as integration.
 
-## Criterios de calidad y terminado
-- [ ] Estructura `specs/` espeja `src/`; cada sistema crítico tiene spec.
-- [ ] Mocks para todo borde externo; cero llamadas reales en la suite del PR.
-- [ ] `beforeEach`/`afterEach` limpian estado; la suite pasa en cualquier orden y 3 veces seguidas.
-- [ ] Mismo comando local = CI, documentado en README.
-- [ ] Regresiones fijadas con test que fallaba antes del fix (evidencia en el PR).
-- [ ] Tiempo de suite del PR <2 min o desglose nightly justificado.
+## Quality and done criteria
+- [ ] `specs/` structure mirrors `src/`; every critical system has a spec.
+- [ ] Mocks for every external boundary; zero real calls in the PR suite.
+- [ ] `beforeEach`/`afterEach` clean state; the suite passes in any order 3 times in a row.
+- [ ] Same command locally = CI, documented in README.
+- [ ] Pinned regressions with a test that failed before the fix (evidence in the PR).
+- [ ] PR suite time <2 min or justified nightly split.
 
-## Herramientas
-- TestEZ bajo `TestService` como runner base.
-- `ModuleScript` + `require` con inyección para mocks.
-- `CollectionService` / `BindableEvent` como puntos de prueba intra-contexto.
-- Git + CI para puerta (ver `roblox-ci-cd`, `roblox-code-review`).
+## Tools
+- TestEZ under `TestService` as the base runner.
+- `ModuleScript` + `require` with injection for mocks.
+- `CollectionService` / `BindableEvent` as same-context test points.
+- Git + CI as gate (see `roblox-ci-cd`, `roblox-code-review`).
 
-## Limitaciones
-- No cubre multicliente ni UI visual; deriva a `roblox-multiplayer-testing` y `roblox-ui-testing`.
-- El runner CLI exacto depende del stack del equipo; adapta el script y verifica.
-- Si dudas de APIs de TestEZ o del runner, anota `(verificar en create.roblox.com/docs)`.
+## Limitations
+- Does not cover multi-client or visual UI; defer to `roblox-multiplayer-testing` and `roblox-ui-testing`.
+- The exact CLI runner depends on the team's stack; adapt the script and verify.
+- If you doubt TestEZ or runner APIs, note "(verify at create.roblox.com/docs)".

@@ -1,98 +1,98 @@
 ---
 name: roblox-lighting-day-night
-description: Configura ciclos día/noche legibles con sol, luna, sombras e interiores nocturnos. Úsala cuando necesites ClockTime, transiciones, sombras o legibilidad nocturna.
+description: Set up readable day/night cycles with sun, moon, shadows, and night interiors. Use it when you need ClockTime, transitions, shadows, or night readability.
 ---
 
-# Iluminación diurna y nocturna en Roblox
+# Day and Night Lighting in Roblox
 
-## Objetivo
+## Objective
 
-Montar un ciclo día/noche que oriente (hora legible), emocione (amanecer/mediodía/atardecer/noche distintos) y mantenga el juego legible de noche sin freír mobile.
+Build a day/night cycle that orients (readable time), moves (distinct dawn/noon/dusk/night), and keeps the game readable at night without frying mobile.
 
-## Alcance y límites
+## Scope and limits
 
-Hace: esquema de Lighting por franja, ClockTime y transiciones, sol/luna y sombras, legibilidad nocturna, interiores de noche, presupuestos de luces.
+Does: Lighting scheme per band, ClockTime and transitions, sun/moon and shadows, night readability, interiors at night, light budgets.
 
-NO hace:
+Does NOT do:
 
-- Atmósfera, niebla, lluvia y post-efectos → `roblox-lighting-atmosphere`.
-- Efectos ambientales (luciérnagas, polvo) → `roblox-ambient-effects`.
-- Materiales y variantes → `roblox-materials-surfaces`.
-- Distribución de farolas y señalética → `roblox-props-decoration`.
-- Interiores (zonas, mobiliario) → `roblox-interior-design`.
+- Atmosphere, fog, rain, and post-effects → `roblox-lighting-atmosphere`.
+- Ambient effects (fireflies, dust) → `roblox-ambient-effects`.
+- Materials and variants → `roblox-materials-surfaces`.
+- Lamppost and signage placement → `roblox-props-decoration`.
+- Interiors (zones, furniture) → `roblox-interior-design`.
 
-Diferenciación declarada: `roblox-world-building` (instalada) es generalista y fina (154 líneas sin auxiliares); esta skill es su versión profunda por especialidad (solo luz día/noche). `roblox-visual-design` y `roblox-art-direction` dirigen (aprueban mood por franja); esta skill ejecuta (parametriza y presupuesta).
+Declared differentiation: `roblox-world-building` (installed) is a concise generalist (154 lines with no helpers); this skill is its deep specialty version (day/night light only). `roblox-visual-design` and `roblox-art-direction` direct (approve mood per band); this skill executes (parameterizes and budgets).
 
-## Casos de uso
+## Use cases
 
-1. Juego nuevo que necesita 4 franjas (mañana/mediodía/atardecer/noche) coherentes.
-2. Noche actual injugable: todo negro o todo quemado.
-3. Interiores que de noche se apagan con el sol.
-4. Sombras que hunden mobile.
-5. Transición día→noche con saltos visibles.
+1. New game needing 4 coherent bands (morning/noon/dusk/night).
+2. Currently unplayable night: all black or all blown out.
+3. Interiors that go dark at night with the sun.
+4. Shadows sinking mobile.
+5. Day→night transition with visible jumps.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define 4 franjas con frase.** Ej. "mañana fresca", "mediodía duro", "atardecer cálido", "noche azul legible". Fija ClockTime por franja (puntos de partida: 8, 13, 18, 0 — no verdad). Captura cada una desde el mismo punto.
-2. **Fija luz base diurna.** Ambiente claro que lava sombras + sol direccional con sombras activas. Verifica: cara norte de un edificio sigue legible (sin negro puro) a mediodía.
-3. **Diseña la noche como "día azul", no como apagón.** Base azulada tenue + farolas cálidas puntuales. Regla: ruta principal caminable sin linterna; secundarias pueden exigirla.
-4. **Presupuesta luces.** Punto de partida: 1 PointLight cada 15–20 studs en ruta, SpotLight solo en hitos, SurfaceLight en fondos. Cuenta por chunk; si un chunk supera el presupuesto, apaga primero las redundantes (dos luces solapando el mismo radio).
-5. **Resuelve interiores de noche.** Capa interior (PointLight tenue + SpotLight de tarea) independiente del sol, con interruptor lógico día/noche (más intensa de noche). Test: interior legible con exterior de noche cerrada.
-6. **Sombras bajo control.** Sombras activas en sol/luna principal; PointLight/SpotLight sin sombras salvo 1–2 heroicas. En mobile, reduce distancia/alcance antes que apagar el sol.
-7. **Transiciones suaves.** Cambia ClockTime y colores por interpolación en pasos pequeños (punto de partida: ciclo completo ≥5 min reales). Verifica: graba 30 s de atardecer; sin saltos ni parpadeos.
-8. **Sol y luna como brújula.** Amanecer este / atardecer oeste consistentes; luna punto de partida opuesta al sol. Documenta orientación para que landmarks la aprovechen.
-9. **Prueba de legibilidad ciega.** Jugador nuevo de noche: encuentra salida, lee 3 letreros y cruza la plaza sin ayuda. Si falla, sube base nocturna antes de añadir más farolas.
-10. **Congela presets.** Guarda 4 presets nombrados (`LUZ_Manana`, `LUZ_Mediodia`, `LUZ_Atardecer`, `LUZ_Noche`) con valores y capturas desde 3 puntos fijos. Cualquier cambio posterior se compara contra ellos.
+1. **Define 4 bands with a phrase.** E.g. "fresh morning", "harsh noon", "warm dusk", "readable blue night". Set ClockTime per band (starting points: 8, 13, 18, 0 — not truth). Capture each from the same spot.
+2. **Set base daylight.** Clear ambient washing shadows + directional sun with shadows on. Verify: a building's north face still reads (no pure black) at noon.
+3. **Design night as "blue day", not blackout.** Faint bluish base + warm punctual lampposts. Rule: main route walkable with no lantern; side paths may require one.
+4. **Budget lights.** Starting point: 1 PointLight every 15–20 studs on route, SpotLight only on landmarks, SurfaceLight on backdrops. Count per chunk; if a chunk exceeds budget, first turn off redundant ones (two lights overlapping the same radius).
+5. **Solve interiors at night.** Interior layer (dim PointLight + task SpotLight) independent of the sun, with day/night logic (brighter at night). Test: interior readable with night outside.
+6. **Shadows under control.** Active shadows on main sun/moon; PointLight/SpotLight without shadows except 1–2 hero lights. On mobile, reduce distance/range before turning off the sun.
+7. **Smooth transitions.** Change ClockTime and colors by interpolation in small steps (starting point: full cycle ≥5 real min). Verify: record 30 s of dusk; no jumps or flicker.
+8. **Sun and moon as compass.** Consistent east dawn / west dusk; starting moon opposite the sun. Document orientation so landmarks use it.
+9. **Blind readability test.** New player at night: finds exit, reads 3 signs, and crosses the plaza with no help. If it fails, raise night base before adding more lampposts.
+10. **Freeze presets.** Save 4 named presets (`LUZ_Morning`, `LUZ_Noon`, `LUZ_Dusk`, `LUZ_Night`) with values and captures from 3 fixed points. Every later change compares against them.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Lighting: contenedor global (ambiente, luz direccional sol/luna, ClockTime). Todos los presets viven aquí; documenta cada valor cambiado.
-- ClockTime: hora del ciclo (puntos de partida 8/13/18/0, no verdad). Cambios bruscos rompen inmersión; interpola siempre.
-- PointLight: base nocturna y farolas; rango punto de partida 20–30, brillo bajo. El coste escala con conteo y solape.
-- SpotLight: hitos y tareas; ángulo punto de partida 40–60 (punto de partida). Sin sombras salvo casos heroicos.
-- SurfaceLight: fondos y paredes guía de noche; barata para lavar superficies grandes.
-- Sombras: la sombra direccional (sol/luna) da profundidad; las sombras de 20 farolas la quitan en mobile. Prioriza una fuente con sombra.
-- BloomEffect/ColorCorrectionEffect con moderación (detalle en `roblox-lighting-atmosphere`); aquí solo lo imprescindible para legibilidad.
+- Lighting: global container (ambient, directional sun/moon light, ClockTime). All presets live here; document every changed value.
+- ClockTime: time of cycle (starting points 8/13/18/0, not truth). Abrupt changes break immersion; always interpolate.
+- PointLight: night base and lampposts; starting range 20–30, low brightness. Cost scales with count and overlap.
+- SpotLight: landmarks and tasks; starting angle 40–60 (starting point). No shadows except hero cases.
+- SurfaceLight: backdrops and guide walls at night; cheap for washing large surfaces.
+- Shadows: directional shadow (sun/moon) gives depth; shadows from 20 lampposts kill it on mobile. Prioritize one shadow source.
+- BloomEffect/ColorCorrectionEffect in moderation (detail in `roblox-lighting-atmosphere`); here only the minimum for readability.
 
-## Buenas prácticas
+## Best practices
 
-- Noche legible > noche realista: un poco de trampa azul vale por 20 farolas.
-- Cálido vs frío: farolas cálidas sobre base fría = profundidad instantánea.
-- Repite temperatura por distrito para orientación (puerto frío, forja cálida).
-- Mide en el peor dispositivo: la noche que va bien en PC puede ser un charco negro en móvil barato.
-- Capturas siempre desde los mismos 3 puntos para comparar franjas.
+- Readable night > realistic night: a little blue cheating beats 20 lampposts.
+- Warm vs. cold: warm lampposts over a cold base = instant depth.
+- Repeat temperature per district for orientation (cold harbor, warm forge).
+- Measure on the worst device: night that works on PC can be a black puddle on cheap mobile.
+- Always capture from the same 3 points to compare bands.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Noche-apagón.** Base a cero y 3 farolas. Corrección: sube base azulada hasta caminar sin linterna en ruta principal.
-2. **Mediodía quemado.** Todo blanco sin sombra legible. Corrección: baja intensidad y refuerza ambiente de relleno.
-3. **20 farolas con sombra.** Mobile arrodillado. Corrección: sombras solo en sol/luna + 1 heroica.
-4. **Interior esclavo del sol.** De noche, interior negro. Corrección: capa interior independiente más intensa de noche.
-5. **Salto de las 18:00.** Transición instantánea. Corrección: interpolación en ciclo ≥5 min.
-6. **Letreros ilegibles de noche.** Sin luz dedicada. Corrección: SurfaceLight o SpotLight por letrero clave (con `roblox-props-decoration`).
-7. **Sol que cambia de este a oeste.** Incoherencia entre mapas. Corrección: documenta orientación y respétala.
+1. **Blackout night.** Base at zero and 3 lampposts. Fix: raise bluish base until the main route walks with no lantern.
+2. **Blown-out noon.** All white with no readable shadow. Fix: lower intensity and reinforce fill ambient.
+3. **20 lampposts with shadows.** Mobile on its knees. Fix: shadows only on sun/moon + 1 hero.
+4. **Interior enslaved to the sun.** At night, black interior. Fix: independent interior layer, brighter at night.
+5. **6 PM jump.** Instant transition. Fix: interpolation over a ≥5 min cycle.
+6. **Unreadable signs at night.** No dedicated light. Fix: SurfaceLight or SpotLight per key sign (with `roblox-props-decoration`).
+7. **Sun switching east to west.** Inconsistent between maps. Fix: document orientation and respect it.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] 4 presets con ClockTime y capturas desde 3 puntos fijos.
-- [ ] Ruta principal caminable de noche sin linterna (test ciego superado).
-- [ ] Interiores legibles con exterior nocturno (3 capturas).
-- [ ] Presupuesto de luces por chunk cumplido y documentado.
-- [ ] Sombras: 1 fuente principal + ≤2 heroicas; resto sin sombras.
-- [ ] Transición grabada 30 s sin saltos.
-- [ ] Orientación sol/luna documentada y consistente.
-- [ ] Peor dispositivo objetivo probado con FPS aceptable.
+- [ ] 4 presets with ClockTime and captures from 3 fixed points.
+- [ ] Main route walkable at night with no lantern (blind test passed).
+- [ ] Interiors readable with night outside (3 captures).
+- [ ] Per-chunk light budget met and documented.
+- [ ] Shadows: 1 main source + ≤2 hero lights; rest without shadows.
+- [ ] 30 s transition recorded with no jumps.
+- [ ] Sun/moon orientation documented and consistent.
+- [ ] Target worst device tested with acceptable FPS.
 
-## Herramientas
+## Tools
 
-- Lighting y ClockTime como controles maestros.
-- PointLight / SpotLight / SurfaceLight con presupuesto por chunk.
-- Post-efectos mínimos (BloomEffect/ColorCorrectionEffect) solo para legibilidad; el resto en `roblox-lighting-atmosphere`.
-- Capturas desde puntos fijos como instrumento de QA.
+- Lighting and ClockTime as master controls.
+- PointLight / SpotLight / SurfaceLight with per-chunk budget.
+- Minimal post-effects (BloomEffect/ColorCorrectionEffect) for readability only; rest in `roblox-lighting-atmosphere`.
+- Captures from fixed points as QA instrument.
 
-## Limitaciones
+## Limitations
 
-- No cubre niebla, lluvia ni post-efectos creativos (ver skill de atmósfera).
-- Valores de ClockTime, rangos y ángulos son puntos de partida, no verdad.
-- Si dudas de una propiedad exacta, escribe "(verificar en create.roblox.com/docs)" y no la afirmes.
-- Distingue referencia visual (foto de atardecer) de preset importable: el preset solo existe si está guardado y capturado.
+- No fog, rain, or creative post-effects (see atmosphere skill).
+- ClockTime values, ranges, and angles are starting points, not truth.
+- If unsure about an exact property, write "(see create.roblox.com/docs)" and don't assert it.
+- Distinguish visual reference (dusk photo) from importable preset: the preset only exists if saved and captured.

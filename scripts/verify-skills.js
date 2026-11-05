@@ -7,7 +7,7 @@ const DIRS = [
   { scope: 'instalada', base: path.join(ROOT, '.agents', 'skills') },
   { scope: 'propia', base: path.join(ROOT, '.opencode', 'skills') },
 ];
-const REQUIRED_HEADERS = ['## Objetivo', '## Alcance', '## Casos de uso', '## Proceso', '## Buenas pr', '## Errores frecuentes', '## Criterios', '## Limitaciones'];
+const REQUIRED_HEADERS = ['## Objective', '## Scope', '## Use cases', '## Step-by-step', '## Best pr', '## Common', '## Quality', '## Limitations'];
 let failures = 0;
 const ids = new Set();
 const rows = [];

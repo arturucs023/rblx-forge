@@ -1,50 +1,50 @@
 ---
 name: roblox-rarity-collectibles
-description: Tiers de rareza, odds transparentes, pity y duplicados para coleccionables. Úsala cuando diseñes gacha, sobres, drops o showcases conformes a políticas.
+description: Rarity tiers, transparent odds, pity, and duplicates for collectibles. Use it when designing policy-compliant gacha, packs, drops, or showcases.
 ---
 
-# Rarezas y Coleccionables
+# Rarity and Collectibles
 
-## Objetivo
-Diseñar sistemas de rareza y colección rentables y conformes a políticas: tiers legibles, probabilidades transparentes, pity verificable, gestión de duplicados y showcase social, sin loot opaco ni presión abusiva.
+## Objective
+Design profitable, policy-compliant rarity and collection systems: readable tiers, transparent odds, verifiable pity, duplicate handling, and social showcase, with no opaque loot or abusive pressure.
 
-## Alcance y límites
-Diferenciación: `roblox-core` y `roblox-datastores` cubren persistencia de inventario; esta skill cubre ingeniería de rareza (odds, pity, duplicados, showcase). `luau-core`/`luau-types` cubren implementación base; aquí se cubre diseño + conformidad.
+## Scope and limits
+Differentiation: `roblox-core` and `roblox-datastores` cover inventory persistence; this skill covers rarity engineering (odds, pity, duplicates, showcase). `luau-core`/`luau-types` cover base implementation; design + compliance is covered here.
 
-Qué NO hace:
+What it does NOT do:
 
-- NO implementa tiendas ni precios (eso es economía general, fuera de esta skill).
-- NO persiste inventario por ti; define qué guardar y deriva el cómo a `roblox-datastores`.
-- NO da asesoría legal; ante duda de política, bloquea el diseño y verifica.
+- It does NOT implement shops or pricing (that is general economy, outside this skill).
+- It does NOT persist inventory for you; it defines what to save and defers how to `roblox-datastores`.
+- It does NOT give legal advice; when in doubt about policy, block the design and verify.
 
-## Casos de uso
-1. Sobres/cajas con tiers Común→Legendario y odds públicas.
-2. Drops de enemigos con pity para rachas malas.
-3. Sistema de duplicados → polvo/fragmentos canjeables.
-4. Álbum/colección completables con showcase.
-5. Eventos temporales con items exclusivos y comunicación clara.
+## Use cases
+1. Packs/crates with Common→Legendary tiers and public odds.
+2. Enemy drops with pity for bad streaks.
+3. Duplicate system → redeemable dust/fragments.
+4. Completable album/collection with showcase.
+5. Temporary events with exclusive items and clear communication.
 
-## Proceso paso a paso
-1. Define tiers (máx. 5-6) con nombre, color, peso y utilidad real. Si un tier no cambia gameplay ni colección, fusiónalo.
-2. Publica odds en el juego antes de la compra/apertura (porcentaje por tier, no solo "raro"). Sin odds visibles no se lanza.
-3. Implementa pity explícito: a N aperturas sin tier X, garantía. Documenta N y resetea al obtenerlo. Testea el límite.
-4. Diseña duplicados desde el día 1: conversión (3 comunes → 1 raro, polvo → tienda) con tabla pública. Nada de duplicado inútil.
-5. Separa pagado de ganado donde la política lo exija; registra fuente por item para auditoría.
-6. Construye showcase: álbum, vitrina, inspeccionar colección ajena. La colección es social, no solo inventario.
-7. Añade protecciones: confirmación en aperturas pagadas, límites por sesión, historial de aperturas visible.
-8. Valida conformidad: revisa políticas vigentes de loot/pagos aleatorios (anota `(verificar en create.roblox.com/docs)` y en políticas de la plataforma) y guarda la revisión con fecha.
-9. Testea distribución: simulación de 10k aperturas compara observado vs teórico por tier; pity dispara en el N exacto.
+## Step-by-step process
+1. Define tiers (max. 5-6) with name, color, weight, and real utility. If a tier changes neither gameplay nor collection, merge it.
+2. Publish odds in-game before purchase/opening (percentage per tier, not just "rare"). No launch without visible odds.
+3. Implement explicit pity: after N openings without tier X, guarantee it. Document N and reset on hit. Test the limit.
+4. Design duplicates from day 1: conversion (3 commons → 1 rare, dust → shop) with a public table. No useless duplicates.
+5. Separate paid from earned where policy requires; record source per item for audit.
+6. Build showcase: album, display case, inspecting others' collections. Collection is social, not just inventory.
+7. Add protections: confirmation on paid openings, per-session limits, visible opening history.
+8. Validate compliance: review current loot/random-payment policies (note `(verify in create.roblox.com/docs)` and platform policies) and record the review with a date.
+9. Test distribution: 10k-opening simulation compares observed vs. theoretical per tier; pity fires at the exact N.
 
-## Conocimientos técnicos
-- Tabla de loot como datos (`ModuleScript` de config): `{ Tier, Peso, Items[] }`. El código de sorteo solo lee la tabla; diseñadores ajustan sin tocar lógica.
-- Sorteo por peso acumulado con RNG centralizado; semilla fija en tests para reproducibilidad.
-- Pity como contador por jugador y pool (`aberturasSinX`). Persiste con el inventario (ver `roblox-datastores`); si se pierde el pity, se pierde confianza.
-- Duplicados: al obtener item ya poseído, aplica conversión automática + log visible ("Duplicado → +50 polvo").
-- `Attributes` para mostrar rareza en el mundo (`Rarity`, `Tier`) sin acoplar UI a jerarquías.
-- `OrderedDataStore` para rankings de colección si hay leaderboards; `DataStoreService` para inventario + pity (con `pcall` + reintento, ver `roblox-error-handling`).
-- Transparencia: las odds mostradas deben ser las del código. Genera la UI desde la misma tabla de config, no de textos duplicados.
+## Technical knowledge
+- Loot table as data (`ModuleScript` config): `{ Tier, Weight, Items[] }`. The roll code only reads the table; designers tune without touching logic.
+- Weight-accumulated roll with centralized RNG; fixed seed in tests for reproducibility.
+- Pity as a per-player, per-pool counter (`openingsWithoutX`). It persists with inventory (see `roblox-error-handling`); if pity is lost, trust is lost.
+- Duplicates: when an already-owned item is obtained, apply automatic conversion + visible log ("Duplicate → +50 dust").
+- `Attributes` to show rarity in the world (`Rarity`, `Tier`) without coupling UI to hierarchies.
+- `OrderedDataStore` for collection rankings if there are leaderboards; `DataStoreService` for inventory + pity (with `pcall` + retry, see `roblox-error-handling`).
+- Transparency: displayed odds must be the code's odds. Generate the UI from the same config table, not from duplicated text.
 
-Ejemplo ilustrativo (tabla de loot + sorteo):
+Illustrative example (loot table + roll):
 
 ```luau
 -- ModuleScript: LootConfig (ilustrativo)
@@ -73,7 +73,7 @@ end
 return LootConfig
 ```
 
-Ejemplo ilustrativo (pity):
+Illustrative example (pity):
 
 ```luau
 -- Ilustrativo: contador por jugador
@@ -90,37 +90,37 @@ local function applyPity(playerState, rolled: string): string
 end
 ```
 
-## Buenas prácticas
-- Menos tiers, más claros. 4 tiers legibles > 8 confusos.
-- Odds con 1 decimal y visibles antes del pago. Nada de "probabilidad aumentada" sin números.
-- Pity documentado en el juego, no solo en un doc interno.
-- Todo item pagado-aleatorio tiene alternativa ganable o canje por duplicados.
-- Historial de aperturas consultable por el jugador.
+## Best practices
+- Fewer, clearer tiers. 4 readable tiers > 8 confusing ones.
+- Odds with 1 decimal, visible before payment. No "increased chance" without numbers.
+- Pity documented in-game, not just in an internal doc.
+- Every paid-random item has an earnable alternative or duplicate redemption.
+- Player-visible opening history.
 
-## Errores frecuentes
-1. Odds en texto UI distintas a las del código: fraude aunque sea accidental. Genera UI desde la misma config.
-2. Pity que se resetea mal (o no persiste): el jugador con mala racha nunca recibe garantía. Testea persistencia del contador.
-3. Duplicado sin valor: el jugador paga por nada. Conversión pública desde el lanzamiento.
-4. Tier nuevo que invalida colección previa sin aviso: quema confianza. Comunica y compensa.
-5. RNG por apertura con semillas correlacionadas (misma semilla por frame): rachas artificiales. Centraliza RNG.
-6. Evento "exclusivo" que vuelve sin avisar: acusa engaño. Define y comunica si es exclusivo o rotativo.
-7. Sin límites ni confirmaciones en aperturas pagadas: compras accidentales y reembolsos. Confirma + limita por sesión.
+## Common mistakes
+1. UI-text odds different from code odds: fraud even if accidental. Generate UI from the same config.
+2. Pity that resets wrongly (or does not persist): the unlucky player never gets the guarantee. Test counter persistence.
+3. Worthless duplicate: the player pays for nothing. Public conversion since launch.
+4. New tier that invalidates a previous collection without warning: burns trust. Communicate and compensate.
+5. Correlated-seed RNG per opening (same seed per frame): artificial streaks. Centralize RNG.
+6. "Exclusive" event that returns without warning: feels like deception. Define and communicate whether it is exclusive or rotating.
+7. No limits or confirmations on paid openings: accidental purchases and refunds. Confirm + limit per session.
 
-## Criterios de calidad y terminado
-- [ ] Tabla de loot única que alimenta código y UI (cero duplicación de odds).
-- [ ] Odds visibles pre-apertura y pity documentado con N exacto.
-- [ ] Simulación 10k aperturas: desviación por tier dentro del margen definido + pity verificado.
-- [ ] Duplicados con conversión pública y log visible al jugador.
-- [ ] Revisión de conformidad fechada con enlaces a políticas verificadas.
-- [ ] Inventario + pity persisten y sobreviven a rejoin (derivar implementación a `roblox-datastores`).
+## Quality and done criteria
+- [ ] Single loot table feeding code and UI (zero odds duplication).
+- [ ] Odds visible pre-opening and pity documented with exact N.
+- [ ] 10k-opening simulation: per-tier deviation within the defined margin + verified pity.
+- [ ] Duplicates with public conversion and player-visible log.
+- [ ] Dated compliance review with links to verified policies.
+- [ ] Inventory + pity persist and survive rejoin (implementation deferred to `roblox-datastores`).
 
-## Herramientas
-- `ModuleScript` de config + `require` como única fuente de odds.
-- `DataStoreService` / `OrderedDataStore` para inventario, pity y rankings.
-- `Attributes` para rareza visible en mundo.
-- `TestService` + TestEZ para simulación de distribución (ver `roblox-testez`).
+## Tools
+- Config `ModuleScript` + `require` as the single source of odds.
+- `DataStoreService` / `OrderedDataStore` for inventory, pity, and rankings.
+- `Attributes` for world-visible rarity.
+- `TestService` + TestEZ for distribution simulation (see `roblox-testez`).
 
-## Limitaciones
-- No sustituye revisión legal ni de políticas; ante cambio de plataforma, re-verifica.
-- No diseña economía de precios ni monetización general.
-- Si dudas de límites de pago o de divulgación exigida, anota `(verificar en create.roblox.com/docs)` y bloquea lanzamiento.
+## Limitations
+- Not a substitute for legal or policy review; when the platform changes, re-verify.
+- Does not design pricing economy or general monetization.
+- If unsure about payment limits or required disclosure, note `(verify in create.roblox.com/docs)` and block launch.

@@ -1,90 +1,90 @@
 ---
 name: roblox-vehicle-systems
-description: Vehículos como gameplay con garaje, combustible, daño y robo validado. Úsala cuando necesites coches, barcos o monturas con propiedad y persistencia.
+description: Vehicles as gameplay with garage, fuel, damage, and validated theft. Use it when you need cars, boats, or mounts with ownership and persistence.
 ---
 
-# Sistemas de Vehículos (Gameplay)
+# Vehicle Systems (Gameplay)
 
-## Objetivo
-Implementar vehículos divertidos y estables: spawn/garaje, conducción arcade legible, combustible/daño/reparación y robo o préstamo entre jugadores con validación total en servidor.
+## Objective
+Implement fun, stable vehicles: spawn/garage, legible arcade driving, fuel/damage/repair, and theft or lending between players with full server-side validation.
 
-## Alcance y límites
-Cubre propiedad, spawn/despawn, daño/combustible, asientos, robo validado y garaje.
-Diferenciación declarada: `roblox-game-systems` (instalada) es recetario fino; esta skill es la versión profunda con propiedad, persistencia y anti-robo por exploit. NO cubre tuning físico de constraints al detalle (usa `Constraints` estables y verifica en create.roblox.com/docs), ni combate vehicular con armas (lo cubre `roblox-combat-systems`), ni economía de precios de coches (lo cubre `roblox-economy-balancing`). `roblox-genre-patterns` no profundiza.
+## Scope and limits
+Covers ownership, spawn/despawn, damage/fuel, seats, validated theft, and garage.
+Declared differentiation: `roblox-game-systems` (installed) is a thin recipe book; this skill is the deep version with ownership, persistence, and anti-exploit theft. Does NOT cover fine constraint tuning in detail (use stable `Constraints` and verify at create.roblox.com/docs), nor vehicular combat with weapons (covered by `roblox-combat-systems`), nor car pricing economy (covered by `roblox-economy-balancing`). `roblox-genre-patterns` doesn't go deep.
 
-## Casos de uso
-- Coche propio con garaje y spawn por botón.
-- Barco compartido por equipo con asientos.
-- Montura rápida con stamina propia.
-- Robo PvP con ganzúa y alarma.
-- Taxi/mecánico como rol con tarifa.
+## Use cases
+- Own car with garage and button spawn.
+- Team-shared boat with seats.
+- Fast mount with its own stamina.
+- PvP theft with lockpick and alarm.
+- Taxi/mechanic as a role with fare.
 
-## Bucle de juego o sistema (diseño)
-1. Comprar/desbloquear vehículo (garaje).
-2. Spawnear en punto válido y conducir (objetivo: transporte, reparto, huida).
-3. Gestionar combustible/daño (repostar/reparar como sink).
-4. Riesgo PvP: aparcar, bloquear, robo con minijuego.
-5. Mejorar (velocidad/blindaje) y presumir.
-Balance de ejemplo: coche base 60 studs/s, deportivo 95, consumo 1%/8 s en marcha, tanque 100 = ~13 min; reparación 40% del precio cada destrucción total; robo tarda 8 s con `ProximityPrompt` + ruido a 60 m; si el vehículo reduce tiempos de viaje >60%, sube coste o añade zonas no-vehiculares.
+## Game or system loop (design)
+1. Buy/unlock vehicle (garage).
+2. Spawn at a valid point and drive (goal: transport, delivery, escape).
+3. Manage fuel/damage (refuel/repair as sink).
+4. PvP risk: park, lock, theft with minigame.
+5. Upgrade (speed/armor) and show off.
+Example balance: base car 60 studs/s, sport 95, consumption 1%/8s on the move, tank 100 ≈ 13 min; repair 40% of price per total destruction; theft takes 8s with `ProximityPrompt` + noise at 60 m; if the vehicle cuts travel times by >60%, raise cost or add non-vehicle zones.
 
-## Proceso paso a paso
-1. Define `VehicleDefs`: `id`, `velMax`, `acel`, `asientos`, `combustibleMax`, `consumo`, `hp`, `permiteRobo`, `precio`.
-2. Garaje por jugador: lista poseída + equipado; `RemoteFunction SpawnVehicle(id)` valida propiedad.
-3. Spawn en servidor en punto libre (chequeo `OverlapParams`); asigna `Attributes` (`OwnerId`, `Locked`, `Fuel`, `HP`).
-4. Conducción: `VehicleSeat` o `Seat` + `Attributes` de control; cliente conduce por replicación física, servidor valida posición/velocidad.
-5. Daño/combustible en servidor por tick (cada 1 s, no cada frame); a 0 HP → humo, a 0 fuel → apagado; reparación solo en taller o con kit.
-6. Robo: `ProximityPrompt` con `HoldDuration` 8 s, requiere dueño ausente >15 m o vehículo desbloqueado; servidor transfiere `DriverRights` temporales, no propiedad.
-7. Despawn: auto a los 120 s sin conductor + guarda fuel/HP; limpieza con `CollectionService` tag `Vehicle`.
-8. Permisos: bloquear/desbloquear con `RemoteEvent ToggleLock`; solo dueño; pasajeros expulsables por dueño.
+## Step-by-step process
+1. Define `VehicleDefs`: `id`, `velMax`, `acel`, `seats`, `fuelMax`, `consumption`, `hp`, `allowsTheft`, `price`.
+2. Garage per player: owned list + equipped; `RemoteFunction SpawnVehicle(id)` validates ownership.
+3. Server-side spawn at a free point (`OverlapParams` check); assign `Attributes` (`OwnerId`, `Locked`, `Fuel`, `HP`).
+4. Driving: `VehicleSeat` or `Seat` + control `Attributes`; client drives via physics replication, server validates position/speed.
+5. Damage/fuel on server per tick (every 1s, not every frame); at 0 HP → smoke, at 0 fuel → engine off; repair only at workshop or with kit.
+6. Theft: `ProximityPrompt` with 8s `HoldDuration`, requires owner absent >15 m or unlocked vehicle; server transfers temporary `DriverRights`, not ownership.
+7. Despawn: auto after 120s with no driver + save fuel/HP; cleanup with `CollectionService` tag `Vehicle`.
+8. Permissions: lock/unlock with `RemoteEvent ToggleLock`; owner only; owner can eject passengers.
 
-## Conocimientos técnicos
-### Qué valida el servidor
-- Propiedad real antes de spawn; límite 1 activo por jugador (2 con pase).
-- Punto de spawn libre y dentro de zona permitida.
-- Conducción: velocidad ≤ velMax + 15% tolerancia; teleports >120 studs/s se corrigen.
-- Robo: distancia, tiempo de hold completo en servidor, dueño no conduciendo, vehículo robable.
-### Persistencia
-- Guarda con `DataStoreService` poseídos, mejoras y `fuel/HP` al despawn; nunca guardes posición exacta salvo garaje fijo.
-- Versiona `vehicles_v1`; migraciones con valores por defecto.
-### Errores/desconexiones
-- Dueño se va: vehículo queda 120 s y despawnea; pasajeros reciben aviso y son expulsados seguros.
-- Pasajero se cae del mundo: respawn a asiento o al lado con fade.
-- Pérdida de `NetworkOwnership`: el servidor reasigna dueño de red al conductor válido; si dudas, verificar en create.roblox.com/docs.
+## Technical knowledge
+### What the server validates
+- Real ownership before spawn; 1 active limit per player (2 with pass).
+- Free spawn point inside an allowed zone.
+- Driving: speed ≤ velMax + 15% tolerance; teleports >120 studs/s corrected.
+- Theft: distance, full hold time on server, owner not driving, stealable vehicle.
+### Persistence
+- Save owned, upgrades, and `fuel/HP` at despawn with `DataStoreService`.
+- Version `vehicles_v1`; migrations with default values.
+### Errors/disconnections
+- Owner leaves: vehicle stays 120s and despawns; passengers get notice and safe ejection.
+- Passenger falls out of the world: respawn to seat or beside with fade.
+- `NetworkOwnership` loss: the server reassigns network owner to the valid driver; if in doubt, verify at create.roblox.com/docs.
 ### Anti-exploit
-- Anti-fly con coche: clamp de Y y velocidad vertical; si sube >8 studs/s sin rampa, corrige y registra.
-- Anti-noclip: colisiones servidor periódicas; ignora inputs imposibles.
-- `ToggleLock` y `SpawnVehicle` con rate-limit 5/s; robo con cooldown 30 s por vehículo.
-- Nunca dejes que el cliente fije `Fuel`/`HP`; solo el servidor escribe esos `Attributes`.
+- Anti-fly with car: clamp Y and vertical speed; if rising >8 studs/s without a ramp, correct and log.
+- Anti-noclip: periodic server collisions; ignore impossible inputs.
+- `ToggleLock` and `SpawnVehicle` with 5/s rate-limit; theft with 30s cooldown per vehicle.
+- Never let the client set `Fuel`/`HP`; only the server writes those `Attributes`.
 
-## Buenas prácticas
-- Arcade antes que simulación: 3–5 parámetros (vel, giro, agarre) bien tuneados.
-- Feedback: velocímetro, barra fuel/HP, sonido motor por pitch, cámara con FOV ligero.
-- Zonas peatonales marcadas; atropello solo si el diseño lo pide y con reglas claras.
-- Asientos con `Seat` + prompt de expulsar; evita atrapar jugadores.
-- LOD y colisiones simples en carrocería para móvil.
+## Best practices
+- Arcade before simulation: 3–5 well-tuned parameters (speed, turn, grip).
+- Feedback: speedometer, fuel/HP bar, engine-pitch sound, slight camera FOV.
+- Marked pedestrian zones; running over only if the design wants it and with clear rules.
+- Seats with `Seat` + eject prompt; don't trap players.
+- LOD and simple body collisions for mobile.
 
-## Errores frecuentes
-1. Fiarse de física cliente sin checks → coches voladores; validar velocidad/posición.
-2. Múltiples spawns por spam → lag y griefing; límite 1 activo + cooldown 5 s.
-3. Robo instantáneo sin hold → frustración; hold 6–10 s + alarma.
-4. Fuel por frame con floats → deriva; tick 1 s con enteros 0–100.
-5. Vehículo persistente con posición → atascos al cargar; spawnear siempre en garaje/punto libre.
+## Common mistakes
+1. Trusting client physics without checks → flying cars; validate speed/position.
+2. Multiple spawns from spam → lag and griefing; 1 active limit + 5s cooldown.
+3. Instant theft without hold → frustration; 6–10s hold + alarm.
+4. Per-frame fuel with floats → drift; 1s tick with 0–100 integers.
+5. Persistent vehicle with position → stuck on load; always spawn at garage/free point.
 
-## Criterios de calidad y terminado
-- [ ] 30 spawns/despawns sin duplicados ni huérfanos en lista de vehículos.
-- [ ] Robo legítimo tarda 8±1 s y notifica al dueño; robo por exploit (lejos) falla 10/10.
-- [ ] Coche a velMax durante 5 min consume 35–40% fuel (rango diseñado).
-- [ ] Fly simulado (Y+50) corregido en <2 s sin expulsar al conductor legítimo en rampa.
-- [ ] Rejoin conserva poseídos y fuel/HP del despawn.
-- [ ] 10 vehículos activos mantienen ≥45 FPS en dispositivo medio.
+## Quality and done criteria
+- [ ] 30 spawns/despawns with no duplicates or orphans in the vehicle list.
+- [ ] Legit theft takes 8±1s and notifies the owner; exploit theft (from afar) fails 10/10.
+- [ ] Car at velMax for 5 min burns 35–40% fuel (designed range).
+- [ ] Simulated fly (Y+50) corrected in <2s without ejecting a legit driver on a ramp.
+- [ ] Rejoin keeps owned plus despawn fuel/HP.
+- [ ] 10 active vehicles hold ≥45 FPS on a mid-range device.
 
-## Herramientas
-Servicios/clases: `RemoteEvent`, `RemoteFunction`, `Players`, `Attributes`, `CollectionService`, `DataStoreService`, `ProximityPrompt`, `TweenService` (humo/luces). Física con `VehicleSeat`, `Seat`, `Constraints`; verificar en create.roblox.com/docs.
+## Tools
+Services/classes: `RemoteEvent`, `RemoteFunction`, `Players`, `Attributes`, `CollectionService`, `DataStoreService`, `ProximityPrompt`, `TweenService` (smoke/lights). Physics with `VehicleSeat`, `Seat`, `Constraints`; verify at create.roblox.com/docs.
 
-## Limitaciones
-- No cubre armas vehiculares ni daño PvP fino; componer con `roblox-combat-systems`.
-- No cubre precios/sinks globales; componer con `roblox-economy-balancing`.
-- Física avanzada (suspensión realista, drift sim) queda fuera de este alcance.
+## Limitations
+- Does not cover vehicular weapons or fine PvP damage; compose with `roblox-combat-systems`.
+- Does not cover global prices/sinks; compose with `roblox-economy-balancing`.
+- Advanced physics (realistic suspension, sim drift) is out of scope.
 
 ```luau
 -- Ilustrativo: tick de combustible en servidor (cada 1 s).

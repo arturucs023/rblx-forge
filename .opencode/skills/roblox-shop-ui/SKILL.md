@@ -1,49 +1,49 @@
 ---
-name: Tienda y Escaparate Roblox
-description: Grids de productos, precios, preview y compra con confirmación. Úsala cuando crees tiendas, escaparates, pases, estados owned/sin fondos o confirmaciones de compra.
+name: Roblox Shop and Showcase
+description: Product grids, prices, preview, and purchase with confirmation. Use it when you create shops, showcases, passes, owned/out-of-funds states, or purchase confirmations.
 ---
 
-# Tienda y Escaparate Roblox
+# Roblox Shop and Showcase
 
-## Objetivo
+## Objective
 
-Vender sin engañar: el jugador entiende qué compra, cuánto cuesta, qué gana (preview real) y confirma antes de pagar. Cubre el escaparate completo —explorar, comparar, confirmar, feedback— con estados claros de disponible, poseído y sin fondos.
+Sell without deceiving: the player understands what they buy, how much it costs, what they get (real preview), and confirms before paying. Covers the full showcase —browse, compare, confirm, feedback— with clear available, owned, and out-of-funds states.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre: grid de productos, precios en moneda blanda/dura, preview del objeto, confirmación de compra, estados owned/no-funds/limitado, y feedback post-compra.
+Covers: product grid, soft/hard currency prices, item preview, purchase confirmation, owned/no-funds/limited states, and post-purchase feedback.
 
-NO hace:
+Does NOT do:
 
-- Mecánica genérica responsiva: lo cubren `roblox-ui` y `roblox-user-interfaces`.
-- Diseño UX previo de monetización: lo cubre `roblox-game-ux`; esta skill implementa la pantalla.
-- Procesamiento real de Robux o receipts: se valida en servidor (verificar en create.roblox.com/docs); la UI solo inicia y refleja.
-- Inventario y equipamiento: lo cubre `roblox-inventory-ui` (aquí solo el botón "Ver en inventario").
-- Pase de temporada como sistema de progresión: teaser en `roblox-main-menu`; aquí solo su tarjeta comprable.
+- Generic responsive mechanics: covered by `roblox-ui` and `roblox-user-interfaces`.
+- Prior monetization UX design: covered by `roblox-game-ux`; this skill implements the screen.
+- Real Robux processing or receipts: validated on server (verify in create.roblox.com/docs); the UI only starts and reflects.
+- Inventory and equipment: covered by `roblox-inventory-ui` (here only the "See in inventory" button).
+- Season pass as a progression system: teaser in `roblox-main-menu`; here only its purchasable card.
 
-## Casos de uso
+## Use cases
 
-- Tienda con pestañas Destacado/Armas/Mascotas/Monedas.
-- Tarjeta de espada con precio "1.250 monedas", preview y botón Comprar.
-- Confirmación "¿Comprar X por Y?" con balance visible.
-- Estado "Poseído" que cambia a Equipar, y "Te faltan 300" sin fondos.
-- Oferta limitada con temporizador honesto y stock visible.
+- Shop with Featured/Weapons/Pets/Coins tabs.
+- Sword card with "1,250 coins" price, preview, and Buy button.
+- "Buy X for Y?" confirmation with visible balance.
+- "Owned" state that switches to Equip, and "You need 300 more" out-of-funds.
+- Limited offer with honest timer and visible stock.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define el catálogo en datos.** ID, nombre, precio, moneda, preview, si es único o consumible, requisitos (nivel/pase). Sin datos no hay UI: primero la tabla, luego la pantalla.
-2. **Maqueta el escaparate.** Cabecera con balance (2 monedas máximo visibles) + pestañas de categoría + `ScrollingFrame` grid + panel de detalle/preview. Móvil: grid 2 columnas + detalle como hoja inferior.
-3. **Construye las tarjetas.** Cada producto = `Frame` + `ImageLabel` o `ViewportFrame` preview + `TextLabel` nombre + `TextLabel` precio con icono + `TextButton` Comprar/Equipar. Precio siempre con moneda explícita ("1.250" solo nunca).
-4. **Implementa el preview honesto.** Muestra el objeto real (modelo o stats reales del catálogo). Rotación lenta en `ViewportFrame` solo si no cuesta rendimiento; si no, imagen estática fiel. Nada de renders que no coincidan con lo entregado.
-5. **Confirmación de compra.** Toda compra abre modal: qué + cuánto + balance antes/después + Confirmar/Cancelar. Sin confirmación no hay compra. Doble clic protegido con estado loading + debounce.
-6. **Estados por tarjeta.** Disponible (botón primario), Poseído (botón secundario "Equipar"/"Ver"), Sin fondos (botón disabled + "Te faltan X"), Requisito bloqueado ("Nivel 10"), Oferta (temporizador + precio anterior tachado solo si es real).
-7. **Feedback post-compra.** Éxito: check + "¡Añadido al inventario!" + botón Ver; fallo: razón + acción ("Conseguir monedas" lleva a la fuente, no a callejón). El balance se actualiza solo tras confirmación del servidor.
-8. **Prueba social y legalidad ligera.** "Más vendido" solo con datos reales. Precios regionales, impuestos y políticas de Robux/pagos: (verificar en create.roblox.com/docs) y con el responsable del juego; la UI nunca inventa términos.
-9. **Verifica en 3 resoluciones.** Precios sin truncar, botones táctiles ≥48 px, scroll fluido con 60+ productos, sin imágenes pesadas que rompan memoria móvil.
+1. **Define the catalog in data.** ID, name, price, currency, preview, whether unique or consumable, requirements (level/pass). No data, no UI: first the table, then the screen.
+2. **Mock up the showcase.** Header with balance (2 visible currencies max) + category tabs + `ScrollingFrame` grid + detail/preview panel. Mobile: 2-column grid + detail as bottom sheet.
+3. **Build the cards.** Each product = `Frame` + `ImageLabel` or `ViewportFrame` preview + `TextLabel` name + `TextLabel` price with icon + `TextButton` Buy/Equip. Price always with explicit currency ("1,250" alone never).
+4. **Implement honest preview.** Show the real object (real model or real stats from the catalog). Slow rotation in `ViewportFrame` only if it costs no performance; otherwise faithful static image. No renders that do not match what is delivered.
+5. **Purchase confirmation.** Every purchase opens a modal: what + how much + balance before/after + Confirm/Cancel. No purchase without confirmation. Double-click protected with loading state + debounce.
+6. **States per card.** Available (primary button), Owned (secondary "Equip"/"View" button), Out-of-funds (disabled button + "You need X more"), Locked by requirement ("Level 10"), Offer (timer + struck old price only if real).
+7. **Post-purchase feedback.** Success: check + "Added to inventory!" + View button; failure: reason + action ("Get coins" leads to the source, not a dead end). Balance updates only after server confirmation.
+8. **Social proof and light legality.** "Best seller" only with real data. Regional pricing, taxes, and Robux/payment policies: (verify in create.roblox.com/docs) and with the game owner; the UI never invents terms.
+9. **Verify at 3 resolutions.** Prices without truncation, touch buttons ≥48 px, smooth scroll with 60+ products, no heavy images that break mobile memory.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Tarjeta de producto (clases estables):
+- Product card (stable classes):
 
   ```luau
   -- Ejemplo ilustrativo: tarjeta de tienda
@@ -60,58 +60,58 @@ NO hace:
   buyButton.Parent = card
   ```
 
-- Grid con `UIGridLayout` a `Scale`, `UIPadding`, `UICorner` 10-12, `UIStroke` por rareza/oferta. Precios con `UITextSizeConstraint` para que "1.250.000" no rompa.
-- `ViewportFrame` para preview 3D solo en la tarjeta seleccionada o el panel de detalle, no en las 60 tarjetas a la vez.
-- Compra: el cliente solicita, el servidor valida fondos, entrega y persiste (verificar en create.roblox.com/docs para productos y receipts). La UI muestra loading hasta la respuesta y revierte si falla.
-- Balances visibles: la UI los pinta desde el estado replicado del jugador; nunca los calcula localmente.
-- `TweenService` para entrada de tarjetas (escalonado leve) y para el modal de confirmación.
+- Grid with `UIGridLayout` at `Scale`, `UIPadding`, `UICorner` 10-12, `UIStroke` by rarity/offer. Prices with `UITextSizeConstraint` so "1,250,000" does not break.
+- `ViewportFrame` for 3D preview only on the selected card or detail panel, not on all 60 cards at once.
+- Purchase: the client requests, the server validates funds, delivers, persists (verify in create.roblox.com/docs for products and receipts). The UI shows loading until the response and rolls back on failure.
+- Visible balances: the UI paints them from the player's replicated state; never computes them locally.
+- `TweenService` for card entrance (slight stagger) and the confirmation modal.
 
-### Identidad visual de esta skill (original, no copiar)
+### Visual identity of this skill (original, do not copy)
 
-- Dirección "escaparate luminoso": fondo marino (#12172A), tarjetas blancas-humo (#F4F6FB) con texto oscuro para contraste de producto, acento compra verde (#22C55E), oferta coral (#FF6B6B), moneda dorada (#FFC53D).
-- Tipografía: precio 18-20 extra-negrita (lo más grande de la tarjeta), nombre 15 semibold, meta 12 gris. Precio nunca truncado ni en gris claro.
-- Composición: grid 3-4 columnas PC / 2 móvil; panel de detalle a la derecha (PC) con preview grande + stats + confirmación. `UIPadding` 14, gap 12.
-- Espaciado: aire alrededor del precio; botón de compra a ancho completo de la tarjeta, altura 44-52.
-- Estados: comprar (verde sólido, hover +brillo, pressed 0.97), poseído (secundario con borde), sin fondos (gris disabled + línea "Te faltan X"), loading (spinner en botón, ignora clics), éxito (check animado 0.4 s).
-- Animación: entrada escalonada 50 ms por tarjeta visible, modal con fundido + escala 0.96→1. Sin autoplay de previews en todas las tarjetas.
+- "Bright showcase" direction: navy background (#12172A), smoke-white cards (#F4F6FB) with dark text for product contrast, buy green accent (#22C55E), offer coral (#FF6B6B), coin gold (#FFC53D).
+- Typography: price 18-20 extra-bold (largest on the card), name 15 semibold, meta 12 gray. Price never truncated or in light gray.
+- Layout: 3-4 column grid on PC / 2 on mobile; detail panel on the right (PC) with large preview + stats + confirmation. `UIPadding` 14, gap 12.
+- Spacing: air around the price; full-card-width buy button, 44-52 tall.
+- States: buy (solid green, hover +brightness, pressed 0.97), owned (secondary with border), out-of-funds (gray disabled + "You need X more" line), loading (spinner in button, ignores clicks), success (0.4 s animated check).
+- Animation: staggered entrance 50 ms per visible card, modal with fade + 0.96→1 scale. No preview autoplay on every card.
 
-## Buenas prácticas
+## Best practices
 
-- Precio + moneda siempre juntos y con balance visible en cabecera.
-- Preview = lo que se entrega. Si hay variante aleatoria (caja), dilo explícitamente.
-- Confirmación en todas las compras con coste; sin "compra en 1 clic por accidente".
-- Ofertas con temporizador real y fin real; nada de "termina en 5:00" eterno.
-- Coherencia con inventario: mismo icono, mismo nombre, misma rareza antes y después.
-- Accesible: precio legible sin depender del color, foco visible en Confirmar/Cancelar.
+- Price + currency always together and with visible balance in header.
+- Preview = what is delivered. If there is random variation (crate), say so explicitly.
+- Confirmation on every paid purchase; no "1-click buy by accident".
+- Offers with real timer and real end; no eternal "ends in 5:00".
+- Consistency with inventory: same icon, same name, same rarity before and after.
+- Accessible: price readable without depending on color, visible focus on Confirm/Cancel.
 
-## Errores frecuentes
+## Common mistakes
 
-- Botón Comprar que cobra sin confirmación o con doble cobro por doble clic.
-- Mostrar "Comprado" antes de la confirmación del servidor y luego revertir en silencio.
-- Precios solo con `Offset` que se cortan en móvil ("1.250.0…").
-- Previews engañosos que no coinciden con el objeto entregado.
-- Ofertas falsas con cuenta atrás reiniciada y desconfianza posterior.
-- Tapar el balance con el modal y pedir confirmar a ciegas.
+- Buy button that charges without confirmation or double-charges on double-click.
+- Showing "Purchased" before server confirmation and then silently rolling back.
+- Prices with only `Offset` that get cut on mobile ("1,250.0…").
+- Misleading previews that do not match the delivered item.
+- Fake offers with a restarting countdown and later distrust.
+- Covering the balance with the modal and asking to confirm blind.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Toda compra exige confirmación con precio, moneda y balance antes/después.
-- [ ] Sin doble cobro bajo spam de clics o latencia alta (debounce + estado loading).
-- [ ] Estados disponible/poseído/sin fondos/bloqueado probados con datos reales.
-- [ ] Preview fiel al objeto entregado, verificado por diseño.
-- [ ] Legible y comprable en PC, tablet y móvil sin solapes.
-- [ ] Errores (fondos, red, requisito) con mensaje y acción siguiente.
+- [ ] Every purchase requires confirmation with price, currency, and before/after balance.
+- [ ] No double charge under click spam or high latency (debounce + loading state).
+- [ ] Available/owned/out-of-funds/locked states tested with real data.
+- [ ] Preview faithful to the delivered item, verified by design.
+- [ ] Readable and purchasable on PC, tablet, and mobile without overlaps.
+- [ ] Errors (funds, network, requirement) with message and next action.
 
-## Herramientas
+## Tools
 
-- Studio: Play con servidor para flujo de compra, simulador móvil para grid.
-- MCP Studio (si disponible): capturas de tarjeta, detalle y modal en 3 resoluciones.
-- Rojo: catálogo como datos (precios, textos, IDs) para revisión sin tocar código.
-- Selene: lint del handler de compra y del debounce.
+- Studio: Play with server for purchase flow, mobile simulator for grid.
+- MCP Studio (if available): card, detail, and modal captures at 3 resolutions.
+- Rojo: catalog as data (prices, texts, IDs) for review without touching code.
+- Selene: lint of purchase handler and debounce.
 
-## Limitaciones
+## Limitations
 
-- No implementa el cobro real ni la persistencia: viven en el servidor (verificar en create.roblox.com/docs).
-- No incluye políticas de la plataforma, precios regionales ni impuestos: validar con documentación oficial y responsable del juego.
-- No hace comercio entre jugadores ni casa de subastas.
-- El `ViewportFrame` masivo degrada el rendimiento; úsalo con moderación documentada.
+- Does not implement real charging or persistence: they live on the server (verify in create.roblox.com/docs).
+- Does not include platform policies, regional pricing, or taxes: validate with official docs and the game owner.
+- No player-to-player trading or auction house.
+- Massive `ViewportFrame` degrades performance; use it sparingly with documented moderation.

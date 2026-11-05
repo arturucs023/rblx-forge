@@ -1,91 +1,91 @@
 ---
 name: roblox-interaction-systems
-description: Interacciones con raycast, prompts, hold y feedback. Úsala cuando necesites puertas, loot, NPC diálogo, recolección o botones con UX clara.
+description: Interactions with raycasts, prompts, holds, and feedback. Use it when you need doors, loot, NPC dialogue, gathering, or buttons with clear UX.
 ---
 
-# Interacciones con el Entorno
+# Environment Interactions
 
-## Objetivo
-Crear interacciones predecibles y rápidas: el jugador siempre sabe qué puede tocar, cuánto tarda y qué pasará, con validación servidor en cada activación.
+## Objective
+Create predictable, fast interactions: the player always knows what they can touch, how long it takes, and what will happen, with server validation on every activation.
 
-## Alcance y límites
-Cubre `ProximityPrompt`, `ClickDetector`, raycast de mirada, hold-to-interact, feedback y accesibilidad.
-Diferenciación declarada: `roblox-game-systems` (instalada) es recetario fino; esta skill es la versión profunda con UX, concurrencia y spam-control. NO cubre recolección con economía de nodos (lo cubre `roblox-resource-gathering`), ni construcción (lo cubre `roblox-building-placement`), ni diálogo ramificado (requiere sistema de diálogo dedicado). `roblox-genre-patterns` no profundiza.
+## Scope and limits
+Covers `ProximityPrompt`, `ClickDetector`, gaze raycast, hold-to-interact, feedback, and accessibility.
+Declared differentiation: `roblox-game-systems` (installed) is a concise recipe book; this skill is the deep version with UX, concurrency, and spam control. Does NOT cover node-based gathering economy (covered by `roblox-resource-gathering`), nor building (covered by `roblox-building-placement`), nor branching dialogue (requires a dedicated dialogue system). `roblox-genre-patterns` doesn't go deep.
 
-## Casos de uso
-- Puertas/cajas fuertes con hold y llave.
-- Loot con ventana personal y spam-click.
-- NPC que abre tienda/diálogo al acercarse.
-- Botones de mapa que activan puentes/trampas.
-- Reparar/hackear con barra de progreso interrumpible.
+## Use cases
+- Doors/safes with hold and key.
+- Loot with personal window and spam-click.
+- NPC that opens a shop/dialogue on approach.
+- Map buttons that activate bridges/traps.
+- Repairable/hackable with interruptible progress bar.
 
-## Bucle de juego o sistema (diseño)
-1. Descubrir affordance (outline + prompt a distancia legible).
-2. Acercarse (rango) y leer coste/efecto.
-3. Mantener/pulsar (hold 0–3 s según riesgo).
-4. Validación y efecto + feedback inmediato.
-5. Cooldown y re-uso claro.
-Balance de ejemplo: loot común hold 0.4 s, puerta con llave instantánea, hackeo 3 s interrumpible; rango 10–14 studs; cooldown 1 s para evitar doble uso; si el tiempo medio de interacción supera 2.5 s en acciones frecuentes, baja hold o añade mejora.
+## Game or system loop (design)
+1. Discover affordance (outline + prompt at readable distance).
+2. Approach (range) and read cost/effect.
+3. Hold/press (0–3 s hold by risk).
+4. Validation and effect + immediate feedback.
+5. Cooldown and clear re-use.
+Example balance: common loot 0.4 s hold, keyed door instant, 3 s interruptible hack; 10–14 stud range; 1 s cooldown to avoid double use; if average interaction time exceeds 2.5 s on frequent actions, lower the hold or add an upgrade.
 
-## Proceso paso a paso
-1. Elige canal: `ProximityPrompt` (recomendado 3D), `ClickDetector` (clic simple), raycast personalizado (mirada + tecla E).
-2. Estandariza prompts: `ActionText`, `ObjectText`, `HoldDuration`, `MaxActivationDistance` (10–14), `RequiresLineOfSight` cuando importe.
-3. Muestra solo lo relevante: 1 prompt prioritario por proximidad; oculta el resto para evitar solape.
-4. Activa vía `Prompt.Triggered` en servidor (Script, no LocalScript) o `RemoteEvent Interact(id)` si es raycast custom.
-5. Valida en servidor: existe, en rango, con requisitos (llave/nivel), sin cooldown, sin uso concurrente.
-6. Ejecuta efecto atómico (abrir, dar loot, teleport local) y marca `enUso` con timeout.
-7. Feedback triple: animación + sonido + UI ("+3 Madera", "Puerta desbloqueada"); fallo con motivo.
-8. Accesibilidad: alternativa a hold (pulsar 3 veces), tamaño de prompt grande, subtítulos de sonidos clave.
+## Step-by-step process
+1. Pick the channel: `ProximityPrompt` (recommended 3D), `ClickDetector` (simple click), custom raycast (gaze + E key).
+2. Standardize prompts: `ActionText`, `ObjectText`, `HoldDuration`, `MaxActivationDistance` (10–14), `RequiresLineOfSight` when it matters.
+3. Show only what's relevant: 1 priority prompt by proximity; hide the rest to avoid overlap.
+4. Trigger via `Prompt.Triggered` on the server (Script, not LocalScript) or `RemoteEvent Interact(id)` for custom raycast.
+5. Validate on server: exists, in range, meets requirements (key/level), no cooldown, no concurrent use.
+6. Execute atomically (open, grant loot, local teleport) and mark `inUse` with timeout.
+7. Triple feedback: animation + sound + UI ("+3 Wood", "Door unlocked"); failure with reason.
+8. Accessibility: hold alternative (press 3 times), large prompt size, subtitles for key sounds.
 
-## Conocimientos técnicos
-### Qué valida el servidor
-- Distancia con posición servidor ≤ `MaxDistance + 2` tolerancia.
-- Hold completado en servidor (`Triggered` ya lo garantiza; en custom valida duración).
-- Requisitos: item/llave en inventario servidor, nivel, equipo.
-- Concurrencia: objeto con `ocupadoPor` + expiración 5 s; segundo jugador recibe "en uso".
-### Persistencia
-- Puertas/cofres persistentes guardan estado (`abiertoPor`, `lootReclamado_UserId`) con `DataStoreService` solo si el diseño lo exige.
-- Loot personal: guarda `reclamados[]` por jugador, no estado global.
-- Cofres diarios: guarda `ultimaReclamacionUnix` y valida 20 h en servidor.
-### Errores/desconexiones
-- Hold interrumpido por muerte/salida: cancela sin efecto ni cobro.
-- Objeto destruido mid-hold: falla elegante con mensaje, sin error.
-- Doble trigger por lag: idempotencia por `usoId`; segundo se ignora.
+## Technical knowledge
+### What the server validates
+- Distance with server position ≤ `MaxDistance + 2` tolerance.
+- Hold completed on server (`Triggered` already guarantees it; in custom setups validate duration).
+- Requirements: item/key in server inventory, level, team.
+- Concurrency: object with `occupiedBy` + 5 s expiry; second player gets "in use".
+### Persistence
+- Persistent doors/chests save state (`openedBy`, `lootClaimed_UserId`) with `DataStoreService` only if the design requires it.
+- Personal loot: save `claimed[]` per player, not global state.
+- Daily chests: save `lastClaimUnix` and validate 20 h on server.
+### Errors/disconnections
+- Hold interrupted by death/exit: cancels with no effect or charge.
+- Object destroyed mid-hold: graceful failure with message, no error.
+- Double trigger from lag: idempotency via `useId`; second one ignored.
 ### Anti-exploit
-- `ClickDetector` con `MaxActivationDistance` siempre; sin él hay uso a través del mapa.
-- Nunca des loot porque el cliente diga "abrí cofre X"; el servidor decide.
-- Rate-limit 8 interacciones/s; más = ignorar + strike.
-- Valida línea de vista para palancas críticas con `Raycast` servidor si hay riesgo de usar a través de muros.
+- `ClickDetector` always with `MaxActivationDistance`; without it, use works across the map.
+- Never grant loot because the client said "I opened chest X"; the server decides.
+- Rate-limit 8 interactions/s; more = ignore + strike.
+- Validate line of sight for critical levers with server `Raycast` if there is risk of use through walls.
 
-## Buenas prácticas
-- Un `Script` `InteractionServer` + `ModuleScript InteractDefs`; prompts creados por código, no a mano 1 por 1.
-- `CollectionService` tags: `Lootable`, `Door`, `Hackable` para registro y limpieza.
-- Prioridad: revive > puerta de misión > loot > decorativo.
-- Cooldown visual en el prompt (`Enabled=false` + cuenta atrás).
-- Sonido de error distinto por motivo (lejos, bloqueado, en uso).
+## Best practices
+- One `Script` `InteractionServer` + `ModuleScript InteractDefs`; prompts created by code, not by hand one by one.
+- `CollectionService` tags: `Lootable`, `Door`, `Hackable` for registration and cleanup.
+- Priority: revive > mission door > loot > decorative.
+- Visual cooldown on the prompt (`Enabled=false` + countdown).
+- Distinct error sound per reason (too far, locked, in use).
 
-## Errores frecuentes
-1. Lógica en `LocalScript` con `Triggered` cliente → loot falso; mover a servidor.
-2. 15 prompts visibles a la vez → ilegible; prioriza el más cercano.
-3. Hold de 5 s para loot trivial → abandono; reserva holds largos a riesgo real.
-4. Sin `RequiresLineOfSight` en palanca secreta → activable por exploit; activarlo.
-5. Sin timeout de `enUso` → objeto bloqueado para siempre si el jugador se va.
+## Common mistakes
+1. Logic in `LocalScript` with client `Triggered` → fake loot; move to server.
+2. 15 prompts visible at once → unreadable; prioritize the nearest.
+3. 5 s hold for trivial loot → abandonment; reserve long holds for real risk.
+4. No `RequiresLineOfSight` on secret lever → exploitable; enable it.
+5. No `inUse` timeout → object locked forever if the player leaves.
 
-## Criterios de calidad y terminado
-- [ ] 30 interacciones legítimas con ping 150 ms sin falsos rechazos >3%.
-- [ ] Uso a 30 studs o a través de muro rechazado 10/10.
-- [ ] Doble trigger simultáneo entrega 1 solo loot.
-- [ ] Hold interrumpido por muerte no cobra ni entrega.
-- [ ] 50 objetos interactuables con <1 ms de coste idle.
-- [ ] Test táctil: todos los prompts usables sin teclado.
+## Quality and done criteria
+- [ ] 30 legitimate interactions at 150 ms ping with <3% false rejections.
+- [ ] Use at 30 studs or through a wall rejected 10/10.
+- [ ] Simultaneous double trigger grants 1 loot only.
+- [ ] Hold interrupted by death neither charges nor grants.
+- [ ] 50 interactable objects with <1 ms idle cost.
+- [ ] Touch test: all prompts usable without keyboard.
 
-## Herramientas
-Servicios/clases: `ProximityPrompt`, `ClickDetector`, `Players`, `CollectionService`, `Attributes`, `RemoteEvent`, `TweenService`, `DataStoreService` (estados persistentes). Verificar en create.roblox.com/docs.
+## Tools
+Services/classes: `ProximityPrompt`, `ClickDetector`, `Players`, `CollectionService`, `Attributes`, `RemoteEvent`, `TweenService`, `DataStoreService` (persistent states). See create.roblox.com/docs.
 
-## Limitaciones
-- No cubre árboles de diálogo ni cinemáticas; requiere sistema narrativo aparte.
-- No cubre inventario general; componer con `roblox-resource-gathering` o `roblox-crafting`.
-- Raycast custom a 60 Hz para muchos jugadores requiere optimización adicional.
+## Limitations
+- No dialogue trees or cinematics; requires a separate narrative system.
+- No general inventory; compose with `roblox-resource-gathering` or `roblox-crafting`.
+- Custom 60 Hz raycast for many players needs further optimization.
 
 ```luau
 -- Ilustrativo: registro de interactuables por tag.

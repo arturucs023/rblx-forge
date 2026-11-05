@@ -1,49 +1,49 @@
 ---
-name: Ajustes Roblox
-description: Panel de gráficos, audio, controles rebind y accesibilidad. Úsala cuando crees opciones, reasignación de teclas, sliders de volumen, presets o persistencia local de ajustes.
+name: Roblox Settings
+description: Graphics, audio, rebindable controls, and accessibility panel. Use it when you create options, key remapping, volume sliders, presets, or local settings persistence.
 ---
 
-# Ajustes Roblox
+# Roblox Settings
 
-## Objetivo
+## Objective
 
-Permitir que cada jugador adapte el juego a su dispositivo y capacidades en menos de un minuto: gráficos que rinden, audio cómodo, controles a su mano y opciones de accesibilidad reales. Todo cambio se previsualiza al instante y persiste entre sesiones.
+Let every player adapt the game to their device and abilities in under a minute: graphics that perform, comfortable audio, controls at hand, and real accessibility options. Every change previews instantly and persists across sessions.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre: pestañas de Gráficos/Audio/Controles/Accesibilidad, sliders/toggles/dropdowns, rebind de teclas, presets (Rendimiento/Equilibrado/Calidad), persistencia local y botón Restablecer.
+Covers: Graphics/Audio/Controls/Accessibility tabs, sliders/toggles/dropdowns, key rebinding, presets (Performance/Balanced/Quality), local persistence, and a Reset button.
 
-NO hace:
+Does NOT do:
 
-- Mecánica genérica responsiva: lo cubren `roblox-ui` y `roblox-user-interfaces`.
-- Diseño UX previo: lo cubre `roblox-game-ux`; esta skill implementa.
-- Ajustes rápidos de la pausa: los cubre `roblox-pause-menu` (este panel es el completo).
-- HUD o menús como tales: `roblox-hud`, `roblox-main-menu`.
-- Optimización del rendimiento del juego en sí (eso es rendimiento; aquí solo la UI que lo expone).
+- Generic responsive mechanics: covered by `roblox-ui` and `roblox-user-interfaces`.
+- Prior UX design: covered by `roblox-game-ux`; this skill implements.
+- Quick pause settings: covered by `roblox-pause-menu` (this panel is the full one).
+- HUD or menus as such: `roblox-hud`, `roblox-main-menu`.
+- Optimizing the game's performance itself (that is performance; here only the UI that exposes it).
 
-## Casos de uso
+## Use cases
 
-- Pestaña Gráficos con preset + distancia de dibujado + sombras on/off.
-- Sliders de volumen Maestro/Música/Efectos con prueba de sonido.
-- Rebind de "Esquivar" de Q a E con detección de conflicto.
-- Modo daltónico, tamaño de subtítulos y reducir sacudida de cámara.
-- "Restablecer valores" con confirmación y efecto inmediato.
+- Graphics tab with preset + draw distance + shadows on/off.
+- Master/Music/Effects volume sliders with sound test.
+- Rebinding "Dodge" from Q to E with conflict detection.
+- Colorblind mode, subtitle size, and camera-shake reduction.
+- "Reset to defaults" with confirmation and instant effect.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Inventaria los ajustes reales.** Solo expón lo que el juego respeta de verdad (si no hay calidad de sombras configurable, no la muestres). Agrupa en 4 pestañas máximo.
-2. **Maqueta el panel.** `ScreenGui` → tarjeta centrada (640-760 px equivalentes máx., 92% en móvil) → barra de pestañas (`TextButton`s) + contenido (`ScrollingFrame` + `UIListLayout`) + pie (Restablecer/Cerrar). Cada fila: etiqueta + control + valor.
-3. **Implementa controles con primitivas estables.** Toggle = `TextButton` con pill (`Frame` + `UICorner` redondo) que cambia de color/posición. Slider = `Frame` pista + `Frame` relleno a `Scale` + `TextButton` invisible amplio para arrastrar. Dropdown = `TextButton` + lista desplegable de `TextButton`s.
-4. **Rebind de teclas.** Botón "Pulsa una tecla…" que escucha `UserInputService.InputBegan`, valida (no reservadas del sistema, sin duplicados; si hay conflicto pregunta "¿Intercambiar?"), guarda y muestra el nombre legible. Siempre ofrece "Restablecer controles".
-5. **Presets de gráficos.** Tres `TextButton`s que fijan combinaciones conocidas y marcan la pestaña como "Personalizado" si el usuario toca algo. El preset se aplica sin reiniciar.
-6. **Accesibilidad de verdad.** Tamaño de texto UI (Pequeño/Normal/Grande vía `UIScale`), reducir movimiento/sacudida (toggle que el juego respeta), modo daltónico (paleta alternativa + formas, nunca solo color), subtítulos de diálogos importantes.
-7. **Persistencia local.** Guarda en almacenamiento local del jugador o atributos/configuración persistente del proyecto (verificar en create.roblox.com/docs); carga al iniciar antes de pintar la primera pantalla. Sin guardado, los ajustes son decoración.
-8. **Feedback inmediato.** Cada cambio se aplica al mover el slider/soltar el toggle, con valor visible ("70%") y botón Probar donde aplique (audio). Nada de "Aplicar" global salvo Restablecer.
-9. **Verifica en los extremos.** Pantalla pequeña + texto Grande + preset Rendimiento debe seguir usable; gamepad + táctil deben operar todo el panel sin ratón.
+1. **Inventory the real settings.** Only expose what the game truly honors (if there is no configurable shadow quality, do not show it). Group into max 4 tabs.
+2. **Mock up the panel.** `ScreenGui` → centered card (640-760 px max equivalent, 92% on mobile) → tab bar (`TextButton`s) + content (`ScrollingFrame` + `UIListLayout`) + footer (Reset/Close). Each row: label + control + value.
+3. **Implement controls with stable primitives.** Toggle = `TextButton` with pill (`Frame` + round `UICorner`) that changes color/position. Slider = track `Frame` + fill `Frame` at `Scale` + wide invisible `TextButton` for dragging. Dropdown = `TextButton` + dropdown list of `TextButton`s.
+4. **Key rebinding.** "Press a key…" button that listens to `UserInputService.InputBegan`, validates (no reserved system keys, no duplicates; if conflict ask "Swap?"), saves, and shows the readable name. Always offer "Reset controls".
+5. **Graphics presets.** Three `TextButton`s that set known combinations and mark the tab as "Custom" if the user touches anything. The preset applies without restarting.
+6. **Real accessibility.** UI text size (Small/Normal/Large via `UIScale`), reduce motion/shake (a toggle the game honors), colorblind mode (alternative palette + shapes, never color alone), subtitles for important dialogue.
+7. **Local persistence.** Save to the player's local storage or persistent project attributes/config (verify in create.roblox.com/docs); load before painting the first screen. Without saving, settings are decoration.
+8. **Instant feedback.** Every change applies when moving the slider/releasing the toggle, with a visible value ("70%") and a Test button where applicable (audio). No global "Apply" except Reset.
+9. **Verify at the extremes.** Small screen + Large text + Performance preset must still be usable; gamepad + touch must operate the whole panel without a mouse.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Fila de ajuste (clases estables):
+- Setting row (stable classes):
 
   ```luau
   -- Ejemplo ilustrativo: fila con toggle
@@ -60,58 +60,58 @@ NO hace:
   toggle.Parent = row
   ```
 
-- Tamaños de fila con `AutomaticSize.Y` + `UIListLayout` (verificar en create.roblox.com/docs para el enum exacto) o alturas fijas a `Scale`; texto con `UITextSizeConstraint`; `UIPadding` generoso para táctil.
-- `UserInputService` para captura de rebind; filtra `gameProcessedEvent` para no capturar teclas del sistema/chat.
-- `UIScale` en la raíz para el ajuste de tamaño de texto/UI sin reescribir cada fuente.
-- Calidad gráfica real del motor (verificar en create.roblox.com/docs); la UI solo expone lo que el proyecto soporta y documenta el rango de cada slider.
-- Volumen: la UI guarda 0-100 y el juego lo mapea a su mezcla; incluye botón de prueba por familia.
+- Row sizes with `AutomaticSize.Y` + `UIListLayout` (verify in create.roblox.com/docs for the exact enum) or fixed heights at `Scale`; text with `UITextSizeConstraint`; generous `UIPadding` for touch.
+- `UserInputService` for rebind capture; filter `gameProcessedEvent` so system/chat keys are not captured.
+- `UIScale` at the root for text/UI size adjustment without rewriting every font.
+- Real engine graphics quality (verify in create.roblox.com/docs); the UI only exposes what the project supports and documents each slider's range.
+- Volume: the UI stores 0-100 and the game maps it to its mix; include a test button per family.
 
-### Identidad visual de esta skill (original, no copiar)
+### Visual identity of this skill (original, do not copy)
 
-- Dirección "laboratorio clínico": fondo claro-ordenado sobre tarjeta blanca-humo (#F2F4F8) con texto grafito (#1A2133) en panel claro, o tarjeta grafito sobre fondo oscuro según el juego; acento índigo (#5B6CFF) para activos.
-- Tipografía: etiquetas 15 semibold, valores 14 tabular a la derecha, descripciones 12 gris. Alineación estricta etiqueta-izquierda / control-derecha.
-- Composición: 4 pestañas con iconos textuales simples, 6-9 filas visibles sin scroll en PC, scroll suave en móvil. `UIPadding` 16, gap 8, `UICorner` 10.
-- Espaciado: filas de 52-60 px equivalentes (táctil cómodo), sliders con área de toque 3x la pista visible.
-- Estados: toggle on índigo con píldora a la derecha / off gris, hover +brillo, pressed 0.97, disabled 50%, slider con valor en vivo, rebind en "escuchando" con borde pulsante lento.
-- Animación: transiciones de pestaña con fundido 0.15 s; toggles con deslizamiento 0.15 s vía `TweenService`. Nada más: es herramienta, no espectáculo.
+- "Clinical lab" direction: light-tidy background over smoke-white card (#F2F4F8) with graphite text (#1A2133) in the light panel, or graphite card over dark background depending on the game; indigo accent (#5B6CFF) for actives.
+- Typography: labels 15 semibold, values 14 tabular right-aligned, descriptions 12 gray. Strict label-left / control-right alignment.
+- Layout: 4 tabs with simple textual icons, 6-9 visible rows without scroll on PC, smooth scroll on mobile. `UIPadding` 16, gap 8, `UICorner` 10.
+- Spacing: 52-60 px-equivalent rows (comfortable touch), sliders with a touch area 3x the visible track.
+- States: toggle on indigo with pill right / off gray, hover +brightness, pressed 0.97, disabled 50%, slider with live value, rebind in "listening" with slow pulsing border.
+- Animation: tab transitions with 0.15 s fade; toggles with 0.15 s slide via `TweenService`. Nothing else: it is a tool, not a show.
 
-## Buenas prácticas
+## Best practices
 
-- Cada ajuste muestra su valor actual ("Alta", "70%", "E"). Sin valores ciegos.
-- Restablecer pide confirmación y anuncia qué se restablece.
-- Los presets nombran el compromiso ("Rendimiento: menos detalle, más FPS").
-- Rebind con nombres legibles ("Espacio", no "Enum.KeyCode.Space").
-- Coherencia con la pausa: los ajustes rápidos y este panel comparten nombres y rangos.
-- Textos cortos; la ayuda larga va a tooltip o a una línea secundaria, no al título.
+- Every setting shows its current value ("High", "70%", "E"). No blind values.
+- Reset asks for confirmation and announces what is reset.
+- Presets name the tradeoff ("Performance: less detail, more FPS").
+- Rebind with readable names ("Space", not "Enum.KeyCode.Space").
+- Consistency with pause: quick settings and this panel share names and ranges.
+- Short texts; long help goes to a tooltip or a secondary line, not the title.
 
-## Errores frecuentes
+## Common mistakes
 
-- Mostrar ajustes que el juego ignora (sombras que no cambian nada).
-- Rebind que permite pisar teclas del sistema o del chat y rompe el juego.
-- Guardar solo en memoria y perder todo al reentrar.
-- Sliders con área de toque de 4 px imposibles en móvil.
-- Panel solo con `Offset` que se sale en pantallas pequeñas.
-- "Aplicar" global que el jugador olvida pulsar y cree que cambió algo.
+- Showing settings the game ignores (shadows that change nothing).
+- Rebind that lets players stomp system or chat keys and breaks the game.
+- Saving to memory only and losing everything on rejoin.
+- Sliders with a 4 px touch area, impossible on mobile.
+- Panel with only `Offset` that overflows on small screens.
+- Global "Apply" that the player forgets to press and thinks something changed.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Cada ajuste se aplica al instante y persiste tras cerrar y reentrar.
-- [ ] Rebind completo sin conflictos silenciosos y con restablecer funcional.
-- [ ] Operable con ratón, táctil y mando en las 3 resoluciones de referencia.
-- [ ] Sin errores en consola; presets verificados en dispositivo bajo y alto.
-- [ ] Accesibilidad mínima: tamaño de texto, reducir movimiento y alternativa a color.
-- [ ] Coherente en nombres y rangos con los ajustes rápidos de pausa.
+- [ ] Each setting applies instantly and persists after closing and rejoining.
+- [ ] Full rebind with no silent conflicts and working reset.
+- [ ] Operable with mouse, touch, and gamepad at the 3 reference resolutions.
+- [ ] No console errors; presets verified on low and high devices.
+- [ ] Minimum accessibility: text size, motion reduction, and color alternative.
+- [ ] Consistent names and ranges with pause quick settings.
 
-## Herramientas
+## Tools
 
-- Studio: simulador de dispositivos, prueba con gamepad, `Output` para conflictos de teclas.
-- MCP Studio (si disponible): capturas del panel en claro/oscuro y en texto Grande.
-- Rojo: valores por defecto y rangos como datos editables por diseño.
-- Selene: lint de la captura de input y de la persistencia local.
+- Studio: device simulator, gamepad test, `Output` for key conflicts.
+- MCP Studio (if available): panel captures in light/dark and Large text.
+- Rojo: defaults and ranges as designer-editable data.
+- Selene: lint of input capture and local persistence.
 
-## Limitaciones
+## Limitations
 
-- Los ajustes del sistema Roblox (menú oficial) no se controlan desde aquí.
-- La calidad gráfica disponible depende del dispositivo y del motor (verificar en create.roblox.com/docs).
-- La persistencia local tiene límites por plataforma; documenta qué se guarda y dónde.
-- Esta skill no optimiza el juego; solo expone controles honestos sobre lo que existe.
+- The official Roblox system settings menu is not controlled from here.
+- Available graphics quality depends on device and engine (verify in create.roblox.com/docs).
+- Local persistence has per-platform limits; document what is saved and where.
+- This skill does not optimize the game; it only exposes honest controls over what exists.

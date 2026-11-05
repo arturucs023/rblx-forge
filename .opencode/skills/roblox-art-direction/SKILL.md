@@ -1,86 +1,89 @@
 ---
-name: Dirección de Arte Roblox
-description: Define y protege la dirección de arte de un juego Roblox. Úsala para paletas, dirección de iluminación, lenguaje de materiales, tipografía y gates de coherencia en todo el proyecto.
+name: Roblox Art Direction
+description: Define and protect a Roblox game's art direction. Use it for palettes, lighting direction, material language, typography, and coherence gates across the project.
 ---
 
 # roblox-art-direction
 
-Tú eres dueño del look. Escribe la dirección una vez y rechaza todo lo que se
-desvíe de ella. Complementarias: `roblox-visual-design`,
+You own the look. Write the direction once and reject anything that drifts
+from it. Complementary: `roblox-visual-design`,
 `roblox-environment-art`, `roblox-reference-research`,
 `roblox-visual-quality-audit`.
 
-## Objetivo
+## Objective
 
-Producir una dirección de una página: palabras de mood, paleta, luz,
-materiales, tipografía. Protegerla en cada revisión de build.
+Produce a one-page direction: mood words, palette, light, materials,
+typography. Enforce it in every build review.
 
-## Alcance y límites
+## Scope and limits
 
-- Cubre: mood, paleta, luz, materiales, tipografía y gates de aceptación.
-- NO construye (eso es `roblox-environment-art` y las skills de entorno) ni
-  audita captura a captura (eso es `roblox-visual-quality-audit`): esta skill
-  define el estándar contra el que se mide todo.
-- Una excepción a la dirección debe escribirse en ella; lo no escrito no existe.
+- Covers: mood, palette, light, materials, typography, and acceptance gates.
+- Does NOT build (that is `roblox-environment-art` and the environment
+  skills) nor audit capture by capture (that is
+  `roblox-visual-quality-audit`): this skill defines the standard everything
+  is measured against.
+- An exception to the direction must be written into it; what is not written
+  down does not exist.
 
-## Casos de uso
+## Use cases
 
-- Nuevo juego: fijar el look antes de construir el primer mapa.
-- Deriva visual: el proyecto acumula estilos incompatibles y hay que reconducir.
-- Revisión de contenido de terceros contra la identidad del juego.
+- New game: lock the look before building the first map.
+- Visual drift: the project accumulates incompatible styles and needs redirecting.
+- Reviewing third-party content against the game's identity.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Mood en tres palabras** (p. ej. "cálido, desgastado, golden-hour"). Cada
-   decisión posterior debe servir al menos a dos de ellas.
-2. **Paleta.** 3–5 `Color3` base + 1 acento. Anota hex y dónde puede aparecer
-   cada uno (estructura / trim / luz / UI). Prohíbe el resto salvo revisión.
-3. **Luz.** `LightingStyle`, comportamiento de `ClockTime` +
-   `GeographicLatitude`, `Ambient`/`OutdoorAmbient`, `Atmosphere` (densidad,
-   offset, color, decay), sombras con mapa vs voxel, un solo post-efecto para
-   empezar (`Bloom` o `ColorCorrection`, con valores).
-4. **Lenguaje de materiales.** Set de `Enum.Material` permitido por familia
-   (piedra/madera/metal/tela/suelo) con guía de rugosidad/color; metalness
-   reservada a metal de verdad. Referencia `references/materials/*` por ruta.
-5. **Tipografía.** Máximo 2 familias para UI, tamaños mínimos por clase de
-   dispositivo, scrims obligatorios sobre 3D.
-6. **Gate.** El contenido nuevo solo pasa si cumple paleta/luz/materiales/tipo;
-   las excepciones se escriben en la dirección, no se toleran en silencio.
+1. **Mood in three words** (e.g. "warm, worn, golden-hour"). Every later
+   decision must serve at least two of them.
+2. **Palette.** 3–5 base `Color3` + 1 accent. Note hex and where each may
+   appear (structure / trim / light / UI). Forbid the rest unless reviewed.
+3. **`Lighting` style,** `ClockTime` behavior +
+   `GeographicLatitude`, `Ambient`/`OutdoorAmbient`, `Atmosphere` (density,
+   offset, color, decay), map vs voxel shadows, a single post-effect to
+   start (`Bloom` or `ColorCorrection`, with values).
+4. **Material language.** Allowed `Enum.Material` set per family
+   (stone/wood/metal/fabric/ground) with roughness/color guidance; metalness
+   reserved for real metal. Reference `references/materials/*` by path.
+5. **Typography.** Maximum 2 families for UI, minimum sizes per device
+   class, mandatory scrims over 3D.
+6. **Gate.** New content only passes if it meets palette/light/materials/type;
+   exceptions are written into the direction, never silently tolerated.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Color: armonía, contraste WCAG orientativo para UI, acento reservado.
-- Luz Roblox: `Lighting`, `Atmosphere`, sombras y su coste en móvil.
+- Color: harmony, indicative WCAG contrast for UI, reserved accent.
+- Roblox light: `Lighting`, `Atmosphere`, shadows and their mobile cost.
 
-## Buenas prácticas
+## Best practices
 
-- Una página, valores exactos, nada de adjetivos sin número.
-- Revisa cada entrega contra los gates; deja acta de pass/fail.
+- One page, exact values, no adjectives without numbers.
+- Review every delivery against the gates; record pass/fail.
 
-## Errores frecuentes
+## Common mistakes
 
-- Un color de acento nuevo por feature (deriva de paleta); dos stacks de
-  post-efectos peleando; referencias fotorrealistas aplicadas literalmente a
-  builds estilizados.
+- A new accent color per feature (palette drift); two competing
+  post-effect stacks; photorealistic references applied literally to
+  stylized builds.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] La dirección cabe en una página y nombra valores exactos, no adjetivos.
-- [ ] Cada revisión de contenido cita pass/fail por gate.
-- Verificación: una build revisada entera contra la dirección sin excepciones
-  sin escribir.
+- [ ] The direction fits on one page and names exact values, not adjectives.
+- [ ] Every content review cites pass/fail per gate.
+- Verification: a full build reviewed against the direction with no
+  unwritten exceptions.
 
-## Herramientas
+## Tools
 
-- Editor + `docs/ART_DIRECTION.md` del proyecto; `references/` para anclar el
-  look; `capture_screenshot` para comprobar deriva.
+- Editor + project `docs/ART_DIRECTION.md`; `references/` to anchor the
+  look; `capture_screenshot` to check drift.
 
-## Limitaciones
+## Limitations
 
-- No impone gusto: impone coherencia con lo escrito. Si el mood está mal
-  elegido, la dirección perpetúa el error (revisar mood cada milestone).
+- Does not impose taste: it imposes coherence with what is written. If the
+  mood is poorly chosen, the direction perpetuates the error (review mood
+  each milestone).
 
-## Ejemplo: extracto de dirección
+## Example: direction excerpt
 
 ```text
 Mood: warm, worn, golden-hour

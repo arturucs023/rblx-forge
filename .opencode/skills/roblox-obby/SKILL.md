@@ -1,89 +1,89 @@
 ---
 name: roblox-obby
-description: Obbies con dificultad por etapas, checkpoints y control de rage-quit. Úsala cuando necesites torres, rage games justos, skips y tiempos verificados.
+description: Obbies with staged difficulty, checkpoints, and rage-quit control. Use it when you need towers, fair rage games, skips, and verified times.
 ---
 
-# Obbies (Dificultad, Checkpoints, Torres)
+# Obbies (Difficulty, Checkpoints, Towers)
 
-## Objetivo
-Diseñar obbies adictivos y justos: curva por etapas, checkpoints cada poco, skips pagos opcionales y anti-rage que retiene sin regalar.
+## Objective
+Design addictive and fair obbies: staged curve, frequent checkpoints, optional paid skips, and anti-rage that retains without giving away.
 
-## Alcance y límites
-Versión profunda de género: bucles, progresión, mecánicas, UX, rendimiento y pitfalls.
-Diferenciación declarada: `roblox-genre-patterns` es catálogo de 1 línea; esta skill es la versión profunda de obby. `roblox-game-systems` es recetario fino; aquí se compone. NO repite: checkpoints técnicos se componen con `roblox-checkpoints`, habilidades de movimiento (dash/doble salto) con `roblox-abilities-cooldowns`, quests/logros con `roblox-quest-progression-systems`, monetización con `roblox-economy-balancing`.
+## Scope and limits
+Deep genre version: loops, progression, mechanics, UX, performance, and pitfalls.
+Declared differentiation: `roblox-genre-patterns` is a 1-line catalog; this skill is the deep obby version. `roblox-game-systems` is a fine recipe book; here it is composed. Does NOT repeat: technical checkpoints compose with `roblox-checkpoints`, movement abilities (dash/double jump) with `roblox-abilities-cooldowns`, quests/achievements with `roblox-quest-progression-systems`, monetization with `roblox-economy-balancing`.
 
-## Casos de uso
-- Torre de 100 pisos con 3 dificultades.
-- Rage obby corto con skip de pago.
-- Obby cooperativo con botones de 2 jugadores.
-- Carrera de obby con timer y leaderboard.
-- Mega-obby de 1000 etapas con guardado por mundos.
+## Use cases
+- 100-floor tower with 3 difficulties.
+- Short rage obby with paid skip.
+- Cooperative obby with 2-player buttons.
+- Obby race with timer and leaderboard.
+- 1000-stage mega-obby with per-world saving.
 
-## Bucle de juego o sistema (diseño)
-- Bucle 30 s: intentar salto → fallar barato → reintentar en <2 s.
-- Bucle 10 min: superar sección temática y ver progreso % subir.
-- Bucle sesión: coronar torre, foto + badge + tiempo.
-Dificultad: mide `muertes/intento` por etapa; fácil <15%, media 15–35%, difícil 35–60%, extremo >60% solo opcional; 70% etapas fáciles/medias, 25% difíciles, 5% extremas; checkpoint cada 4–8 saltos o 60–90 s; si el abandono en una etapa supera 40% en 500 intentos, nerfea (plataforma +0.5 studs o checkpoint extra).
+## Game or system loop (design)
+- 30 s loop: attempt jump → fail cheaply → retry in <2 s.
+- 10 min loop: beat a themed section and watch progress % rise.
+- Session loop: crown the tower, photo + badge + time.
+Difficulty: measure `deaths/attempts` per stage; easy <15%, medium 15–35%, hard 35–60%, extreme >60% only optional; 70% easy/medium stages, 25% hard, 5% extreme; checkpoint every 4–8 jumps or 60–90 s; if quits on a stage exceed 40% over 500 attempts, nerf it (+0.5-stud platform or extra checkpoint).
 
-## Proceso paso a paso
-1. Bloquea layout por secciones temáticas de 10 etapas con checkpoint grande al final (componer guardado con `roblox-checkpoints`).
-2. Estandariza saltos: distancia base 7 studs andando, 10–12 corriendo; altura 2–3; lava = muerte instantánea con respawn 1.5 s.
-3. Variedad rotativa: saltos, `Conveyor`, hielo (fricción baja), botones temporales, láseres con patrón; introduce 1 mecánica nueva por sección con zona segura de práctica.
-4. Skips: 1 gratis por torre + resto con Robux/moneda creciente; skip no da tiempo de leaderboard.
-5. Modos: normal (checkpoints), hardcore (sin checkpoints, badge aparte), contrarreloj (timer servidor).
-6. UX: etapa actual/total, % torre, muertes, timer, fantasma de mejor intento si aplica.
-7. Validación de tiempos: timer solo servidor; completa con `Touched` ordenado (componer con `roblox-checkpoints`).
-8. Playtest por cohorte: novatos deben completar torre fácil en 15–25 min con <80 muertes.
+## Step-by-step process
+1. Lock the layout in themed 10-stage sections with a big checkpoint at the end (compose saving with `roblox-checkpoints`).
+2. Standardize jumps: base distance 7 studs walking, 10–12 running; height 2–3; lava = instant death with 1.5 s respawn.
+3. Rotating variety: jumps, `Conveyor`, ice (low friction), timed buttons, patterned lasers; introduce 1 new mechanic per section with a safe practice zone.
+4. Skips: 1 free per tower + rest with Robux/currency at rising cost; skips grant no leaderboard time.
+5. Modes: normal (checkpoints), hardcore (no checkpoints, separate badge), time trial (server timer).
+6. UX: current/total stage, tower %, deaths, timer, best-attempt ghost where applicable.
+7. Time validation: server-only timer; complete with ordered `Touched` (compose with `roblox-checkpoints`).
+8. Cohort playtest: newcomers must complete the easy tower in 15–25 min with <80 deaths.
 
-## Conocimientos técnicos
-### Qué valida el servidor
-- Orden de checkpoints y tiempos coherentes (velocidad a pie + tolerancia).
-- Skip con pago y auditoría; leaderboard excluye runs con skip.
-- Ganador/badge solo si recorrió etapas requeridas en orden.
-- Rate-limit de toques de checkpoint 10/s.
-### Persistencia
-- `DataStoreService`: `maxStage` por torre, mejor tiempo sin skip, muertes totales, skips usados.
-- Guarda cada checkpoint grande + al salir; versión por torre (`obbyTorreA_v2`).
-- Rejoin ofrece continuar; hardcore nunca guarda a mitad.
-### Errores/desconexiones
-- Caída mid-torre: rejoin al último checkpoint grande, no al exacto si cambió el layout.
-- Plataforma móvil desincronizada: usa `TweenService`/CFrame servidor con tiempo, no física cliente.
-- Empuje entre jugadores: colisión opcional desactivable en zonas estrechas.
+## Technical knowledge
+### What the server validates
+- Checkpoint order and coherent times (walking speed + tolerance).
+- Skip with payment and audit; leaderboard excludes skipped runs.
+- Winner/badge only if required stages were covered in order.
+- Checkpoint touch rate-limit 10/s.
+### Persistence
+- `DataStoreService`: `maxStage` per tower, best skip-less time, total deaths, skips used.
+- Save at each big checkpoint + on exit; version per tower (`obbyTorreA_v2`).
+- Rejoin offers continue; hardcore never saves mid-run.
+### Errors/disconnections
+- Mid-tower crash: rejoin at the last big checkpoint, not the exact one if the layout changed.
+- Desynced moving platform: use server-time `TweenService`/CFrame, not client physics.
+- Player pushing: optional collision toggleable in narrow zones.
 ### Anti-exploit
-- Anti-fly/teleport entre checkpoints (distancia/tiempo); 3 strikes = run invalidada sin ban.
-- Anti-noclip en muros finos: grosor mínimo 1 stud + kill-brick detrás si es crítico.
-- Speed-hack: si el tiempo por sección <60% del récord humano, invalida.
-- Skips falsos: solo el servidor puede avanzar etapa.
+- Anti-fly/teleport between checkpoints (distance/time); 3 strikes = invalidated run, no ban.
+- Anti-noclip on thin walls: minimum 1-stud thickness + kill-brick behind if critical.
+- Speed-hack: if section time <60% of the human record, invalidate.
+- Fake skips: only the server can advance a stage.
 
-## Buenas prácticas
-- Muerte barata y rápida: respawn ≤2 s, sin pantalla de carga.
-- Señaliza: verde = seguro, rojo = muerte, amarillo = temporal; tutorial de 5 saltos.
-- Checkpoints visibles y distintos; sonido de logro corto.
-- Rage control: mensaje humorístico, botón práctica, pausa sugerida tras 10 muertes seguidas.
-- Performance: reutiliza piezas, `CanCollide` solo donde importa, LOD en torres de 500+ partes.
+## Best practices
+- Cheap fast death: respawn ≤2 s, no loading screen.
+- Signpost: green = safe, red = death, yellow = timed; 5-jump tutorial.
+- Visible distinct checkpoints; short achievement sound.
+- Rage control: humorous message, practice button, suggested pause after 10 deaths in a row.
+- Performance: reuse pieces, `CanCollide` only where it matters, LOD on 500+ part towers.
 
-## Errores frecuentes
-1. 20 saltos difíciles sin checkpoint → rage-quit 60%; checkpoint cada 5.
-2. Plataformas de 1 stud con lag → imposible en móvil; mínimo 3×3 para normal.
-3. Lava con hitbox gigante → muertes injustas; hitbox 10% más pequeña que visual.
-4. Timer en cliente → récords falsos; timer servidor.
-5. Sin modo práctica → novatos abandonan; práctica sin ranking.
+## Common mistakes
+1. 20 hard jumps with no checkpoint → 60% rage-quit; checkpoint every 5.
+2. 1-stud platforms with lag → impossible on mobile; minimum 3×3 for normal.
+3. Lava with a giant hitbox → unfair deaths; hitbox 10% smaller than the visual.
+4. Client-side timer → fake records; server timer.
+5. No practice mode → newcomers quit; practice with no ranking.
 
-## Criterios de calidad y terminado
-- [ ] Torre fácil completada por 5 testers nuevos en 15–25 min.
-- [ ] Ninguna etapa con abandono >40% en 500 intentos.
-- [ ] Teleport a la cima rechazado 10/10 sin badge.
-- [ ] Respawn medio <2 s en 20 muertes.
-- [ ] Run con skip excluida de leaderboard automáticamente.
-- [ ] 30 jugadores en torre ≥45 FPS.
+## Quality and done criteria
+- [ ] Easy tower completed by 5 new testers in 15–25 min.
+- [ ] No stage with quits >40% over 500 attempts.
+- [ ] Teleport to the top rejected 10/10 with no badge.
+- [ ] Average respawn <2 s over 20 deaths.
+- [ ] Skipped run automatically excluded from the leaderboard.
+- [ ] 30 players in the tower at ≥45 FPS.
 
-## Herramientas
-Servicios/clases: `Players`, `CollectionService`, `Attributes`, `DataStoreService`, `OrderedDataStore` (tiempos), `RemoteEvent`, `BadgeService`, `TweenService`. Componer con `roblox-checkpoints` y `roblox-abilities-cooldowns`. Verificar en create.roblox.com/docs.
+## Tools
+Services/classes: `Players`, `CollectionService`, `Attributes`, `DataStoreService`, `OrderedDataStore` (times), `RemoteEvent`, `BadgeService`, `TweenService`. Compose with `roblox-checkpoints` and `roblox-abilities-cooldowns`. Check create.roblox.com/docs.
 
-## Limitaciones
-- No cubre habilidades de movimiento avanzadas; componer con habilidades.
-- No cubre rankings cross-server complejos; extensión con `MemoryStoreService`.
-- No genera torres procedurales; layout manual o generador aparte.
+## Limitations
+- Does not cover advanced movement abilities; compose with abilities.
+- Does not cover complex cross-server rankings; extension with `MemoryStoreService`.
+- Does not generate procedural towers; manual layout or separate generator.
 
 ```luau
 -- Ilustrativo: tasa de abandono por etapa.

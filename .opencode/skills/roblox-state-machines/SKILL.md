@@ -1,49 +1,49 @@
 ---
 name: roblox-state-machines
-description: Máquinas de estado para IA, UI y gameplay en Luau (estados, transiciones, guardas). Úsala cuando un if/cadena de flags se vuelve inmanejable.
+description: State machines for AI, UI, and gameplay in Luau (states, transitions, guards). Use it when an if/flag chain becomes unmanageable.
 ---
 
-# Máquinas de Estado en Roblox
+# State Machines in Roblox
 
-## Objetivo
-Modelar comportamientos (IA de enemigos, flujos de UI, rondas de juego) como máquinas de estado explícitas: estados, eventos, transiciones y guardas verificables, eliminando banderas booleanas contradictorias.
+## Objective
+Model behaviors (enemy AI, UI flows, round loops) as explicit state machines: verifiable states, events, transitions, and guards, eliminating contradictory boolean flags.
 
-## Alcance y límites
-Diferenciación: `luau-core`, `luau-types` y `roblox-core` cubren lenguaje y ubicación del código; esta skill cubre ingeniería de comportamiento (diseño de estados y transiciones). `roblox-component-systems` cubre composición de entidades; aquí solo se cubre el cerebro que decide qué hacer.
+## Scope and limits
+Differentiation: `luau-core`, `luau-types`, and `roblox-core` cover language and code location; this skill covers behavior engineering (state and transition design). `roblox-component-systems` covers entity composition; only the brain that decides what to do is covered here.
 
-Qué NO hace:
+What it does NOT do:
 
-- NO implementa pathfinding ni animación (usa el estado para decidir, no para mover).
-- NO cubre réplica de estado (eso lo cubre `roblox-networking`); aquí se diseña la máquina autoritativa y qué eventos se replican.
-- NO es un framework: no introduce clases externas, solo `ModuleScript` + tablas + `BindableEvent`.
+- It does NOT implement pathfinding or animation (use state to decide, not to move).
+- It does NOT cover state replication (that is `roblox-networking`); here the authoritative machine is designed plus which events are replicated.
+- It is NOT a framework: it introduces no external classes, only `ModuleScript` + tables + `BindableEvent`.
 
-## Casos de uso
-1. IA de enemigo: Idle → Chase → Attack → Stunned → Dead.
-2. Flujo de UI: Loading → Menu → Lobby → Playing → Results.
-3. Loop de ronda: Waiting → Countdown → Active → Ending → Intermission.
-4. Interactuables: Closed → Opening → Open → Closing.
-5. Jugador: Normal → Dashing → Stunned → Dead (con jerarquía si aporta).
+## Use cases
+1. Enemy AI: Idle → Chase → Attack → Stunned → Dead.
+2. UI flow: Loading → Menu → Lobby → Playing → Results.
+3. Round loop: Waiting → Countdown → Active → Ending → Intermission.
+4. Interactables: Closed → Opening → Open → Closing.
+5. Player: Normal → Dashing → Stunned → Dead (with hierarchy if useful).
 
-## Proceso paso a paso
-1. Enumera estados como valores cerrados (tabla de constantes). Prohíbe strings libres fuera de esa tabla.
-2. Dibuja la matriz de transición: fila = estado origen, columna = evento, celda = destino + guarda. Toda celda vacía es transición ilegal.
-3. Define guardas como funciones puras `(ctx) -> (boolean, razón)`. Ninguna guarda muta estado; solo decide.
-4. Implementa `enter`/`exit` por estado: `enter` adquiere recursos (timers, conexiones), `exit` los libera. Nunca lo contrario.
-5. Centraliza el cambio en una única función `transition(to, reason)`: valida legalidad, llama `exit`, cambia, llama `enter`, emite evento de cambio para observabilidad.
-6. Añade jerarquía solo si hay sub-estados con `exit` compartido (ej. Attack.Melee/Attack.Ranged). Si solo hay 3 estados planos, no jerarquices.
-7. Conecta ticks con cautela: el `Update(dt)` solo ejecuta lógica del estado actual; jamás cambia de estado sin pasar por `transition`.
-8. Registra cada transición (origen → destino, evento, marca temporal) en un log circular para depurar (ver `roblox-error-handling`).
-9. Testea matriz completa: cada transición legal y 3-5 ilegales representativas (ver `roblox-testez`).
+## Step-by-step process
+1. List states as closed values (constant table). Ban free strings outside that table.
+2. Draw the transition matrix: row = origin state, column = event, cell = destination + guard. Every empty cell is an illegal transition.
+3. Define guards as pure functions `(ctx) -> (boolean, reason)`. No guard mutates state; it only decides.
+4. Implement `enter`/`exit` per state: `enter` acquires resources (timers, connections), `exit` releases them. Never the reverse.
+5. Centralize change in a single `transition(to, reason)` function: validate legality, call `exit`, switch, call `enter`, emit change event for observability.
+6. Add hierarchy only if there are sub-states with shared `exit` (e.g. Attack.Melee/Attack.Ranged). If there are only 3 flat states, do not hierarchize.
+7. Connect ticks with care: `Update(dt)` only runs the current state's logic; it never changes state without going through `transition`.
+8. Log every transition (origin → destination, event, timestamp) in a circular log for debugging (see `roblox-error-handling`).
+9. Test the full matrix: every legal transition and 3-5 representative illegal ones (see `roblox-testez`).
 
-## Conocimientos técnicos
-- Representación canónica: tabla `states`, tabla `transitions[origen][evento] = { to, guard }`, estado actual como string de la tabla cerrada.
-- Guardas: validan precondiciones (cooldown listo, distancia, permiso). Si la guarda falla, la máquina se queda y reporta la razón; no hace "mitad" de transición.
-- `BindableEvent` para notificar cambios de estado dentro del mismo contexto; útil para UI que reacciona a la máquina de gameplay.
-- `Attributes` para exponer el estado actual a depuración sin acoplar (ej. atributo `State` legible). No uses atributos como única fuente de verdad si la máquina es autoritativa en servidor.
-- Jerárquicas: un estado padre aporta `enter`/`exit` común y delega a hijos. Implementa como máquinas anidadas solo cuando el `exit` compartido ahorra duplicación real.
-- Temporizadores: cada estado con duración lleva su propio conteo; al salir se cancela. Un timer huérfano es la primera causa de transiciones fantasma.
+## Technical knowledge
+- Canonical representation: `states` table, `transitions[origin][event] = { to, guard }` table, current state as a string from the closed table.
+- Guards: validate preconditions (cooldown ready, distance, permission). If a guard fails, the machine stays and reports the reason; it does no "half" transition.
+- `BindableEvent` to notify state changes within the same context; useful for UI reacting to the gameplay machine.
+- `Attributes` to expose current state for debugging without coupling (e.g. readable `State` attribute). Do not use attributes as the single source of truth if the machine is server-authoritative.
+- Hierarchical: a parent state contributes shared `enter`/`exit` and delegates to children. Implement as nested machines only when the shared `exit` saves real duplication.
+- Timers: each state with duration carries its own count; on exit it is cancelled. An orphaned timer is the first cause of ghost transitions.
 
-Ejemplo ilustrativo (núcleo genérico):
+Illustrative example (generic core):
 
 ```luau
 -- ModuleScript: StateMachine (ilustrativo)
@@ -74,7 +74,7 @@ end
 return StateMachine
 ```
 
-Ejemplo ilustrativo (definición de enemigo):
+Illustrative example (enemy definition):
 
 ```luau
 -- Uso ilustrativo
@@ -95,37 +95,37 @@ local def = {
 }
 ```
 
-## Buenas prácticas
-- Estados con nombres de adjetivo/situación (`Stunned`), eventos con verbos (`stun`, `recover`). No mezclar.
-- Una máquina, un dueño. Si dos sistemas cambian el mismo estado, fusiona o separa máquinas.
-- Transiciones ilegales = `false` + log, nunca error fatal en runtime (en tests sí deben fallar).
-- Expón `current` como lectura; el cambio solo vía `transition`.
-- Documenta la matriz en el encabezado del módulo; el código debe espejarla 1:1.
+## Best practices
+- States with adjective/situation names (`Stunned`), events with verbs (`stun`, `recover`). Do not mix.
+- One machine, one owner. If two systems change the same state, merge or split machines.
+- Illegal transitions = `false` + log, never fatal runtime error (in tests they must fail).
+- Expose `current` as a read; change only via `transition`.
+- Document the matrix in the module header; the code must mirror it 1:1.
 
-## Errores frecuentes
-1. Booleanos paralelos (`isRunning`, `isStunned`, `isDead` a la vez en true): estados contradictorios. Corrección: un único `current`.
-2. Cambiar `current` por asignación directa saltando `exit`/`enter`: fugas de timers y conexiones. Usa siempre `transition`.
-3. Guardas con efectos secundarios (dañan, mueven): se ejecutan dos veces al reintentar. Hazlas puras.
-4. Timer que sobrevive al `exit`: el estado viejo dispara transiciones tarde. Cancela en `exit` y verifica con test.
-5. Jerarquía prematura con 2 estados: complejidad sin ahorro. Empieza plana, jerarquiza al tercer sub-estado duplicado.
-6. Replicar cada tick de la máquina en vez de eventos: spam de red. Replica solo `transition` relevantes (ver `roblox-networking`).
-7. `Update` que decide y transiciona a la vez sin guarda: lógica imposible de testear. Separa "evaluar" de "transicionar".
+## Common mistakes
+1. Parallel booleans (`isRunning`, `isStunned`, `isDead` all true at once): contradictory states. Fix: a single `current`.
+2. Changing `current` by direct assignment skipping `exit`/`enter`: timer and connection leaks. Always use `transition`.
+3. Guards with side effects (they damage, move): they run twice on retry. Keep them pure.
+4. Timer surviving `exit`: the old state fires late transitions. Cancel on `exit` and verify with a test.
+5. Premature hierarchy with 2 states: complexity without savings. Start flat, hierarchize at the third duplicated sub-state.
+6. Replicating every machine tick instead of events: network spam. Replicate only relevant `transition`s (see `roblox-networking`).
+7. `Update` that evaluates and transitions at once without a guard: untestable logic. Separate "evaluate" from "transition".
 
-## Criterios de calidad y terminado
-- [ ] Matriz de transición documentada y sin celdas ambiguas; toda transición ilegal retorna `false` + log.
-- [ ] `enter`/`exit` apareados: ningún recurso sobrevive al cambio (verificable con conteo de conexiones antes/después).
-- [ ] Guardas puras con tests unitarios independientes.
-- [ ] Historial de últimas N transiciones disponible para depuración.
-- [ ] Suite que recorre todos los estados alcanzables y 3+ transiciones ilegales pasa en verde.
-- [ ] Si hay jerarquía, justificación escrita de qué `exit` compartido la motivó.
+## Quality and done criteria
+- [ ] Documented transition matrix with no ambiguous cells; every illegal transition returns `false` + log.
+- [ ] Paired `enter`/`exit`: no resource survives the switch (verifiable with connection count before/after).
+- [ ] Pure guards with independent unit tests.
+- [ ] History of last N transitions available for debugging.
+- [ ] Suite covering all reachable states and 3+ illegal transitions passes green.
+- [ ] If hierarchical, written justification of which shared `exit` motivated it.
 
-## Herramientas
-- `ModuleScript` + `require` para la máquina reutilizable.
-- `BindableEvent` para notificar cambios intra-contexto.
-- `Attributes` para depuración visible del estado.
-- `TestService` + TestEZ para matriz de transiciones (ver `roblox-testez`).
+## Tools
+- `ModuleScript` + `require` for the reusable machine.
+- `BindableEvent` to notify intra-context changes.
+- `Attributes` for visible state debugging.
+- `TestService` + TestEZ for transition matrix (see `roblox-testez`).
 
-## Limitaciones
-- No sustituye diseño de IA (percepción, pathfinding) ni de UI; solo ordena el comportamiento.
-- No cubre réplica autoritativa ni persistencia; deriva a `roblox-networking` y `roblox-datastores`.
-- Si dudas de una firma o servicio, anota `(verificar en create.roblox.com/docs)` antes de usarlo en producción.
+## Limitations
+- Does not replace AI design (perception, pathfinding) or UI design; it only orders behavior.
+- Does not cover authoritative replication or persistence; defer to `roblox-networking` and `roblox-datastores`.
+- If unsure about a signature or service, note `(verify in create.roblox.com/docs)` before using it in production.

@@ -1,90 +1,90 @@
 ---
 name: roblox-rpg
-description: RPG/aventura con clases, stats, mundo, jefes y party. Úsala cuando necesites diseñar progresión, quests de zona, dungeons y combate de grupo.
+description: RPG/adventure with classes, stats, world, bosses, and party. Use it when you need to design progression, zone quests, dungeons, and group combat.
 ---
 
-# RPG / Aventura (Clases, Stats, Mundo, Jefes)
+# RPG / Adventure (Classes, Stats, World, Bosses)
 
-## Objetivo
-Diseñar un RPG jugable 30+ horas: 3–5 clases con identidad, stats transparentes, mundo por zonas, quests, dungeons y jefes con mecánicas, más party que premia cooperar.
+## Objective
+Design a 30+ hour playable RPG: 3–5 classes with identity, transparent stats, zoned world, quests, dungeons, bosses with mechanics, plus a party that rewards cooperating.
 
-## Alcance y límites
-Versión profunda de género: bucles, progresión, mecánicas, UX, rendimiento y pitfalls.
-Diferenciación declarada: `roblox-genre-patterns` es catálogo de 1 línea; esta skill es la versión profunda de RPG. `roblox-game-systems` es recetario fino. NO repite: combate fino se compone con `roblox-combat-systems`, quests/logros con `roblox-quest-progression-systems`, economía con `roblox-economy-balancing`, social/party/clanes con `roblox-social-systems`, eventos mundiales con `roblox-dynamic-events`. Aquí se integran en un mundo coherente.
+## Scope and limits
+Deep genre version: loops, progression, mechanics, UX, performance, and pitfalls.
+Declared differentiation: `roblox-genre-patterns` is a 1-line catalog; this skill is the deep RPG version. `roblox-game-systems` is a lean recipe book. Does NOT repeat: fine combat composes with `roblox-combat-systems`, quests/achievements with `roblox-quest-progression-systems`, economy with `roblox-economy-balancing`, social/party/clans with `roblox-social-systems`, world events with `roblox-dynamic-events`. They are integrated here into a coherent world.
 
-## Casos de uso
-- RPG de mundo abierto con 5 zonas por nivel.
-- Dungeon crawler 4 jugadores con 3 jefes.
-- RPG de historia con capítulos y decisiones.
-- MMO-lite con hubs, profesiones y raids.
-- RPG de evento con temporada y reset suave.
+## Use cases
+- Open-world RPG with 5 zones by level.
+- 4-player dungeon crawler with 3 bosses.
+- Story RPG with chapters and decisions.
+- MMO-lite with hubs, professions, and raids.
+- Event RPG with season and soft reset.
 
-## Bucle de juego o sistema (diseño)
-- Bucle 2 min: matar/explorar → +XP/loot → subir número visible.
-- Bucle 20 min: completar quest de zona, desbloquear punto rápido, mejorar pieza.
-- Bucle sesión: dungeon/jefe con loot semanal + progreso de historia.
-- Bucle temporada: nivel cap, raid, mount/título exclusivo.
-Progresión: XP `100 * 1.28^nivel`, tiempo/nivel 12–20 min hasta 20, 30–45 min hasta 40; stats: cada punto +2% daño o +15 HP; clases con delta: guerrero +40% HP/−10% daño, mago +35% daño/−30% HP, pícaro +20% crit; boss HP = DPS_party_esperado × 120–180 s; si el 80% juega 1 clase, buffa identidad de las otras, no solo números.
+## Game or system loop (design)
+- 2-min loop: kill/explore → +XP/loot → visible number goes up.
+- 20-min loop: complete zone quest, unlock fast-travel point, upgrade a piece.
+- Session loop: dungeon/boss with weekly loot + story progress.
+- Season loop: level cap, raid, exclusive mount/title.
+Progression: XP `100 * 1.28^level`, time/level 12–20 min to 20, 30–45 min to 40; stats: each point +2% damage or +15 HP; class deltas: warrior +40% HP/−10% damage, mage +35% damage/−30% HP, rogue +20% crit; boss HP = expected_party_DPS × 120–180 s; if 80% play 1 class, buff the identity of the others, not just numbers.
 
-## Proceso paso a paso
-1. Define 3–5 clases con fantasía, recurso (maná/furia), rol (tank/heal/DPS) y 6–8 habilidades (componer cooldowns con `roblox-abilities-cooldowns`).
-2. Stats derivadas en servidor: `daño = base × (1+ATK/100) × multClase`; muestra fórmula simplificada en UI.
-3. Mundo por zonas de nivel (1–10, 10–20...) con transiciones, puntos rápidos y nivel sincronizado (sidekick: −2/+2) para jugar con amigos.
-4. Quests de zona: 3 principales + 4 secundarias por zona (componer estructura con `roblox-quest-progression-systems`); marcador + distancia siempre.
-5. Dungeons: lockout diario/semanal, roles requeridos 1-1-2, checkpoints por jefe (componer con `roblox-checkpoints`).
-6. Jefes con 2–4 mecánicas telegrafiadas (AoE 2 s, adds, fase 50%); enrage a 5 min para evitar eternas.
-7. Party: loot por contribución + need/greed simple, revive con casteo 3 s, XP compartida en 60 m.
-8. Onboarding: 10 min con clase prestada, cambio gratis hasta nivel 10, luego con coste.
+## Step-by-step process
+1. Define 3–5 classes with fantasy, resource (mana/fury), role (tank/heal/DPS), and 6–8 abilities (compose cooldowns with `roblox-abilities-cooldowns`).
+2. Server-side derived stats: `damage = base × (1+ATK/100) × classMult`; show a simplified formula in UI.
+3. Level-zoned world (1–10, 10–20...) with transitions, fast-travel points, and synced level (sidekick: −2/+2) to play with friends.
+4. Zone quests: 3 main + 4 side per zone (compose structure with `roblox-quest-progression-systems`); marker + distance always.
+5. Dungeons: daily/weekly lockout, required roles 1-1-2, checkpoints per boss (compose with `roblox-checkpoints`).
+6. Bosses with 2–4 telegraphed mechanics (2 s AoE, adds, 50% phase); 5-min enrage to avoid endless fights.
+7. Party: contribution loot + simple need/greed, revive with 3 s cast, shared XP within 60 m.
+8. Onboarding: 10 min with a loaned class, free swap until level 10, then with cost.
 
-## Conocimientos técnicos
-### Qué valida el servidor
-- Daño/XP/loot calculados en servidor; cliente nunca envía "subo nivel".
-- Habilidades con cooldown/recurso/estado (componer validación de habilidades).
-- Acceso a zona/dungeon por nivel/quest/llave; teleport solo servidor.
-- Need/greed: un voto por jugador, objeto único, timeout 30 s.
-### Persistencia
-- `DataStoreService`: nivel, XP, clase, stats, inventario, quests, cooldowns de lockout (`dungeonId→reseteaUnix`), puntos rápidos.
-- Guarda cada 90 s + tras boss/level-up; `UpdateAsync` si hay trade.
-- Temporadas: snapshot `season_3` separado; reset suave conserva cosméticos.
-### Errores/desconexiones
-- Caída en boss: rejoin en 5 min vuelve a la puerta del jefe, no al inicio, si el grupo sigue vivo.
-- Líder se va: liderazgo pasa al siguiente + loot sigue repartible.
-- Rollback: congela trade 10 min y avisa; no borra progreso sin backup.
+## Technical knowledge
+### What the server validates
+- Damage/XP/loot computed on server; client never sends "level up".
+- Abilities with cooldown/resource/state (compose ability validation).
+- Zone/dungeon access by level/quest/key; server-only teleport.
+- Need/greed: one vote per player, unique item, 30 s timeout.
+### Persistence
+- `DataStoreService`: level, XP, class, stats, inventory, quests, lockout cooldowns (`dungeonId→resetUnix`), fast-travel points.
+- Save every 90 s + after boss/level-up; `UpdateAsync` if there is trading.
+- Seasons: separate `season_3` snapshot; soft reset keeps cosmetics.
+### Errors/disconnections
+- Disconnect during boss: rejoin within 5 min returns to the boss door, not the start, if the group is still alive.
+- Leader leaves: leadership passes to the next + loot stays distributable.
+- Rollback: freeze trading 10 min and warn; never wipe progress without backup.
 ### Anti-exploit
-- Anti-farm de élite: lockout + diminishing returns tras 5 kills/hora (−80%).
-- Anti-teleport a zona final: valida nivel en cada ganancia de XP.
-- Anti-oneshot: clamp de daño/atributo (ej. ATK ≤ 5000) con log de outliers.
-- Detección de bots: farmeo 3 h sin quest ni movimiento social = revisión.
+- Elite anti-farm: lockout + diminishing returns after 5 kills/hour (−80%).
+- Anti-teleport to final zone: validate level on every XP gain.
+- Anti-oneshot: damage/attribute clamp (e.g. ATK ≤ 5000) with outlier logging.
+- Bot detection: farming 3 h with no quest or social movement = review.
 
-## Buenas prácticas
-- Identidad antes que números: cada clase debe sentirse distinta en 5 min.
-- Tiempo a diversión <10 min: combate, loot y primera quest completada.
-- Muestra números honestos (DPS, % crit) y dummies de prueba por zona.
-- Accesibilidad: reasignar teclas, modo daltónico, telegrafías con forma + color.
-- Performance: culling por zona, pools de enemigos (máx 40 activos), LOD de VFX.
+## Best practices
+- Identity before numbers: each class must feel different in 5 min.
+- Time to fun <10 min: combat, loot, and first completed quest.
+- Show honest numbers (DPS, % crit) and test dummies per zone.
+- Accessibility: rebindable keys, colorblind mode, telegraphs with shape + color.
+- Performance: culling per zone, enemy pools (max 40 active), VFX LOD.
 
-## Errores frecuentes
-1. 12 clases sin identidad → todas iguales; 3–5 pulidas mejor.
-2. Quest "mata 50" sin historia → churn; mezcla con exploración y jefes.
-3. Boss esponja sin mecánicas → aburrido; 2 mecánicas mínimo + fases.
-4. Sin sincronía de nivel → amigos no juegan juntos; sidekick obligatorio.
-5. Loot ninja sin reglas → toxicidad; need/greed + log visible.
+## Common mistakes
+1. 12 classes with no identity → all the same; 3–5 polished is better.
+2. "Kill 50" quest with no story → churn; mix with exploration and bosses.
+3. Sponge boss with no mechanics → boring; 2 mechanics minimum + phases.
+4. No level sync → friends cannot play together; sidekick required.
+5. Ninja loot with no rules → toxicity; need/greed + visible log.
 
-## Criterios de calidad y terminado
-- [ ] Nuevo jugador completa tutorial y primera quest en <15 min sin ayuda.
-- [ ] 4 clases entre 15–35% pick-rate en 200 jugadores.
-- [ ] Boss de 4 con grupo medio cae en 2–4 min con 1–3 wipes de aprendizaje.
-- [ ] Exploit de XP (teleport a zona final) otorga 0 XP en 10 pruebas.
-- [ ] Rejoin a dungeon conserva lockout y permite retomar en jefe.
-- [ ] 20 jugadores + 30 NPCs por zona ≥40 FPS en dispositivo medio.
+## Quality and done criteria
+- [ ] New player completes tutorial and first quest in <15 min unaided.
+- [ ] 4 classes at 15–35% pick-rate across 200 players.
+- [ ] 4-player boss with an average group falls in 2–4 min with 1–3 learning wipes.
+- [ ] XP exploit (teleport to final zone) grants 0 XP in 10 tests.
+- [ ] Dungeon rejoin keeps lockout and allows resuming at boss.
+- [ ] 20 players + 30 NPCs per zone ≥40 FPS on mid-range device.
 
-## Herramientas
-Servicios/clases: `RemoteEvent`, `RemoteFunction`, `Players`, `Teams`, `Attributes`, `CollectionService`, `DataStoreService`, `OrderedDataStore`, `BadgeService`, `MarketplaceService`, `PathfindingService`, `ProximityPrompt`. Componer con `roblox-combat-systems`, `roblox-quest-progression-systems`, `roblox-social-systems`. Verificar en create.roblox.com/docs.
+## Tools
+Services/classes: `RemoteEvent`, `RemoteFunction`, `Players`, `Teams`, `Attributes`, `CollectionService`, `DataStoreService`, `OrderedDataStore`, `BadgeService`, `MarketplaceService`, `PathfindingService`, `ProximityPrompt`. Compose with `roblox-combat-systems`, `roblox-quest-progression-systems`, `roblox-social-systems`. Verify in create.roblox.com/docs.
 
-## Limitaciones
-- No sustituye el diseño de combate/quests/economía; los compone.
-- Raids de 20+ y PvP masivo requieren arquitectura adicional.
-- Historia ramificada compleja queda fuera; arcos lineales + secundarias aquí.
+## Limitations
+- Does not replace combat/quest/economy design; it composes them.
+- 20+ raids and massive PvP require additional architecture.
+- Complex branching story is out of scope; linear arcs + side quests here.
 
 ```luau
 -- Ilustrativo: XP y nivel en servidor.

@@ -1,60 +1,60 @@
 ---
 name: roblox-land-vehicles
-description: Vehículos terrestres arcade (chasis, suspensión, asientos, ownership). Úsala cuando montes karts, coches o motos que se conducen bien y no se desarman en red.
+description: Arcade land vehicles (chassis, suspension, seats, ownership). Use it when building karts, cars, or bikes that drive well and don't fall apart over the network.
 ---
 
-# Vehículos Terrestres
+# Land Vehicles
 
-## Objetivo
+## Objective
 
-Crear vehículos de tierra divertidos y estables: chasis predecible, suspensión arcade o física según presupuesto, entrada/salida limpias con `Seat`/`VehicleSeat` y ownership de red que evita jitter y robos.
+Create fun, stable ground vehicles: predictable chassis, arcade or physics suspension by budget, clean enter/exit with `Seat`/`VehicleSeat`, and network ownership that avoids jitter and theft.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre karts, coches y motos del jugador: chasis, suspensión, dirección, asientos, entrada/salida y red.
+Covers player karts, cars, and bikes: chassis, suspension, steering, seats, enter/exit, and networking.
 
-**Qué NO hace:**
+**What it does NOT do:**
 
-- NO cubre construcción detallada de la carrocería como modelo: la construcción base se apoya en criterios de modelo de vehículo (esta skill define chasis y comportamiento, no el arte final).
-- NO cubre ciclo de vida del personaje a pie: lo cubre `roblox-characters`.
-- NO cubre cámaras de persecución: lo cubre `camera-systems` (aquí solo velocidad/posición para la cámara).
-- NO cubre daño/economía/garaje: son sistemas de gameplay aparte.
-- NO cubre NPCs conduciendo: lo cubre `roblox-npcs`.
-- NO cubre audio de motor: solo timing con RPM como requisito, no diseño de sonido.
+- Does NOT cover detailed body construction as a model: base construction follows vehicle-model criteria (this skill defines chassis and behavior, not final art).
+- Does NOT cover on-foot character lifecycle: covered by `roblox-characters`.
+- Does NOT cover chase cameras: covered by `camera-systems` (here only speed/position for the camera).
+- Does NOT cover damage/economy/garage: those are separate gameplay systems.
+- Does NOT cover NPC driving: covered by `roblox-npcs`.
+- Does NOT cover engine audio: only timing with RPM as a requirement, not sound design.
 
-## Casos de uso
+## Use cases
 
-1. Kart arcade para party game (4–8 jugadores).
-2. Coche urbano con derrape controlado.
-3. Moto rápida que no vuelca en cada curva.
-4. Pasajeros: conductor + 2 asientos traseros.
-5. Vehículo que tiembla o se teletransporta con lag.
-6. Jugadores que roban coches ajenos o los lanzan al vacío.
+1. Arcade kart for a party game (4–8 players).
+2. City car with controlled drift.
+3. Fast bike that doesn't flip on every corner.
+4. Passengers: driver + 2 rear seats.
+5. Vehicle that shakes or teleports with lag.
+6. Players stealing other people's cars or launching them into the void.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Elige arcade vs física.** Arcade (recomendado para party/mobile): velocidad dirigida, agarre alto, vuelco imposible salvo rampa. Física con restricciones: más real pero exige tuning de suspensión y anti-vuelco. Decide por público, no por prestigio.
-2. **Monta el chasis mínimo.** Cuerpo principal + 4 puntos de rueda (o 2 en moto) + `Seat` de conductor y `Seat` de pasajeros + `VehicleSeat` si necesitas el modelo clásico de conducción. El chasis colisiona; la carrocería visual idealmente no.
-3. **Configura suspensión arcade primero.** Altura fija al suelo, absorción visual (ruedas suben/bajan) sin simular muelles reales, límite de inclinación (pitch/roll capados). Si el coche nunca se queda atascado en bordillos de 0.5 studs, la base sirve.
-4. **Tunea dirección y derrape.** Velocidad máxima, aceleración, radio de giro por velocidad (a más velocidad, menos giro), derrape como pérdida parcial de agarre trasero con recuperación automática. Documenta los 4 números.
-5. **Implementa entrada/salida.** Entrada: `ProximityPrompt` o触 toque del `Seat` con distancia máxima y vehículo casi quieto; salida: coloca al `Character` al lado libre con espacio, nunca dentro del chasis ni bajo el mapa. Prohíbe salir a más de X velocidad.
-6. **Asigna ownership de red.** El conductor posee la simulación (su cliente mueve, los demás ven réplica); al bajar, la propiedad vuelve al servidor. Un solo dueño a la vez; cambio atómico con estado "en transición".
-7. **Añade límites y anti-abuso.** Velocidad máxima dura validada en servidor, zona de mapa (fuera = respawn del vehículo), anti-empuje (un coche no lanza otro al vacío), cooldown de entrada tras robo. El cliente propone aceleración, el servidor valida posición/velocidad.
-8. **Prueba con pasajeros y lag.** Conductor + pasajeros con 150–200 ms: ¿los pasajeros vibran? ¿el coche se teletransporta? Ajusta tasa de réplica y suavizado antes de tocar la física.
-9. **Tunea vuelco y atascos.** Rampas, bordillos, choques frontales: el arcade se endereza solo en 1 s; el físico tiene botón/auto-enderezado. Ningún vehículo queda boca abajo para siempre.
-10. **Congela la ficha.** Velocidad max, aceleración, giro, agarre, asientos, ownership y reglas de robo. Sin ficha no hay "terminado".
+1. **Pick arcade vs. physics.** Arcade (recommended for party/mobile): directed speed, high grip, impossible rollover except on ramps. Constraint physics: more real but demands suspension and anti-roll tuning. Decide by audience, not prestige.
+2. **Build the minimal chassis.** Main body + 4 wheel points (or 2 on a bike) + driver `Seat` and passenger `Seat`s + `VehicleSeat` if you need the classic driving model. The chassis collides; the visual body ideally does not.
+3. **Set up arcade suspension first.** Fixed ride height, visual absorption (wheels move up/down) without simulating real springs, tilt cap (pitch/roll clamped). If the car never gets stuck on 0.5-stud curbs, the base works.
+4. **Tune steering and drift.** Top speed, acceleration, speed-sensitive turn radius (faster = less turn), drift as partial loss of rear grip with automatic recovery. Document the 4 numbers.
+5. **Implement enter/exit.** Enter: `ProximityPrompt` or touch on the `Seat` with max distance and a near-stopped vehicle; exit: place the `Character` in free space beside it, never inside the chassis or under the map. Forbid exiting above X speed.
+6. **Assign network ownership.** The driver owns the simulation (their client moves it, others see the replica); on exit, ownership returns to the server. One owner at a time; atomic transition with an "in transition" state.
+7. **Add limits and anti-abuse.** Server-enforced hard top speed, map zone (outside = vehicle respawn), anti-push (one car can't launch another into the void), entry cooldown after theft. The client proposes acceleration, the server validates position/speed.
+8. **Test with passengers and lag.** Driver + passengers at 150–200 ms: do passengers vibrate? Does the car teleport? Adjust replication rate and smoothing before touching physics.
+9. **Tune rollover and stucks.** Ramps, curbs, head-on crashes: arcade self-rights within 1 s; physics has a button/auto-right. No vehicle stays upside down forever.
+10. **Freeze the spec sheet.** Max speed, acceleration, steering, grip, seats, ownership, and theft rules. No spec sheet, no "done".
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- **`Seat` vs `VehicleSeat`:** el `Seat` sienta al `Character` y le da occupant; el `VehicleSeat` añade controles de conducción clásicos (acelerar/girar). Elige según si conduces con lógica propia (Seat + tu código) o con el modelo clásico.
-- **Chasis vs carrocería:** el chasis (partes simples, colisión activada) define física; la carrocería (`SkinnedMesh`/detalles, sin colisión o mínima) define arte. Mezclarlos causa atascos en marcos de puerta.
-- **`Humanoid` sentado:** al sentarse, el `Humanoid` cambia a estado sentado y el controlador a pie se suspende; al salir, se restaura. Coordina con `roblox-character-controller` para no dejar velocidades residuales.
-- **Arcade:** tú integras velocidad向 dirección con agarre; estable y barato en red. Física con restricciones: el motor resuelve; divertido pero sensible a lag y a masas dispares.
-- **Ownership:** quien conduce simula; el servidor valida (velocidad, posición, dentro de mapa). Sin dueño claro hay jitter por doble simulación.
-- **`ProximityPrompt` de entrada:** distancia, cooldown y "vehículo casi quieto" evitan robos a 100 studs/s.
-- **Pasajeros:** ocupantes sin control; su `Character` sigue al `Seat`. Limita su capacidad de mover el vehículo (peso o nada) para evitar griefing.
+- **`Seat` vs `VehicleSeat`:** `Seat` seats the `Character` and gives it an occupant; `VehicleSeat` adds classic driving controls (throttle/steer). Choose based on whether you drive with custom logic (Seat + your code) or the classic model.
+- **Chassis vs body:** the chassis (simple parts, collision on) defines physics; the body (`SkinnedMesh`/details, no or minimal collision) defines art. Mixing them causes snags on door frames.
+- **Seated `Humanoid`:** when seated, the `Humanoid` switches to the seated state and the on-foot controller suspends; on exit it restores. Coordinate with `roblox-character-controller` so no residual velocity remains.
+- **Arcade:** you integrate speed toward heading with grip; stable and cheap over the network. Constraint physics: the engine resolves; fun but sensitive to lag and mismatched masses.
+- **Ownership:** whoever drives simulates; the server validates (speed, position, inside map). Without a clear owner there is jitter from double simulation.
+- **Entry `ProximityPrompt`:** distance, cooldown, and "vehicle nearly stopped" prevent thefts at 100 studs/s.
+- **Passengers:** occupants with no control; their `Character` follows the `Seat`. Limit their ability to move the vehicle (weight or nothing) to avoid griefing.
 
-Ejemplo ilustrativo (entrada validada, no código final):
+Illustrative example (validated entry, not final code):
 
 ```luau
 -- Ilustrativo: solo permite sentarse si el vehículo va despacio y hay sitio.
@@ -64,45 +64,45 @@ if vehicleVelocidad <= 5 and asientoConductor.Occupant == nil then
 end
 ```
 
-## Buenas prácticas
+## Best practices
 
-- El cliente propone input de conducción, el servidor valida: velocidad máxima, posición dentro de mapa y transiciones de asiento se comprueban en servidor.
-- Un dueño de red a la vez; transición atómica conductor→servidor→nuevo conductor.
-- Salida siempre a espacio libre comprobado; jamás dentro de geometría.
-- Arcade por defecto salvo que el juego venda simulación; el tuning físico cuesta semanas.
-- Separa colisión (chasis simple) de visual (carrocería detallada sin colisión).
-- Registra robos/abandonos para balancear cooldowns y respawns.
+- The client proposes driving input, the server validates: top speed, position inside the map, and seat transitions are checked on the server.
+- One network owner at a time; atomic driver→server→new-driver transition.
+- Always exit to verified free space; never inside geometry.
+- Arcade by default unless the game sells simulation; physics tuning costs weeks.
+- Separate collision (simple chassis) from visuals (detailed body with no collision).
+- Log thefts/abandons to balance cooldowns and respawns.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Sin dueño claro:** dos clientes simulan y el coche vibra. Un owner a la vez.
-2. **Salida dentro del chasis:** el jugador aparece atascado o bajo el mapa. Busca punto libre lateral.
-3. **Carrocería con colisión:** se engancha en cada puerta. Solo el chasis colisiona.
-4. **Sin límite de servidor:** cliente a 300 studs/s. Velocidad máxima dura en servidor.
-5. **Vuelco permanente:** sin auto-enderezado el coche muere boca abajo. Enderezado en ≤1 s (arcade) o botón.
-6. **Robo a distancia:** entrar desde lejos o a toda velocidad. Distancia + velocidad + cooldown.
-7. **Pasajero que conduce:** permitir input de pasajeros o que su peso vuelque. Pasajeros sin autoridad.
+1. **No clear owner:** two clients simulate and the car vibrates. One owner at a time.
+2. **Exit inside the chassis:** the player spawns stuck or under the map. Find a free side point.
+3. **Body with collision:** snags on every door. Only the chassis collides.
+4. **No server limit:** client at 300 studs/s. Hard top speed on the server.
+5. **Permanent rollover:** without auto-right the car dies upside down. Right within ≤1 s (arcade) or button.
+6. **Remote theft:** entering from far away or at full speed. Distance + speed + cooldown.
+7. **Driving passenger:** letting passengers input or their weight flip the car. Passengers have no authority.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Ficha con velocidad, aceleración, giro, agarre, asientos y ownership.
-- [ ] Entrada/salida sin atascos en 20 intentos (incluye salida junto a pared).
-- [ ] Sin jitter con 150 ms (conductor + 2 pasajeros observados).
-- [ ] Validación de servidor rechaza velocidad/teleport en prueba adversaria.
-- [ ] Auto-enderezado o botón verificado boca abajo en 3 superficies.
-- [ ] Fuera de mapa = respawn del vehículo sin perder al jugador.
-- [ ] Derrape controlable por jugador nuevo en 3 intentos.
+- [ ] Spec sheet with speed, acceleration, steering, grip, seats, and ownership.
+- [ ] Enter/exit with no snags in 20 attempts (includes exit next to a wall).
+- [ ] No jitter at 150 ms (driver + 2 observed passengers).
+- [ ] Server validation rejects speed/teleport in adversarial test.
+- [ ] Auto-right or button verified upside down on 3 surfaces.
+- [ ] Off-map = vehicle respawn without losing the player.
+- [ ] Drift controllable by a new player within 3 attempts.
 
-## Herramientas
+## Tools
 
-- Pista de pruebas (recta, slalom, bordillos, rampa, pared lateral).
-- Ficha de vehículo estándar + tabla de ownership y transiciones.
-- Cliente de prueba con lag simulado y prueba de robo/exploit.
-- Checklist de entrada/salida (20 intentos).
+- Test track (straight, slalom, curbs, ramp, side wall).
+- Standard vehicle spec sheet + ownership and transition table.
+- Test client with simulated lag and theft/exploit test.
+- Enter/exit checklist (20 attempts).
 
-## Limitaciones
+## Limitations
 
-- No cubre daño, combustible, garaje ni economía (sistemas aparte).
-- No cubre audio de motor más allá de exponer RPM/velocidad.
-- No cubre persecuciones con IA (ver `roblox-npcs`).
-- APIs fuera de la lista estable: "(verificar en create.roblox.com/docs)".
+- No damage, fuel, garage, or economy (separate systems).
+- No engine audio beyond exposing RPM/speed.
+- No AI pursuits (see `roblox-npcs`).
+- APIs outside the stable list: "(see create.roblox.com/docs)".

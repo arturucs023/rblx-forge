@@ -1,92 +1,92 @@
 ---
 name: roblox-meshparts-geometry
-description: MeshParts y geometría (mesh vs parts, CSG con moderación, colisiones caja vs precisas, escalado). Úsala cuando decidas entre piezas clásicas o mallas y necesites formas complejas sin romper rendimiento ni colisiones.
+description: MeshParts and geometry (mesh vs parts, moderate CSG, box vs precise collisions, scaling). Use it when deciding between classic parts or meshes and needing complex shapes without breaking performance or collisions.
 ---
 
-# MeshParts y Geometría
+# MeshParts and Geometry
 
-## Objetivo
+## Objective
 
-Decidir con criterio cuándo usar `Part` clásicas, cuándo `MeshPart` y cuándo CSG (`UnionOperation` / `NegateOperation`), y aplicar colisiones (caja vs. precisa) y escalado correctos para formas complejas que sigan siendo jugables y baratas.
+Decide with criteria when to use classic `Part`s, when `MeshPart`, and when CSG (`UnionOperation` / `NegateOperation`), and apply correct collisions (box vs. precise) and scaling so complex shapes stay playable and cheap.
 
-## Alcance y límites
+## Scope and limits
 
-Qué NO hace ni cubre esta skill:
+What this skill does NOT do or cover:
 
-- NO diseña QUÉ formas necesita cada zona (estilo, temática): eso lo diseñan `roblox-world-building` (generalista) y `roblox-exterior-architecture`, `roblox-interior-design`, `roblox-city-settlements`, `roblox-terrain-sculpting`, `roblox-vegetation-landscaping`, `roblox-materials-surfaces`, `roblox-props-decoration` (propias, en curso).
-- NO cubre construcción modular, vehículos ni props como tales: eso lo cubren `roblox-modular-building`, `roblox-vehicle-construction` y `roblox-props-creation` (esta skill solo aporta el criterio geométrico).
-- NO cubre organización global ni sync: eso lo cubren `roblox-model-organization` y `roblox-rojo`.
+- Does NOT design WHAT each zone's shapes should be (style, theme): that is designed by `roblox-world-building` (generalist) and `roblox-exterior-architecture`, `roblox-interior-design`, `roblox-city-settlements`, `roblox-terrain-sculpting`, `roblox-vegetation-landscaping`, `roblox-materials-surfaces`, `roblox-props-decoration` (own, in progress).
+- Does NOT cover modular construction, vehicles, or props as such: that is covered by `roblox-modular-building`, `roblox-vehicle-construction`, and `roblox-props-creation` (this skill only provides the geometric criterion).
+- Does NOT cover global organization or sync: that is covered by `roblox-model-organization` and `roblox-rojo`.
 
-Diferenciación declarada: `roblox-world-building` (instalada, generalista fina) y las skills propias (`roblox-exterior-architecture` / `roblox-interior-design` / `roblox-city-settlements` / `roblox-terrain-sculpting` / `roblox-vegetation-landscaping` / `roblox-materials-surfaces` / `roblox-props-decoration`) diseñan QUÉ construir; esta skill explica CÓMO construirlo (técnica geométrica). `roblox-rojo` cubre el sync; esta skill cubre la técnica de modelado.
+Declared differentiation: `roblox-world-building` (installed, concise generalist) and the own skills (`roblox-exterior-architecture` / `roblox-interior-design` / `roblox-city-settlements` / `roblox-terrain-sculpting` / `roblox-vegetation-landscaping` / `roblox-materials-surfaces` / `roblox-props-decoration`) design WHAT to build; this skill explains HOW to build it (geometric technique). `roblox-rojo` covers sync; this skill covers modeling technique.
 
-## Casos de uso
+## Use cases
 
-- Decidir si un arco, escalera curva o roca va en `Part`, CSG o `MeshPart`.
-- Recortar un vano (puerta/ventana) con `NegateOperation` sin destrozar el rendimiento.
-- Sustituir un grupo de 30 `Part` por un `MeshPart` equivalente.
-- Corregir un `MeshPart` que se ve bien pero atraviesa al avatar o engancha.
+- Decide whether an arch, curved staircase, or rock goes in `Part`, CSG, or `MeshPart`.
+- Cut an opening (door/window) with `NegateOperation` without wrecking performance.
+- Replace a group of 30 `Part`s with an equivalent `MeshPart`.
+- Fix a `MeshPart` that looks fine but lets the avatar through or snags.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Clasifica la forma.** Recta/repetible → `Part`. Recorte puntual (vano, hueco) → CSG. Curva/orgánica/única repetida muchas veces → candidata a `MeshPart`.
-2. **Prueba primero con `Part`.** Bloquea la forma con piezas clásicas y valida escala avatar (pasos ~2x avatar) antes de invertir en malla o CSG.
-3. **Usa CSG con moderación.** Une solo lo necesario con `UnionOperation` y recorta con `NegateOperation` para vanos puntuales; evita cadenas de decenas de operaciones.
-4. **Separa visual de colisión.** Tras CSG o malla, envuelve en colliders simples de `Part` (cajas) para suelos, muros y pasos; reserva la colisión precisa solo a casos que la exijan (verificar opciones exactas en create.roblox.com/docs si dudas).
-5. **Introduce `MeshPart` donde aporte.** Sustituye grupos caros de piezas o formas imposibles en `Part` (ruedas, morros, rocas) por un `MeshPart` de densidad razonable.
-6. **Escala con cuidado.** Escala `MeshPart` de forma uniforme cuando sea posible; si escalas no uniforme, verifica deformaciones y revalida colisiones y apoyos.
-7. **Valida a pie y con cámara.** Recorre la pieza, choca, sube/baja y mírala desde la `Camera` real; una malla perfecta en editor puede fallar en juego.
-8. **Mide el coste.** Compara instancias y legibilidad antes/después; si el `MeshPart` no reduce piezas ni mejora lectura, vuelve a `Part`.
-9. **Empaqueta y etiqueta.** Guarda cada pieza como `Model`/`MeshPart` nombrado en su `Folder`, con `Tags`/`Attributes` (`Geometria="Mesh/CSG/Parts"`, `Collider="Caja/Precisa"`).
-10. **Deja listo para Rojo.** No versiona binarios nuevos ni dependencias: la malla queda referenciada y organizada para que `roblox-rojo` la sincronice sin pisar trabajo.
+1. **Classify the shape.** Straight/repeatable → `Part`. Punctual cut (opening, hollow) → CSG. Curved/organic/unique repeated many times → `MeshPart` candidate.
+2. **Prototype with `Part` first.** Block out the shape with classic parts and validate avatar scale (~2x avatar steps) before investing in mesh or CSG.
+3. **Use CSG sparingly.** Union only what's needed with `UnionOperation` and cut punctual openings with `NegateOperation`; avoid chains of dozens of operations.
+4. **Separate visual from collision.** After CSG or mesh, wrap in simple `Part` colliders (boxes) for floors, walls, and steps; reserve precise collision for cases that demand it (verify exact options in create.roblox.com/docs if unsure).
+5. **Bring in `MeshPart` where it helps.** Replace expensive part groups or shapes impossible in `Part` (wheels, snouts, rocks) with a reasonable-density `MeshPart`.
+6. **Scale carefully.** Scale `MeshPart` uniformly when possible; with non-uniform scale, verify deformations and revalidate collisions and supports.
+7. **Validate on foot and with camera.** Walk the piece, bump, climb/descend, and view it from the real `Camera`; a perfect-in-editor mesh can fail in game.
+8. **Measure cost.** Compare instances and readability before/after; if the `MeshPart` doesn't reduce parts or improve readability, go back to `Part`.
+9. **Pack and label.** Save each piece as a named `Model`/`MeshPart` in its `Folder`, with `Tags`/`Attributes` (`Geometry="Mesh/CSG/Parts"`, `Collider="Box/Precise"`).
+10. **Leave it Rojo-ready.** No versioned new binaries or dependencies: the mesh stays referenced and organized so `roblox-rojo` syncs it without clobbering work.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- `Part` vs `MeshPart`: `Part` es predecible, barata y fácil de editar; `MeshPart` gana en formas curvas/orgánicas y en reducir muchas piezas a una, pero exige controlar escala y colisión.
-- CSG (`UnionOperation` / `NegateOperation`): útil para fusiones y recortes puntuales; el abuso (decenas de uniones) complica edición y colisiones. Con moderación.
-- Colisiones caja vs. precisa: la caja (collider simple de `Part`) es estable y barata para jugar; la precisa sigue la malla pero puede enganchar en detalles. Por defecto, caja; precisa solo con motivo.
-- Escalado: escalar `MeshPart` cambia también su colisión aparente; revalida apoyos (flotación/hundimiento) y pasos tras cada escalado no uniforme.
-- `SpecialMesh`: redondeo barato dentro de `Part` para detalles (esferas, cilindros) sin saltar a malla completa.
-- Escala avatar: vanos recortados con `NegateOperation` deben respetar ~2x avatar; un arco precioso pero bajo es un fallo jugable.
-- Rendimiento: menos instancias y colliders simples; un `MeshPart` que sustituye a 30 piezas suele compensar, uno que sustituye a 2 no.
-- `Workspace` / `StreamingEnabled`, `Lighting`, `Camera`: valida mallas bajo luz real, con streaming y desde ángulos de juego; los sombreados cambian respecto al editor.
+- `Part` vs `MeshPart`: `Part` is predictable, cheap, and easy to edit; `MeshPart` wins on curved/organic shapes and on collapsing many parts into one, but demands scale and collision control.
+- CSG (`UnionOperation` / `NegateOperation`): useful for punctual merges and cuts; abuse (dozens of unions) complicates editing and collisions. In moderation.
+- Box vs. precise collisions: the box (simple `Part` collider) is stable and cheap for play; precise follows the mesh but can snag on detail. Box by default; precise only with reason.
+- Scaling: scaling `MeshPart` also changes its apparent collision; revalidate supports (floating/sinking) and steps after each non-uniform scale.
+- `SpecialMesh`: cheap rounding inside `Part` for details (spheres, cylinders) without jumping to a full mesh.
+- Avatar scale: openings cut with `NegateOperation` must respect ~2x avatar; a beautiful but short arch is a playable failure.
+- Performance: fewer instances and simple colliders; a `MeshPart` replacing 30 parts usually pays off, one replacing 2 doesn't.
+- `Workspace` / `StreamingEnabled`, `Lighting`, `Camera`: validate meshes under real light, with streaming, and from play angles; shading changes vs. the editor.
 
-## Buenas prácticas
+## Best practices
 
-- Regla de oro: `Part` por defecto, CSG para recortes puntuales, `MeshPart` para lo que `Part` no puede hacer bien.
-- Un `UnionOperation` por pieza lógica, no uno por nivel entero.
-- Toda malla o CSG en zona de paso lleva collider de caja aunque "parezca" colisionar bien.
-- Nombra con tipo geométrico (`Arco_CSG_4studs`, `Roca_Mesh_01`) para saber qué estás tocando.
-- Conserva la versión en `Part` como referencia hasta validar la malla en juego.
+- Golden rule: `Part` by default, CSG for punctual cuts, `MeshPart` for what `Part` can't do well.
+- One `UnionOperation` per logical piece, not one per whole level.
+- Every mesh or CSG in a walk zone gets a box collider even if it "looks" like it collides.
+- Name with geometric type (`Arch_CSG_4studs`, `Rock_Mesh_01`) so you know what you're touching.
+- Keep the `Part` version as reference until the mesh validates in game.
 
-## Errores frecuentes
+## Common mistakes
 
-- Nivel entero fusionado en una sola `UnionOperation` imposible de editar. Causa: unir por unir. Solución: uniones pequeñas y reversibles.
-- Avatar que atraviesa una malla bonita. Causa: confiar en la colisión de la malla sin collider. Solución: caja simple envolvente.
-- Avatar enganchado en adornos de malla. Causa: colisión precisa sobre detalle. Solución: colisión por caja y detalle sin colisión.
-- `MeshPart` deformado tras escalado no uniforme. Causa: estirar sin verificar. Solución: escala uniforme o revalidación completa.
-- Vanos recortados demasiado bajos/estrechos. Causa: no validar con avatar. Solución: regla ~2x avatar y prueba a pie.
-- Sustituir 2 `Part` por un `MeshPart` pesado sin ganancia. Causa: moda de malla. Solución: medir instancias y legibilidad antes/después.
-- Introducir binarios o dependencias nuevas para una malla. Causa: saltarse la regla. Solución: prohibido; solo geometría con herramientas existentes.
+- Whole level merged into one `UnionOperation`, impossible to edit. Cause: union for union's sake. Fix: small reversible unions.
+- Avatar walking through a pretty mesh. Cause: trusting mesh collision with no collider. Fix: wrapping simple box.
+- Avatar snagging on mesh ornaments. Cause: precise collision on detail. Fix: box collision and detail with no collision.
+- Deformed `MeshPart` after non-uniform scale. Cause: stretching without verifying. Fix: uniform scale or full revalidation.
+- Cut openings too low/narrow. Cause: not validating with avatar. Fix: ~2x avatar rule and on-foot test.
+- Replacing 2 `Part`s with a heavy `MeshPart` for no gain. Cause: mesh fashion. Fix: measure instances and readability before/after.
+- Introducing new binaries or dependencies for one mesh. Cause: skipping the rule. Fix: forbidden; geometry only with existing tooling.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Decisión `Part` / CSG / `MeshPart` justificada por forma y coste, no por gusto.
-- [ ] CSG limitada a fusiones/recortes puntuales, editable por piezas.
-- [ ] Colliders simples en toda zona de paso; colisión precisa solo donde esté justificada.
-- [ ] Escalados verificados (sin flotación, hundimiento ni deformación) y pasos ~2x avatar.
-- [ ] Prueba a pie y desde `Camera` real superada; coste de instancias igual o mejor que antes.
-- [ ] Piezas nombradas por tipo geométrico con `Tags`/`Attributes` de geometría y collider.
-- [ ] Sin binarios ni dependencias nuevas; listo para sync Rojo.
+- [ ] `Part` / CSG / `MeshPart` decision justified by shape and cost, not taste.
+- [ ] CSG limited to punctual merges/cuts, editable by pieces.
+- [ ] Simple colliders across walk zones; precise collision only where justified.
+- [ ] Scales verified (no floating, sinking, or deformation) and ~2x avatar steps.
+- [ ] On-foot and real-`Camera` test passed; instance cost equal or better than before.
+- [ ] Pieces named by geometric type with geometry and collider `Tags`/`Attributes`.
+- [ ] No new binaries or dependencies; Rojo-sync ready.
 
-## Herramientas
+## Tools
 
-- `Part`, `MeshPart`, `SpecialMesh` para formas base y redondeos.
-- `UnionOperation`, `NegateOperation` para fusiones y recortes puntuales.
-- `Model`, `Folder`, `CollectionService` / Tags, `Attributes` para empaquetar y marcar.
-- `Workspace` / `StreamingEnabled`, `Lighting`, `Camera` para validación real.
-- Rojo `project.json` / `$path` / `$className` solo como destino (configura `roblox-rojo`).
+- `Part`, `MeshPart`, `SpecialMesh` for base shapes and rounding.
+- `UnionOperation`, `NegateOperation` for punctual merges and cuts.
+- `Model`, `Folder`, `CollectionService` / Tags, `Attributes` for packing and marking.
+- `Workspace` / `StreamingEnabled`, `Lighting`, `Camera` for real validation.
+- Rojo `project.json` / `$path` / `$className` as destination only (configured by `roblox-rojo`).
 
-Ejemplo Luau ilustrativo (organización por script):
+Illustrative Luau example (scripted organization):
 
 ```luau
 -- Ilustrativo: auditar qué piezas usan colisión precisa.
@@ -100,8 +100,8 @@ end
 print("MeshParts con colisión precisa:", conteo)
 ```
 
-## Limitaciones
+## Limitations
 
-- No crea ni edita mallas externas; solo decide y aplica su uso dentro de Studio.
-- No programa física ni gameplay; solo geometría y colisiones jugables.
-- No configura Rojo ni versionado global. Si dudas de cualquier propiedad (colisiones, escalado, CSG), verifícala en create.roblox.com/docs.
+- No external mesh creation or editing; only decides and applies their use inside Studio.
+- No physics or gameplay programming; only geometry and playable collisions.
+- No Rojo or global versioning setup. If unsure about any property (collisions, scaling, CSG), verify it in create.roblox.com/docs.

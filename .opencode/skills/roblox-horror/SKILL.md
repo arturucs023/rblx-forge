@@ -1,88 +1,88 @@
 ---
 name: roblox-horror
-description: Horror con tensión, sustos justos, oscuridad legible y audio. Úsala cuando necesites ritmo de miedo, monstruo, linternas y anti-cheat de luz.
+description: Horror with tension, fair scares, readable darkness, and audio. Use it when you need scare pacing, monsters, flashlights, and light anti-cheat.
 ---
 
-# Horror (Tensión, Ritmo y Sustos Justos)
+# Horror (Tension, Pacing, and Fair Scares)
 
-## Objetivo
-Crear horror que asusta sin frustrar: ritmo tensión→alivio, sustos anunciados por reglas, oscuridad legible, audio como 50% del miedo y trampas anti-cheat de luz.
+## Objective
+Create horror that scares without frustrating: tension→relief pacing, rule-telegraphed scares, readable darkness, audio as 50% of the fear, and anti-cheat traps for light exploits.
 
-## Alcance y límites
-Versión profunda de género: bucles, progresión, mecánicas, UX, rendimiento y pitfalls.
-Diferenciación declarada: `roblox-genre-patterns` es catálogo de 1 línea; esta skill es la versión profunda de horror. `roblox-game-systems` es recetario fino. NO repite: IA de monstruo/persecución detallada se compone con `roblox-combat-systems` (daño/hit) y pathfinding, quests/objetivos con `roblox-quest-progression-systems`, economía de pases con `roblox-economy-balancing`, social/matchmaking con `roblox-social-systems`.
+## Scope and limits
+Deep genre version: loops, progression, mechanics, UX, performance, and pitfalls.
+Declared differentiation: `roblox-genre-patterns` is a 1-line catalog; this skill is the deep horror version. `roblox-game-systems` is a concise recipe book. Does NOT repeat: detailed monster chase AI composes with `roblox-combat-systems` (damage/hit) and pathfinding, quests/objectives with `roblox-quest-progression-systems`, pass economy with `roblox-economy-balancing`, social/matchmaking with `roblox-social-systems`.
 
-## Casos de uso
-- Survival con monstruo que patrulla y escucha.
-- Capítulo story de 20 min con 3 sustos guionizados.
-- Asimétrico 4v1 con linternas y escondites.
-- Horror coop con objetivos y extracción.
-- Casa embrujada con eventos aleatorios.
+## Use cases
+- Survival with a monster that patrols and listens.
+- 20-minute story chapter with 3 scripted scares.
+- 4v1 asymmetric with flashlights and hiding spots.
+- Co-op horror with objectives and extraction.
+- Haunted house with random events.
 
-## Bucle de juego o sistema (diseño)
-- Bucle 2 min: explorar a oscuras → pista/sonido → decidir (esconder/correr) → alivio breve.
-- Bucle capítulo: 3–4 picos de tensión (70–90 s) + valles de 60 s con luz/objetivo claro.
-- Bucle sesión: completar objetivos (3–5), sobrevivir/escapar, badge + unlock.
-Ritmo: 60% exploración tensa, 25% persecución, 15% calma; sustos cada 4–7 min, nunca 2 en <90 s; batería de linterna 6 min + 2 pilas por capítulo; si el ritmo cardíaco de testers (diversión) cae por sustos cada <2 min, espaciar 30%.
+## Game or system loop (design)
+- 2-min loop: explore in the dark → clue/sound → decide (hide/run) → brief relief.
+- Chapter loop: 3–4 tension peaks (70–90 s) + 60 s valleys with light/clear objective.
+- Session loop: complete objectives (3–5), survive/escape, badge + unlock.
+Pacing: 60% tense exploration, 25% chase, 15% calm; scares every 4–7 min, never 2 within <90 s; flashlight battery 6 min + 2 batteries per chapter; if tester heart-rate (fun) drops with scares more frequent than every 2 min, space them out by 30%.
 
-## Proceso paso a paso
-1. Define reglas del monstruo en 3 líneas visibles (ej. "te oye correr, no te ve agachado, teme la luz 3 s").
-2. Mapa legible a oscuras: siluetas, borde de luz tenue, salidas con señal; oscuridad = contraste, no negro total.
-3. Linterna con `SpotLight`: batería, parpadeo al 15%, pilas con `ProximityPrompt`; anti-subir-brillo: la jugabilidad no depende solo de ver.
-4. Audio: capas (ambience, pasos, stinger a 2 s del susto, silencio previo 1.5 s); subtítulos opcionales + modo daltónico de señales.
-5. Escondites con `Attributes` (`Escondite=true`): entrar con hold 0.8 s, salir con ruido; monstruo revisa 1–2 cercanos, no todos.
-6. Objetivos: 3–5 (llaves/fusibles) con orden parcial libre; HUD mínimo con objetivo actual.
-7. Sustos justos: siempre hay counter-play (luz, escondite, sprint con stamina); sin jumpscare sin pista previa.
-8. Dificultad: día 1 perdonable (monstruo 10% más lento que sprint), noche 2+ real; revive 1 por jugador casual.
+## Step-by-step process
+1. Define the monster's rules in 3 visible lines (e.g. "it hears you run, doesn't see you crouch, fears light for 3 s").
+2. Map readable in the dark: silhouettes, dim edge lighting, marked exits; darkness = contrast, not total black.
+3. Flashlight with `SpotLight`: battery, flicker at 15%, batteries with `ProximityPrompt`; anti-brightness: gameplay must not depend only on seeing.
+4. Audio: layers (ambience, footsteps, stinger 2 s before the scare, 1.5 s prior silence); optional subtitles + color-blind signal mode.
+5. Hiding spots with `Attributes` (`Escondite=true`): enter with 0.8 s hold, exit with noise; monster checks 1–2 nearby spots, not all.
+6. Objectives: 3–5 (keys/fuses) with partially free order; HUD with minimal current objective.
+7. Fair scares: always counter-play (light, hiding, sprint with stamina); no jumpscare without a prior cue.
+8. Difficulty: forgiving day 1 (monster 10% slower than sprint), night 2+ real; 1 revive per casual player.
 
-## Conocimientos técnicos
-### Qué valida el servidor
-- Daño/muerte solo por lógica servidor (distancia monstruo–jugador, línea de vista, estado escondido).
-- Objetivos: proximidad ≤12 studs + orden permitido + no duplicado.
-- Batería/pilas en servidor; cliente no fija `Bateria=100`.
-- Escondido real: valida zona + postura; salir genera ruido audible para IA.
-### Persistencia
-- Guarda capítulo desbloqueado, badges, mejor tiempo y modo (casual/pesadilla) con `DataStoreService`.
-- Nunca guardes posición del monstruo; al rejoin reinicia encuentro, conserva objetivos.
-### Errores/desconexiones
-- Jugador se cae en persecución: monstruo vuelve a patrulla, no campea su cadáver.
-- Si el portador de llave se va, la llave reaparece en punto visible en 20 s.
-- Stuck en escondite: botón "salir" + teleport suave a 3 m si colisiona.
+## Technical knowledge
+### What the server validates
+- Damage/death by server logic only (monster–player distance, line of sight, hidden state).
+- Objectives: proximity ≤12 studs + allowed order + no duplicates.
+- Battery/batteries on server; client never sets `Bateria=100`.
+- Real hiding: validate zone + stance; exiting generates audible noise for AI.
+### Persistence
+- Save unlocked chapter, badges, best time, and mode (casual/nightmare) with `DataStoreService`.
+- Never save monster position; on rejoin restart the encounter, keep objectives.
+### Errors/disconnections
+- Player drops during chase: monster returns to patrol, doesn't camp their corpse.
+- If the key carrier leaves, the key respawns at a visible point within 20 s.
+- Stuck in hiding spot: "exit" button + smooth teleport 3 m away on collision.
 ### Anti-exploit
-- Anti-luz máxima: el monstruo usa audición/proximidad servidor, no lo que el cliente renderiza; subir brillo no evita detección.
-- Anti-noclip a sala final: valida llaves en servidor antes de abrir.
-- Anti-speed en huida: clamp de velocidad; sprint con stamina servidor.
-- Rate-limit de interacciones 8/s.
+- Anti-max-light: monster uses server-side hearing/proximity, not what the client renders; raising brightness doesn't avoid detection.
+- Anti-noclip to final room: validate keys on server before opening.
+- Anti-speed while fleeing: speed clamp; sprint with server stamina.
+- Interaction rate-limit 8/s.
 
-## Buenas prácticas
-- Accesibilidad: advertencia de sustos, modo "menos intenso" (menos stingers, misma historia), brillo mínimo garantizado.
-- Menores: sin gore excesivo; cumple políticas de Roblox (verificar en create.roblox.com/docs).
-- Performance: 1 monstruo con IA barata (tick 0.2 s), luces limitadas (máx 6 dinámicas cerca), niebla en vez de oscuridad por píxel.
-- Usa `CollectionService` para sustos reutilizables y `Attributes` para estado (persecución/calma).
-- Playtest con 5 personas: si alguien se pierde >3 min, añade señal.
+## Best practices
+- Accessibility: scare warning, "less intense" mode (fewer stingers, same story), guaranteed minimum brightness.
+- Younger players: no excessive gore; comply with Roblox policies (see create.roblox.com/docs).
+- Performance: 1 monster with cheap AI (0.2 s tick), limited lights (max 6 nearby dynamic), fog instead of per-pixel darkness.
+- Use `CollectionService` for reusable scares and `Attributes` for state (chase/calm).
+- Playtest with 5 people: if someone gets lost for >3 min, add signage.
 
-## Errores frecuentes
-1. Negro total → jugadores suben brillo y se pierde el miedo; usa gris azulado + focos.
-2. Monstruo injusto (más rápido siempre) → rage; 90–95% de velocidad de sprint + atajos para él.
-3. Susto sin pista → sensación de trampa; 2 s de audio previo siempre.
-4. Objetivos crípticos sin HUD → abandono; 1 línea de objetivo siempre visible.
-5. Luces infinitas sin coste → sin tensión; batería + zonas seguras escasas.
+## Common mistakes
+1. Total black → players raise brightness and the fear is lost; use blue-gray + focal points.
+2. Unfair monster (always faster) → rage; 90–95% of sprint speed + shortcuts for it.
+3. Scare without cue → feels like cheating; always 2 s of prior audio.
+4. Cryptic objectives with no HUD → abandonment; 1 line of objective always visible.
+5. Unlimited lights with no cost → no tension; battery + scarce safe zones.
 
-## Criterios de calidad y terminado
-- [ ] 5 testers nuevos completan capítulo en 18–30 min sin guía externa.
-- [ ] 0 muertes sin counter-play en 20 persecuciones (todas tenían luz/escondite/sprint).
-- [ ] Subir brillo al máximo no evita detección en 10 pruebas.
-- [ ] Batería dura 5–7 min y hay pilas suficientes sin trivializar.
-- [ ] Nadie perdido >3 min en 5 runs.
-- [ ] 8 jugadores con 1 monstruo ≥45 FPS en mapa oscuro.
+## Quality and done criteria
+- [ ] 5 new testers complete the chapter in 18–30 min with no external guide.
+- [ ] 0 deaths without counter-play in 20 chases (all had light/hiding/sprint).
+- [ ] Max brightness avoids detection in 0/10 tests.
+- [ ] Battery lasts 5–7 min and there are enough batteries without trivializing.
+- [ ] Nobody lost for >3 min across 5 runs.
+- [ ] 8 players with 1 monster at ≥45 FPS on a dark map.
 
-## Herramientas
-Servicios/clases: `Players`, `Attributes`, `CollectionService`, `ProximityPrompt`, `DataStoreService`, `PathfindingService` (patrulla/persecución), `RemoteEvent`. Sonido con `SoundService` (verificar en create.roblox.com/docs). Componer con `roblox-combat-systems` para daño.
+## Tools
+Services/classes: `Players`, `Attributes`, `CollectionService`, `ProximityPrompt`, `DataStoreService`, `PathfindingService` (patrol/chase), `RemoteEvent`. Sound with `SoundService` (see create.roblox.com/docs). Compose with `roblox-combat-systems` for damage.
 
-## Limitaciones
-- No implementa IA avanzada con sentidos complejos; base aquí + extensión.
-- No cubre narrativa ramificada; componer con sistema de quests/diálogo.
-- Contenido sensible debe revisarse contra políticas de la plataforma.
+## Limitations
+- No advanced AI with complex senses; base here + extension.
+- No branching narrative; compose with a quest/dialogue system.
+- Sensitive content must be reviewed against platform policies.
 
 ```luau
 -- Ilustrativo: ¿jugador detectable? (servidor).

@@ -1,60 +1,60 @@
 ---
 name: roblox-character-design
-description: Diseño visual de personajes y avatares (silueta, proporciones, rol/equipo). Úsala cuando crees un héroe, enemigo, NPC jugable o sistema de customización.
+description: Visual design of characters and avatars (silhouette, proportions, role/team). Use it when creating a hero, enemy, playable NPC, or customization system.
 ---
 
-# Diseño de Personajes y Avatares
+# Character and Avatar Design
 
-## Objetivo
+## Objective
 
-Definir personajes legibles, atractivos y coherentes con el gameplay: silueta reconocible a distancia, proporciones que comunican rol y velocidad, colores de equipo/facción claros y customización que no rompe la legibilidad ni el rendimiento.
+Define characters that are readable, appealing, and coherent with gameplay: a silhouette recognizable at distance, proportions that communicate role and speed, clear team/faction colors, and customization that doesn't break readability or performance.
 
-## Alcance y límites
+## Scope and limits
 
-Esta skill cubre dirección visual del personaje: silueta, proporciones, paleta, `Accessory`, `HumanoidDescription` y reglas de customización.
+This skill covers visual character direction: silhouette, proportions, palette, `Accessory`, `HumanoidDescription`, and customization rules.
 
-**Qué NO hace:**
+**What it does NOT cover:**
 
-- NO cubre ciclo de vida respawn-safe (`Character` reaparición, caché de `Humanoid`/`Animator`): lo cubre `roblox-characters`.
-- NO cubre construcción de rigs (`Motor6D`, jerarquías, validación): lo cubre `roblox-rigging`.
-- NO es dispatcher general de animación: lo cubre `roblox-animation`; los detalles por dominio están en `roblox-locomotion-animation`, `roblox-combat-animation` y `roblox-expressive-animation`.
-- NO cubre NPCs con IA/navegación: lo cubre `roblox-npcs`.
-- NO cubre cámaras (encuadre, follow, shake): lo cubre `camera-systems`; aquí solo se define qué debe verse bien en cámara.
+- Does NOT cover respawn-safe lifecycle (`Character` respawn, `Humanoid`/`Animator` caching): covered by `roblox-characters`.
+- Does NOT cover rig building (`Motor6D`, hierarchies, validation): covered by `roblox-rigging`.
+- Is NOT a general animation dispatcher: covered by `roblox-animation`; domain details live in `roblox-locomotion-animation`, `roblox-combat-animation`, and `roblox-expressive-animation`.
+- Does NOT cover NPCs with AI/navigation: covered by `roblox-npcs`.
+- Does NOT cover cameras (framing, follow, shake): covered by `camera-systems`; here only what must read well on camera.
 
-## Casos de uso
+## Use cases
 
-1. Héroe jugable que debe destacar entre 8 jugadores en pantalla.
-2. Enemigos con tiers (débil / élite / jefe) legibles a 30+ metros.
-3. Equipos rojo vs azul sin confusión para daltónicos.
-4. Sistema de customización (piel, ropa, sombreros, mochilas) con límites.
-5. Adaptación de avatar de plataforma (`HumanoidDescription`) a estilo del juego.
-6. Mascota o compañero que no se confunde con un enemigo.
+1. Playable hero that must stand out among 8 players on screen.
+2. Enemies with tiers (weak / elite / boss) readable at 30+ meters.
+3. Red vs blue teams with no confusion for color-blind players.
+4. Customization system (skin, clothes, hats, backpacks) with limits.
+5. Platform avatar (`HumanoidDescription`) adapted to the game's style.
+6. Pet or companion that isn't mistaken for an enemy.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define el rol en una frase.** Ejemplo: "tanque lento que bloquea puertas". Todo (ancho, altura, color) deriva de ahí.
-2. **Boceta la silueta en negro puro.** Dibuja 3 variantes solo con formas. Si no se distinguen en miniatura, vuelve a empezar.
-3. **Fija proporciones con bloques.** Cabeza:tronco:piernas. Anota: alto total en studs, ancho de hombros, largo de piernas (las piernas largas se leen como "rápido").
-4. **Asigna paleta de rol.** 1 color dominante (60%), 1 secundario (30%), 1 acento (10%). Reserva el acento para la zona que el gameplay necesita leer (manos, arma, núcleo).
-5. **Diseña lectura de equipo.** Banda de equipo en torso + cabeza, no solo en un `Accessory` pequeño que se pierde a distancia. Prueba con filtros de daltonismo.
-6. **Mapea a `HumanoidDescription`.** Traduce tu diseño a propiedades estándar: alturas, anchos, colores de cuerpo, camisa/pantalón. Documenta qué campo toca cada decisión.
-7. **Define kit de `Accessory` permitido.** Lista blanca: qué slots existen (cabeza, torso, espalda), tamaño máximo y si afectan hitbox visual. Prohíbe accesorios que cubran la cara o el color de equipo.
-8. **Valida en contexto.** Coloca 4 copias en un mapa gris, aléjate con `Camera` a 20/40/60 studs (ver `camera-systems` para encuadre) y pregunta: ¿sé qué es cada uno y de qué equipo es?
-9. **Prueba de animación base.** Reproduce idle y walk (ver `roblox-locomotion-animation`). Si el diseño se rompe al moverse (manos que atraviesan torso), ajusta proporciones, no la animación.
-10. **Congela la guía.** Exporta hoja de personaje: silueta, paleta con códigos, límites de customización y checklist de aprobación.
+1. **Define the role in one sentence.** Example: "slow tank that blocks doorways". Everything (width, height, color) derives from it.
+2. **Sketch the silhouette in pure black.** Draw 3 variants with shapes only. If they can't be told apart in thumbnail, start over.
+3. **Lock proportions with blocks.** Head:torso:legs. Note: total height in studs, shoulder width, leg length (long legs read as "fast").
+4. **Assign a role palette.** 1 dominant color (60%), 1 secondary (30%), 1 accent (10%). Reserve the accent for the zone gameplay needs to read (hands, weapon, core).
+5. **Design team readability.** Team band on torso + head, not just on one small `Accessory` lost at distance. Test with color-blindness filters.
+6. **Map to `HumanoidDescription`.** Translate your design into standard properties: heights, widths, body colors, shirt/pants. Document which field each decision touches.
+7. **Define an allowed `Accessory` kit.** Allowlist: which slots exist (head, torso, back), max size, and whether they affect the visual hitbox. Forbid accessories covering the face or team color.
+8. **Validate in context.** Place 4 copies on a gray map, pull the `Camera` back to 20/40/60 studs (see `camera-systems` for framing) and ask: do I know what each is and which team it's on?
+9. **Base animation test.** Play idle and walk (see `roblox-locomotion-animation`). If the design breaks in motion (hands clipping through torso), adjust proportions, not the animation.
+10. **Freeze the guide.** Export a character sheet: silhouette, palette with codes, customization limits, and approval checklist.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- **Silueta primero:** el jugador reconoce formas antes que detalles. Hombros anchos = poder; cuerpo estrecho y alto = velocidad; masa baja y ancha = tanque.
-- **Proporciones y gameplay:** personajes cabezones se leen "amigables"; proporciones realistas se leen "serios". Las manos grandes mejoran la lectura de ataques (ver `roblox-combat-animation`).
-- **`Humanoid` y escala:** la altura afecta percepción de velocidad: un personaje alto parece más lento aunque vaya igual. Compensa con efectos o ajusta `Humanoid` solo tras probar en mapa real.
-- **`HumanoidDescription`:** es la vía estándar para aplicar apariencia de avatar sin reconstruir el `Character` a mano. Úsala como contrato entre diseño y código.
-- **`Accessory`:** cada accesorio suma geometría y posibles colisiones visuales. Límite recomendado: 0–3 por personaje jugable en móvil.
-- **`SkinnedMesh` vs partes rígidas:** la malla con piel suaviza hombros/codos pero exige pesos correctos; las partes rígidas son más baratas y predecibles. Decide por presupuesto, no por moda.
-- **Contraste y fondo:** diseña contra los fondos reales del juego (pasto verde, cueva oscura), no contra fondo blanco de editor.
-- **Legibilidad facial:** a más de 15 studs la cara no se lee; no pongas información de gameplay solo en la cara (ver `roblox-expressive-animation` para cuándo sí usarla).
+- **Silhouette first:** players recognize shapes before details. Broad shoulders = power; tall narrow body = speed; low wide mass = tank.
+- **Proportions and gameplay:** big-headed characters read "friendly"; realistic proportions read "serious". Big hands improve attack readability (see `roblox-combat-animation`).
+- **`Humanoid` and scale:** height affects perceived speed: a tall character looks slower at the same speed. Compensate with effects or adjust `Humanoid` only after testing on a real map.
+- **`HumanoidDescription`:** the standard way to apply avatar appearance without rebuilding the `Character` by hand. Use it as the contract between design and code.
+- **`Accessory`:** each accessory adds geometry and potential visual collisions. Recommended limit: 0–3 per playable character on mobile.
+- **`SkinnedMesh` vs rigid parts:** skinned meshes smooth shoulders/elbows but need correct weights; rigid parts are cheaper and more predictable. Decide by budget, not fashion.
+- **Contrast and background:** design against the game's real backgrounds (green grass, dark cave), not a white editor background.
+- **Facial readability:** beyond 15 studs the face doesn't read; don't put gameplay information only on the face (see `roblox-expressive-animation` for when to use it).
 
-Ejemplo ilustrativo (contrato diseño → código, no lógica final):
+Illustrative example (design → code contract, not final logic):
 
 ```luau
 -- Ilustrativo: aplicar la paleta aprobada vía HumanoidDescription.
@@ -65,45 +65,45 @@ description.RightArm = Color3.fromRGB(30, 90, 200)
 -- El Humanoid del Character aplica esta descripción al aparecer.
 ```
 
-## Buenas prácticas
+## Best practices
 
-- Una idea por personaje: si necesita dos frases para explicarse, divídelo en dos diseños.
-- Reserva los colores más saturados para información de gameplay (equipo, peligro, objetivo).
-- El cliente propone customización, el servidor valida: todo cambio de apariencia (color, `Accessory` equipado) debe pasar por validación de servidor contra la lista blanca antes de replicarse a otros jugadores.
-- Documenta "lo prohibido" con ejemplos visuales, no solo con texto.
-- Mantén el `HumanoidRootPart` visualmente centrado: capas o mochilas gigantes descentran la percepción del pivote.
-- Diseña pensando en `SkinnedMesh` y en partes rígidas a la vez si el juego soporta ambos.
-- Revisa diseño con animaciones reales puestas, nunca en pose T estática solamente.
+- One idea per character: if it takes two sentences to explain, split it into two designs.
+- Reserve the most saturated colors for gameplay information (team, danger, objective).
+- The client proposes customization, the server validates: every appearance change (color, equipped `Accessory`) must pass server validation against the allowlist before replicating to other players.
+- Document "what's forbidden" with visual examples, not just text.
+- Keep the `HumanoidRootPart` visually centered: giant capes or backpacks decenter the pivot's perception.
+- Design for `SkinnedMesh` and rigid parts at once if the game supports both.
+- Review design with real animations playing, never in a static T-pose alone.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Diseñar en zoom máximo:** se ve genial de cerca e ilegible en juego. Probar siempre a distancia de `Camera` real.
-2. **Equipo solo en un pin pequeño:** a 30 studs desaparece. El color de equipo debe ocupar torso o cabeza.
-3. **Accesorios que tapan hitbox visual:** sombreros enormes que ocultan si el jugador lleva arma o no.
-4. **Paleta del personaje = paleta del mapa:** personaje verde en jungla verde. Exige contraste mínimo documentado.
-5. **Customización sin límites:** permite combinaciones que rompen rol (enemigo que parece aliado). Siempre lista blanca validada en servidor.
-6. **Manos y pies del mismo color que el suelo:** se pierde la lectura de pisadas y ataques. Reserva un tono distinto.
-7. **Ignorar `HumanoidDescription`:** reconstruir apariencia a mano genera inconsistencias entre respawns; usa el contrato estándar que gestiona `roblox-characters`.
+1. **Designing at max zoom:** looks great up close, unreadable in game. Always test at real `Camera` distance.
+2. **Team color on one small pin:** gone at 30 studs. Team color must cover torso or head.
+3. **Accessories covering the visual hitbox:** huge hats hiding whether the player carries a weapon.
+4. **Character palette = map palette:** green character in a green jungle. Demand a documented minimum contrast.
+5. **Unlimited customization:** allows combos that break role (an enemy looking like an ally). Always a server-validated allowlist.
+6. **Hands and feet the same color as the floor:** footstep and attack reads get lost. Reserve a different tone.
+7. **Ignoring `HumanoidDescription`:** rebuilding appearance by hand creates inconsistencies between respawns; use the standard contract managed by `roblox-characters`.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Silueta reconocible en miniatura (64 px) por 3 de 3 probadores.
-- [ ] Rol (rápido/tanque/soporte) adivinado correctamente sin explicación.
-- [ ] Equipo/facción identificado al 100% a 30 studs, incluyendo simulación de daltonismo.
-- [ ] Kit de `Accessory` con límites escritos y validados en servidor.
-- [ ] Hoja de personaje congelada: paleta, proporciones y `HumanoidDescription` base.
-- [ ] Validado con idle/walk reales sin clipping grave.
+- [ ] Silhouette recognizable in thumbnail (64 px) by 3 of 3 testers.
+- [ ] Role (fast/tank/support) guessed correctly with no explanation.
+- [ ] Team/faction identified 100% at 30 studs, including color-blindness simulation.
+- [ ] `Accessory` kit with written limits and server validation.
+- [ ] Frozen character sheet: palette, proportions, and base `HumanoidDescription`.
+- [ ] Validated with real idle/walk and no major clipping.
 
-## Herramientas
+## Tools
 
-- Editor de avatares y vista previa de `HumanoidDescription` del entorno de desarrollo.
-- Mapa de prueba gris con distancias marcadas (20/40/60 studs) y fondos del juego.
-- Checklist de aprobación de personaje (esta skill) + pruebas de cámara con `camera-systems`.
-- Tabla de lista blanca de customización para validación de servidor.
+- Avatar editor and `HumanoidDescription` preview in the dev environment.
+- Gray test map with marked distances (20/40/60 studs) and game backgrounds.
+- Character approval checklist (this skill) + camera tests with `camera-systems`.
+- Customization allowlist table for server validation.
 
-## Limitaciones
+## Limitations
 
-- No genera modelos ni texturas por sí misma; define dirección y contratos.
-- No ajusta rendimiento de mallas ni presupuestos de triángulos (ver auditoría de rendimiento del proyecto).
-- No sustituye pruebas con jugadores reales ni criterios de accesibilidad legal; la verificación de daltonismo aquí es heurística.
-- Cualquier API fuera de la lista estable debe escribirse como "(verificar en create.roblox.com/docs)".
+- Does not generate models or textures by itself; defines direction and contracts.
+- Does not tune mesh performance or triangle budgets (see the project's performance audit).
+- Does not replace testing with real players or legal accessibility criteria; color-blindness verification here is heuristic.
+- Any API outside the stable list must be written as "(check create.roblox.com/docs)".

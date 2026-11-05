@@ -1,49 +1,49 @@
 ---
-name: Bienvenida y Onboarding Roblox
-description: Pantallas de bienvenida, onboarding y tutorial inicial. Úsala cuando crees la primera sesión, tutoriales interactivos, pantallas de descubrimiento o flujo de skip.
+name: Roblox Welcome and Onboarding
+description: Welcome screens, onboarding, and first tutorial. Use it when building the first session, interactive tutorials, discovery screens, or skip flow.
 ---
 
-# Bienvenida y Onboarding Roblox
+# Roblox Welcome and Onboarding
 
-## Objetivo
+## Objective
 
-Construir la primera sesión del jugador: pantalla de bienvenida, secuencia de descubrimiento de controles y objetivos, y transición suave a la partida. El objetivo es que un jugador nuevo entienda qué hacer en menos de 90 segundos sin leer manuales, y que un jugador recurrente pueda saltar todo en un clic.
+Build the player's first session: welcome screen, control and objective discovery sequence, and smooth transition into play. The goal is for a new player to understand what to do in under 90 seconds without reading manuals, and for a returning player to skip everything in one click.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre: portada de bienvenida, pasos de onboarding (2-5 pasos), tutorial interactivo inicial (mover, interactuar, objetivo), botón de skip, persistencia de "ya vio el onboarding" y telemetría de abandono por paso.
+Covers: welcome cover, onboarding steps (2-5 steps), initial interactive tutorial (move, interact, objective), skip button, "already saw onboarding" persistence, and per-step drop-off telemetry.
 
-NO hace:
+Does NOT do:
 
-- Mecánica genérica responsiva (layouts, constraints, stylesheets): lo cubren `roblox-ui` y `roblox-user-interfaces`.
-- Diseño UX previo o investigación de retención: lo cubre `roblox-game-ux`; esta skill implementa.
-- Menú principal completo con modos y noticias: lo cubre `roblox-main-menu`.
-- HUD persistente en partida: lo cubre `roblox-hud`.
-- Ajustes de accesibilidad editables: lo cubre `roblox-settings-ui`.
+- Generic responsive mechanics (layouts, constraints, stylesheets): covered by `roblox-ui` and `roblox-user-interfaces`.
+- Prior UX design or retention research: covered by `roblox-game-ux`; this skill implements.
+- Full main menu with modes and news: covered by `roblox-main-menu`.
+- Persistent in-game HUD: covered by `roblox-hud`.
+- Editable accessibility settings: covered by `roblox-settings-ui`.
 
-## Casos de uso
+## Use cases
 
-- Portada "¡Bienvenido!" con botón Jugar y botón "Cómo jugar".
-- Secuencia de 3 tarjetas: moverse, interactuar, objetivo del juego.
-- Tutorial interactivo: "pulsa W para moverte hasta la zona marcada" con validación.
-- Jugador recurrente que entra y ve solo un banner resumido con opción de replay.
-- Medición de en qué paso abandonan los nuevos para iterar.
+- "Welcome!" cover with Play button and "How to play" button.
+- 3-card sequence: move, interact, game objective.
+- Interactive tutorial: "press W to move to the marked zone" with validation.
+- Returning player who enters and sees only a summary banner with replay option.
+- Measuring at which step newcomers drop off, to iterate.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define el resultado de aprendizaje.** Escribe 3 frases máximo que el jugador debe saber al terminar (ej. "me muevo", "interactúo", "gano haciendo X"). Si necesitas más de 3, recorta el juego, no el onboarding.
-2. **Estructura la secuencia.** Portada (1 pantalla) + 2-4 pasos + confirmación final. Cada paso = 1 idea, 1 ilustración o zona demo, 1 acción. Dibuja el flujo en papel antes de tocar Studio.
-3. **Construye la portada.** `ScreenGui` en `PlayerGui` con `Frame` contenedor a `Scale`, título `TextLabel`, subtítulo, `TextButton` principal "Jugar" y secundario "Cómo jugar" + `TextButton` discreto "Saltar". Fondo `ImageLabel` o `Frame` con degradado propio.
-4. **Construye el paso a paso.** Un `Frame` carrusel con indicador de progreso (ej. "1/3" + barra `Frame`). Botones Atrás/Siguiente/Saltar. Cada paso muestra `ImageLabel` ilustrativa + `TextLabel` de 1-2 líneas + demostración (ej. resalta la tecla).
-5. **Añade el tutorial interactivo (opcional pero recomendado).** En vez de solo leer, pide una acción real: "camina hasta el círculo" o "pulsa E". Escucha el input con `UserInputService` o la zona con validación del lado servidor (verificar en create.roblox.com/docs). Avanza solo cuando se completa o tras timeout con opción de skip.
-6. **Implementa skip y persistencia.** El botón Saltar cierra todo y marca `LocalPlayer` como atendido en almacenamiento local o atributo; al reentrar, muestra versión compacta. El skip nunca debe penalizar ni bloquear recompensas base.
-7. **Añade transiciones.** Entrada/salida con `TweenService` (desvanecido `CanvasGroup` o `GroupTransparency`, desplazamiento leve). Duración 0.25-0.4 s. Sin transiciones no hay sensación de pulido.
-8. **Instrumenta abandono.** Registra evento por paso visto/completado/abandonado (sistema de analítica del proyecto; verificar en create.roblox.com/docs). Revisa semanalmente qué paso pierde más gente y simplifícalo primero.
-9. **Verifica en PC y móvil.** Mismo flujo con tamaños `Scale`, botones de mínimo 44 px equivalentes, texto legible a 1 m de distancia simulada. Prueba con cuenta nueva y con cuenta que ya lo completó.
+1. **Define the learning outcome.** Write 3 sentences max that the player must know when done (e.g. "I move", "I interact", "I win by doing X"). If you need more than 3, trim the game, not the onboarding.
+2. **Structure the sequence.** Cover (1 screen) + 2-4 steps + final confirmation. Each step = 1 idea, 1 illustration or demo zone, 1 action. Sketch the flow on paper before touching Studio.
+3. **Build the cover.** `ScreenGui` in `PlayerGui` with a `Frame` container at `Scale`, `TextLabel` title, subtitle, primary `TextButton` "Play" and secondary "How to play" + discreet "Skip" `TextButton`. `ImageLabel` background or `Frame` with own gradient.
+4. **Build the step carousel.** One `Frame` carousel with progress indicator (e.g. "1/3" + `Frame` bar). Back/Next/Skip buttons. Each step shows an illustrative `ImageLabel` + 1-2 line `TextLabel` + demo (e.g. highlights the key).
+5. **Add the interactive tutorial (optional but recommended).** Instead of just reading, ask for a real action: "walk to the circle" or "press E". Listen to input with `UserInputService` or the zone with server-side validation (verify at create.roblox.com/docs). Advance only on completion or after timeout with a skip option.
+6. **Implement skip and persistence.** The Skip button closes everything and marks `LocalPlayer` as served in local storage or attribute; on re-entry, show a compact version. Skipping must never penalize or block base rewards.
+7. **Add transitions.** Enter/exit with `TweenService` (fading `CanvasGroup` or `GroupTransparency`, slight slide). 0.25-0.4s duration. Without transitions there's no sense of polish.
+8. **Instrument drop-off.** Log an event per step seen/completed/abandoned (project analytics system; verify at create.roblox.com/docs). Review weekly which step loses the most people and simplify it first.
+9. **Verify on PC and mobile.** Same flow with `Scale` sizes, minimum 44px-equivalent buttons, text legible at simulated 1 m distance. Test with a new account and with one that already completed it.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Jerarquía recomendada (solo clases estables):
+- Recommended hierarchy (stable classes only):
 
   ```luau
   -- Ejemplo ilustrativo: estructura de pantallas de onboarding
@@ -62,58 +62,58 @@ NO hace:
   root.Parent = gui
   ```
 
-- Tamaños siempre con `UDim2.fromScale` y `UIAspectRatioConstraint` / `UISizeConstraint` para mínimos y máximos. Nunca posiciones fijas solo con `Offset`.
-- Progreso con `UIListLayout` horizontal para los puntos y `Frame` barra; texto de paso con `UITextSizeConstraint` para no romper en pantallas pequeñas.
-- Tutorial interactivo: combina UI local (`UserInputService.InputBegan`) con validación de autoridad en servidor (verificar en create.roblox.com/docs). La UI nunca decide sola que el jugador "ganó".
-- `GuiService` para peeking de estados de menú del sistema si necesitas evitar solapamientos (solo lectura).
-- Persistencia de "onboarding visto": atributo del jugador o almacenamiento local/persistente según el proyecto (verificar en create.roblox.com/docs). No uses `DataStore` directamente desde el cliente.
+- Sizes always with `UDim2.fromScale` and `UIAspectRatioConstraint` / `UISizeConstraint` for minimums and maximums. Never fixed positions with `Offset` only.
+- Progress with horizontal `UIListLayout` for dots and `Frame` bar; step text with `UITextSizeConstraint` so it doesn't break on small screens.
+- Interactive tutorial: combine local UI (`UserInputService.InputBegan`) with authoritative server validation (verify at create.roblox.com/docs). The UI never decides alone that the player "won".
+- `GuiService` for peeking system menu states if you need to avoid overlaps (read-only).
+- "Onboarding seen" persistence: player attribute or local/persistent storage per project (verify at create.roblox.com/docs). Don't use `DataStore` directly from the client.
 
-### Identidad visual de esta skill (original, no copiar)
+### This skill's visual identity (original, do not copy)
 
-- Dirección de arte "amanecer de aventura": fondo azul noche profundo (#141B33) con acento cálido ámbar (#FFB84D) y secundario turquesa (#4DE3C2). Contraste alto.
-- Tipografía: título grande en negrita (32-44 pt equivalentes con `UITextSizeConstraint`), cuerpo 16-18, interlineado generoso. Sin serifas decorativas.
-- Composición: portada centrada con ilustración arriba (40% alto), título, 1 línea de promesa, botón primario grande abajo. Pasos en tarjeta centrada del 60% ancho en PC, 90% en móvil.
-- Espaciado: `UIPadding` de 16-24 px equivalentes, `UICorner` de 12-16, `UIStroke` sutil de 1 px en tarjetas.
-- Estados: primario ámbar con hover +8% brillo, pressed escala 0.97, disabled gris 50% transparencia, loading con puntos animados, feedback con check turquesa + `TweenService`.
-- Animación: fundido + subida de 12 px al entrar cada paso; celebración final con pulso único. Nada que parpadee más de 1 vez/segundo.
+- "Adventure dawn" art direction: deep night-blue background (#141B33) with warm amber accent (#FFB84D) and turquoise secondary (#4DE3C2). High contrast.
+- Typography: large bold title (32-44pt equivalent with `UITextSizeConstraint`), body 16-18, generous leading. No decorative serifs.
+- Composition: centered cover with illustration on top (40% height), title, 1 promise line, big primary button below. Steps in a centered card at 60% width on PC, 90% on mobile.
+- Spacing: 16-24px-equivalent `UIPadding`, 12-16 `UICorner`, subtle 1px `UIStroke` on cards.
+- States: amber primary with +8% brightness hover, 0.97 pressed scale, 50% transparency gray disabled, loading with animated dots, feedback with turquoise check + `TweenService`.
+- Animation: fade + 12px rise on each step's entry; single-pulse final celebration. Nothing blinking more than 1x/second.
 
-## Buenas prácticas
+## Best practices
 
-- Una idea por paso. Si un paso necesita scroll, divídelo.
-- Botón Saltar siempre visible y con la misma jerarquía secundaria en todos los pasos.
-- Texto de 1-2 líneas por paso, verbo de acción al inicio ("Camina", "Pulsa", "Recoge").
-- Ilustra con la estética real del juego, no con iconos genéricos que luego no se reconocen.
-- La recompensa por completar el onboarding (si existe) se anuncia al final, no al inicio, para no condicionar el skip.
-- Coherencia con el menú y el HUD: mismos radios de esquina, misma familia tipográfica, mismo tono de botones.
+- One idea per step. If a step needs scroll, split it.
+- Skip button always visible with the same secondary hierarchy on every step.
+- 1-2 lines of text per step, action verb first ("Walk", "Press", "Collect").
+- Illustrate with the game's real aesthetic, not generic icons unrecognizable later.
+- The onboarding-completion reward (if any) is announced at the end, not the start, so it doesn't condition skipping.
+- Consistent with menu and HUD: same corner radii, same type family, same button tone.
 
-## Errores frecuentes
+## Common mistakes
 
-- Muro de texto de 5 párrafos que nadie lee en móvil.
-- Tutorial no skipeable o que castiga con pérdida de recompensa por saltar.
-- Posiciones solo con `Offset` que se rompen en tablet y teléfono.
-- Validar el tutorial solo en cliente: el explotador lo salta y reclama recompensa (toda recompensa se valida en servidor).
-- 7+ pasos que miden abandono del 60% en el paso 4 y nadie los recorta.
-- Tapar los controles táctiles con la tarjeta del tutorial en móvil.
+- 5-paragraph text wall nobody reads on mobile.
+- Non-skippable tutorial or one that punishes skipping with lost rewards.
+- `Offset`-only positions that break on tablet and phone.
+- Validating the tutorial on client only: the exploiter skips it and claims the reward (every reward is server-validated).
+- 7+ steps measuring 60% drop-off at step 4 that nobody trims.
+- Covering touch controls with the tutorial card on mobile.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Jugador nuevo entiende el objetivo sin ayuda externa en prueba con 3 usuarios.
-- [ ] Skip funciona desde cualquier paso y deja al jugador en estado jugable.
-- [ ] Sin errores en consola, transiciones a 60 fps en PC y sin tirones visibles en móvil gama media.
-- [ ] Texto legible en 1366x768, 1920x1080 y teléfono vertical 390x844 (simulador Studio).
-- [ ] Telemetría registra visto/completado/abandono por paso.
-- [ ] Reentrar con onboarding completado muestra versión compacta, no repite la larga.
+- [ ] New player understands the goal with no outside help in a 3-user test.
+- [ ] Skip works from any step and leaves the player in a playable state.
+- [ ] No console errors, 60 fps transitions on PC and no visible hitches on mid-range mobile.
+- [ ] Text legible at 1366x768, 1920x1080, and 390x844 vertical phone (Studio simulator).
+- [ ] Telemetry logs seen/completed/abandoned per step.
+- [ ] Re-entering with onboarding done shows the compact version, doesn't repeat the long one.
 
-## Herramientas
+## Tools
 
-- Studio: ScreenGui editor, simulador de dispositivos, modo Play solo + Play con servidor para validar persistencia.
-- MCP Studio (si disponible): captura de las 3 resoluciones, lectura de `Output`, localización de la `ScreenGui`.
-- Rojo: la UI vive en módulos compartidos versionados; el flujo de pasos como tabla de datos editable.
-- Selene/luau-lsp: chequeo de scripts locales del carrusel y del listener de `UserInputService`.
+- Studio: ScreenGui editor, device simulator, Play solo + Play with server to validate persistence.
+- Studio MCP (if available): capture of the 3 resolutions, `Output` read, `ScreenGui` location.
+- Rojo: UI lives in versioned shared modules; the step flow as an editable data table.
+- Selene/luau-lsp: checking carousel local scripts and the `UserInputService` listener.
 
-## Limitaciones
+## Limitations
 
-- No sustituye el balance del juego: si el juego es confuso, el onboarding no lo salva.
-- La telemetría aquí es conteo de pasos, no analítica avanzada de retención (eso es `roblox-analytics-liveops`, verificar en create.roblox.com/docs).
-- No gestiona localización multi-idioma completa; deja `TextLabel` con claves y espacio extra del 30% para traducciones largas.
-- En consola la navegación por mando requiere orden de selección explícito; prueba con gamepad real antes de publicar.
+- Not a substitute for game balance: if the game is confusing, onboarding won't save it.
+- Telemetry here is step counting, not advanced retention analytics (that's `roblox-analytics-liveops`, verify at create.roblox.com/docs).
+- Doesn't handle full multi-language localization; leave `TextLabel`s with keys and 30% extra room for long translations.
+- On console, gamepad navigation needs explicit selection order; test with a real gamepad before publishing.

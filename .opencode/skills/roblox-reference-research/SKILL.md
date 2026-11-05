@@ -1,89 +1,66 @@
 ---
-name: Investigación de Referencias Roblox
-description: Encuentra, verifica y organiza referencias visuales para construcciones Roblox. Úsala cuando un build necesite un look, antes de la dirección de arte o para ampliar la biblioteca local de referencias.
+name: Roblox Reference Research
+description: Find, verify, and organize visual references for Roblox builds. Use it when a build needs a look, before art direction, or to grow the local reference library.
 ---
 
 # roblox-reference-research
 
-Las referencias son evidencia, no decoración. Cada imagen que conserva el
-proyecto debe ser real, estar en disco, tener licencia para uso local y estar
-indexada. Nunca inventes URLs, autores ni licencias. Si una candidata no se
-puede verificar, no entra en la biblioteca.
+References are evidence, not decoration. Every image the project keeps must be real, on disk, licensed for local use, and indexed. Never invent URLs, authors, or licenses. If a candidate cannot be verified, it does not enter the library.
 
-## Objetivo
+## Objective
 
-1. Responder una pregunta visual ("muro de piedra medieval", "luz cálida de
-   interior") con 2–4 imágenes concretas de `references/`.
-2. Verificar cada imagen nueva: URL directa estable, fichero real (magic bytes
-   + preview renderizado), licencia + autor + página fuente exactos.
-3. Mantener el índice (`docs/REFERENCE_LIBRARY.md`) veraz: nombre, categoría,
-   fichero, URL fuente, autor, licencia, descripción, etiquetas, fecha.
+1. Answer a visual question ("medieval stone wall", "warm interior light") with 2–4 concrete images from `references/`.
+2. Verify each new image: stable direct URL, real file (magic bytes + rendered preview), exact license + author + source page.
+3. Keep the index (`docs/REFERENCE_LIBRARY.md`) truthful: name, category, file, source URL, author, license, description, tags, date.
 
-## Alcance y límites
+## Scope and limits
 
-- Cubre: búsqueda local, vetting con criterios de licencia, descarga honesta,
-  atribución y moodboards.
-- NO genera imágenes ni hace concept art (eso es trabajo manual/externo).
-- NO aprueba licencias dudosas: ante la duda, se descarta la candidata.
+- Covers: local search, vetting with license criteria, honest download, attribution, and moodboards.
+- Does NOT generate images or do concept art (that is manual/external work).
+- Does NOT approve dubious licenses: when in doubt, the candidate is rejected.
 
-## Casos de uso
+## Use cases
 
-- Un build necesita un look y hay que responder con referencias reales.
-- Ampliar `references/` con una categoría nueva.
-- Auditar que el índice y los ficheros siguen siendo válidos.
+- A build needs a look and must be answered with real references.
+- Growing `references/` with a new category.
+- Auditing that the index and files are still valid.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Busca primero en local.** Lista ficheros coincidentes bajo `references/`;
-   prefiérelos a la web. Cita rutas, no impresiones.
-2. **Fallback web.** Páginas File: de Wikimedia Commons (verifica con
-   `imageinfo`/`extmetadata`: artista, `LicenseShortName`), o bibliotecas CC0
-   cuya página de licencia abras de verdad (p. ej. kenney.nl). Permitido: CC0,
-   dominio público, CC BY, CC BY-SA. Rechazado: páginas "free download" sin
-   licencia, thumbnails de buscadores, URLs con caducidad/tokens, granjas de
-   wallpapers IA.
-3. **Descarga honesta.** Prefiere variantes `thumb.wikimedia.org` con tamaño
-   cuando el host full limite; registra qué variante se guardó. Verifica magic
-   bytes (`FF D8 FF` JPEG / `89 50 4E 47` PNG) y abre la imagen tú mismo.
-4. **Atribución.** CC BY / CC BY-SA exigen crédito: autor + licencia + enlace
-   en el índice. CC0/PD también registran autor y fuente.
-5. **Moodboards.** Un moodboard es un conjunto de ficheros + una línea de
-   intención por imagen ("ritmo de textura de muro", "paleta nocturna"), nunca
-   una imagen generada presentada como referencia.
+1. **Search locally first.** List matching files under `references/`; prefer them over the web. Cite paths, not impressions.
+2. **Web fallback.** File: pages on Wikimedia Commons (verify with `imageinfo`/`extmetadata`: artist, `LicenseShortName`), or CC0 libraries whose license page you actually open (e.g. kenney.nl). Allowed: CC0, public domain, CC BY, CC BY-SA. Rejected: "free download" pages without a license, search-engine thumbnails, expiring/tokenized URLs, AI wallpaper farms.
+3. **Honest download.** Prefer `thumb.wikimedia.org` variants with size when the full host limits; record which variant was saved. Verify magic bytes (`FF D8 FF` JPEG / `89 50 4E 47` PNG) and open the image yourself.
+4. **Attribution.** CC BY / CC BY-SA require credit: author + license + link in the index. CC0/PD also record author and source.
+5. **Moodboards.** A moodboard is a set of files + one intent line per image ("wall texture rhythm", "night palette"), never a generated image presented as reference.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Licencias: CC0/PD (uso libre), CC BY (atribución), CC BY-SA (atribución +
-  compartir igual). Formatos y magic bytes para verificación.
+- Licenses: CC0/PD (free use), CC BY (attribution), CC BY-SA (attribution + share alike). Formats and magic bytes for verification.
 
-## Buenas prácticas
+## Best practices
 
-- Verificar antes de indexar, siempre en ese orden.
-- Una imagen, una fila de índice completa; sin filas a medias.
-- Revisa periódicamente que los enlaces fuente sigan vivos.
+- Verify before indexing, always in that order.
+- One image, one complete index row; no half rows.
+- Periodically recheck that source links are still alive.
 
-## Errores frecuentes
+## Common mistakes
 
-- Guardar desde el preview del buscador e inventar autor/licencia.
-- Mezclar concept art generado en la biblioteca de referencias (los outputs IA
-  van en `references/concept-art/` claramente etiquetados, nunca como referencias).
-- Carpetas de categorías vacías "para luego": solo cuentan ficheros indexados.
+- Saving from the search preview and inventing author/license.
+- Mixing generated concept art into the reference library (AI outputs go in `references/concept-art/` clearly labeled, never as references).
+- Empty category folders "for later": only indexed files count.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Cada imagen indexada abre, coincide con su descripción y tiene fuente +
-  autor + licencia registrados.
-- [ ] Sin enlaces rotos, sin CC BY/SA sin atribuir, sin carpetas vacías.
-- Verificación: reabre cada fichero; re-comprueba una URL fuente aleatoria por
-  lote. Si el modelo no puede mostrar imágenes en la sesión actual, dilo
-  explícitamente y marca las comprobaciones visuales como NOT VERIFIED.
+- [ ] Each indexed image opens, matches its description, and has source + author + license recorded.
+- [ ] No broken links, no unattributed CC BY/SA, no empty folders.
+- Verification: reopen each file; recheck one random source URL per batch. If the model cannot display images in the current session, say so explicitly and mark visual checks as NOT VERIFIED.
 
-## Herramientas
+## Tools
 
-- Sistema de ficheros + visor de imágenes + `docs/REFERENCE_LIBRARY.md`.
-- `webfetch` para páginas de licencia; checksums locales si el lote lo exige.
+- File system + image viewer + `docs/REFERENCE_LIBRARY.md`.
+- `webfetch` for license pages; local checksums if the batch requires it.
 
-## Limitaciones
+## Limitations
 
-- No puede verificar licencias de sitios que las ocultan o falsifican.
-- No genera contenido: solo cura el existente y verificable.
+- Cannot verify licenses on sites that hide or fake them.
+- Generates no content: only curates what is existing and verifiable.

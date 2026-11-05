@@ -1,98 +1,98 @@
 ---
 name: roblox-ambient-effects
-description: Añade efectos ambientales sutiles (polvo, luciérnagas, hojas, lluvia local) con storytelling. Úsala cuando necesites ambiente vivo con presupuesto mobile estricto.
+description: Add subtle ambient effects (dust, fireflies, leaves, local rain) with storytelling. Use it when you need a living ambience on a strict mobile budget.
 ---
 
-# Efectos ambientales en Roblox
+# Ambient Effects in Roblox
 
-## Objetivo
+## Objective
 
-Dar vida al aire con efectos sutiles —polvo, luciérnagas, hojas, lluvia local— que cuentan historia y marcan lugar, sin ruido visual ni coste mobile.
+Bring the air to life with subtle effects —dust, fireflies, leaves, local rain— that tell a story and mark a place, with no visual noise or mobile cost.
 
-## Alcance y límites
+## Scope and limits
 
-Hace: polvo/luciérnagas/hojas/lluvia ambiental localizada, storytelling ambiental (qué cuenta cada efecto), presupuestos mobile, zonas y transiciones de efectos.
+Does: localized dust/fireflies/leaves/rain, ambient storytelling (what each effect tells), mobile budgets, effect zones and transitions.
 
-NO hace:
+Does NOT do:
 
-- Emisores técnicos en detalle (curvas, módulos) → `roblox-vfx` (cubre emisores técnicos; esta skill cubre efectos ambientales: cuándo, dónde y cuánto).
-- Clima global, niebla y post-efectos → `roblox-lighting-atmosphere`.
-- Ciclo día/noche base → `roblox-lighting-day-night`.
-- Vegetación (plantar) → `roblox-vegetation-landscaping`.
-- Props y señalética → `roblox-props-decoration`.
+- Technical emitters in detail (curves, modules) → `roblox-vfx` (covers technical emitters; this skill covers ambient effects: when, where, and how much).
+- Global weather, fog, and post-effects → `roblox-lighting-atmosphere`.
+- Base day/night cycle → `roblox-lighting-day-night`.
+- Planting vegetation → `roblox-vegetation-landscaping`.
+- Props and signage → `roblox-props-decoration`.
 
-Diferenciación declarada: `roblox-world-building` (instalada) es generalista y fina (154 líneas sin auxiliares); esta skill es su versión profunda por especialidad (solo ambiente). `roblox-visual-design` y `roblox-art-direction` dirigen (aprueban tono); esta skill ejecuta (coloca efectos con presupuesto). `roblox-vfx` cubre emisores técnicos; esta skill cubre efectos ambientales.
+Declared differentiation: `roblox-world-building` (installed) is generalist and thin (154 lines with no auxiliaries); this skill is its deep version per specialty (ambience only). `roblox-visual-design` and `roblox-art-direction` direct (approve tone); this skill executes (places effects with budget). `roblox-vfx` covers technical emitters; this skill covers ambient effects.
 
-## Casos de uso
+## Use cases
 
-1. Biblioteca con polvo en haces de luz que se siente antigua.
-2. Pantano con luciérnagas y niebla baja localizadas.
-3. Patio otoñal con hojas cayendo sin tapar la vista.
-4. Soportal con lluvia visible fuera y refugio seco dentro.
-5. Mapa con 40 emisores globales que funde mobile: dieta ambiental.
+1. Library with dust in light shafts that feels old.
+2. Swamp with localized fireflies and low fog.
+3. Autumn courtyard with falling leaves that don't block the view.
+4. Porch with rain visible outside and a dry shelter inside.
+5. Map with 40 global emitters melting mobile: ambient diet.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Asigna 1 efecto por lugar.** Tabla lugar→efecto→frase (ej. biblioteca→polvo→"abandono quieto"). Prohibido: 2 efectos compitiendo en el mismo radio de 30 studs.
-2. **Localiza con radio, no global.** Cada efecto vive en un volumen (punto de partida: 20–40 studs de radio) con entrada/salida claras. Verifica: fuera del radio no se ve ni se oye.
-3. **Elige el portador correcto.** Polvo: ParticleEmitter lento en haz de luz. Hojas: ParticleEmitter con caída + suelo con Decal de hojas. Luciérnagas: ParticleEmitter pequeño nocturno (+ PointLight tenue solo en 1–2 focos). Lluvia local: emisor en alero/ventana, no en cielo entero.
-4. **Parametriza sutil.** Punto de partida: tasa baja (ej. 5–20/s), vida 2–4 s, tamaño pequeño, opacidad ≤0,5 (puntos de partida, no verdad). Regla: si el efecto se nota antes que la escena, baja a la mitad.
-5. **Storytelling en 3 toques.** Cada efecto cuenta algo: origen (¿de dónde viene?), ritmo (¿constante o rachas?), resto (hojas en suelo, charcos). Sin resto = efecto decorativo vacío; añade 1 Decal o prop-testigo.
-6. **Zonas día/noche.** Luciérnagas solo de noche, polvo solo con haz diurno, lluvia según clima (con `roblox-lighting-atmosphere`). Transición con fundido punto de partida 5–10 s, nunca on/off brusco.
-7. **Presupuesto mobile estricto.** Punto de partida: ≤3 emisores visibles a la vez, ≤100 partículas simultáneas por escena, sin sombras en emisores, sin colisiones. Cuenta con el peor dispositivo y recorta primero el efecto menos narrativo.
-8. **Prueba en movimiento.** Corre, gira cámara y salta dentro del volumen 60 s. Verifica: sin tirones, sin popping al entrar/salir, legible el camino (el efecto no tapa salidas ni letreros).
-9. **Guarda kits.** `AMB_Polvo_Biblioteca`, `AMB_Luciernagas_Pantano` como Models con emisor + ajustes. Reutiliza kit antes de crear emisor nuevo.
-10. **QA final.** Checklist en § Criterios; desactiva todos los efectos y compara capturas: la escena debe funcionar sin ellos (son capa, no muleta).
+1. **Assign 1 effect per place.** Place→effect→sentence table (e.g. library→dust→"quiet abandonment"). Forbidden: 2 effects competing within the same 30-stud radius.
+2. **Localize with radius, not global.** Each effect lives in a volume (starting point: 20–40 stud radius) with clear entry/exit. Verify: outside the radius it is neither seen nor heard.
+3. **Pick the right carrier.** Dust: slow ParticleEmitter in a light shaft. Leaves: ParticleEmitter with fall + ground with leaf Decal. Fireflies: small night-only ParticleEmitter (+ dim PointLight on 1–2 spots only). Local rain: emitter on eaves/window, not on the whole sky.
+4. **Parameterize subtle.** Starting point: low rate (e.g. 5–20/s), 2–4 s lifetime, small size, opacity ≤0.5 (starting points, not truth). Rule: if the effect is noticed before the scene, halve it.
+5. **Storytelling in 3 touches.** Each effect tells something: origin (where does it come from?), rhythm (constant or gusts?), residue (leaves on the ground, puddles). Without residue it's a decorative empty effect; add 1 Decal or witness prop.
+6. **Day/night zones.** Fireflies only at night, dust only with daytime shafts, rain per weather (with `roblox-lighting-atmosphere`). Transition with a 5–10 s starting-point fade, never an abrupt on/off.
+7. **Strict mobile budget.** Starting point: ≤3 visible emitters at once, ≤100 simultaneous particles per scene, no shadows on emitters, no collisions. Count on the worst device and cut the least narrative effect first.
+8. **Test in motion.** Run, rotate the camera, and jump inside the volume for 60 s. Verify: no hitches, no popping on enter/exit, readable path (the effect doesn't cover exits or signs).
+9. **Save kits.** `AMB_Library_Dust`, `AMB_Swamp_Fireflies` as Models with emitter + settings. Reuse a kit before creating a new emitter.
+10. **Final QA.** Checklist in § Criteria; disable all effects and compare captures: the scene must work without them (they are a layer, not a crutch).
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- ParticleEmitter: tasa, vida, velocidad, tamaño y transparencia definen el efecto. Tasa baja + vida media = ambiente; tasa alta = evento (aquí no).
-- PointLight en efectos: máximo 1–2 por escena (luciérnagas foco, farol con insectos); nunca un PointLight por partícula.
-- Beam: hilos de lluvia localizada, telarañas con rocío o haces tenues; 1–2 por escena con textura suave.
-- Trail: estelas de hojas o chispas en movimiento; reservado a 1 foco narrativo, no a ambiente general.
-- Highlight: no es efecto ambiental; prohibido como sustituto de luz o clima.
-- Distancia de render: emisores con alcance corto (punto de partida 40–60 studs); más allá, sugieren con Decal/niebla, no con partículas.
-- Coordinación: el clima global lo pone `roblox-lighting-atmosphere`; aquí solo su manifestación local (lluvia bajo el alero, polvo en el haz).
+- ParticleEmitter: rate, lifetime, speed, size, and transparency define the effect. Low rate + medium lifetime = ambience; high rate = event (not here).
+- PointLight in effects: maximum 1–2 per scene (firefly spot, lantern with insects); never one PointLight per particle.
+- Beam: threads of localized rain, cobwebs with dew, or faint shafts; 1–2 per scene with a soft texture.
+- Trail: trails of leaves or sparks in motion; reserved for 1 narrative focus, not general ambience.
+- Highlight: not an ambient effect; forbidden as a substitute for light or weather.
+- Render distance: emitters with short range (40–60 stud starting point); beyond that, suggest with Decal/fog, not particles.
+- Coordination: global weather is set by `roblox-lighting-atmosphere`; here only its local manifestation (rain under the eave, dust in the shaft).
 
-## Buenas prácticas
+## Best practices
 
-- Sutilidad como norma: el jugador nota el lugar, no el emisor.
-- Un efecto memorable por distrito; el resto, silencio visual.
-- Efectos que respetan gameplay: nunca sobre salidas, letreros ni zonas de combate intenso.
-- Noche y lluvia multiplican el valor del efecto: concéntralos ahí.
-- Documenta radio, tasa y frase narrativa de cada emisor en su nombre o nota.
+- Subtlety as the norm: the player notices the place, not the emitter.
+- One memorable effect per district; silence everywhere else.
+- Effects that respect gameplay: never over exits, signs, or intense combat zones.
+- Night and rain multiply the effect's value: concentrate them there.
+- Document each emitter's radius, rate, and narrative sentence in its name or note.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Emisor global.** Polvo en todo el mapa. Corrección: radio 20–40 por lugar.
-2. **Tasa de evento.** 200/s para "ambiente". Corrección: 5–20/s y opacidad ≤0,5.
-3. **Luciérnagas de día.** Visibles a mediodía como ruido. Corrección: solo noche + fundido.
-4. **Efecto que tapa.** Hojas que ocultan salida. Corrección: despeja salidas y letreros.
-5. **40 emisores.** Mobile fundido. Corrección: ≤3 visibles a la vez, kits reutilizados.
-6. **Sin resto.** Lluvia sin charcos, hojas sin suelo. Corrección: añade Decal/prop-testigo.
-7. **On/off brusco.** Efecto que parpadea al entrar. Corrección: fundido 5–10 s.
+1. **Global emitter.** Dust across the whole map. Fix: 20–40 radius per place.
+2. **Event rate.** 200/s for "ambience". Fix: 5–20/s and opacity ≤0.5.
+3. **Daytime fireflies.** Visible at noon as noise. Fix: night only + fade.
+4. **Blocking effect.** Leaves hiding an exit. Fix: clear exits and signs.
+5. **40 emitters.** Mobile melts. Fix: ≤3 visible at once, reused kits.
+6. **No residue.** Rain without puddles, leaves without ground cover. Fix: add Decal/witness prop.
+7. **Abrupt on/off.** Effect flickering on enter. Fix: 5–10 s fade.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] 1 efecto por lugar con frase narrativa; sin competencia en 30 studs.
-- [ ] Radios 20–40 definidos; fuera del radio no se percibe (test).
-- [ ] Parámetros sutiles (tasa/vida/opacidad) documentados como puntos de partida.
-- [ ] Resto visible (Decal/prop) por cada efecto continuo.
-- [ ] Transiciones día/noche/clima con fundido 5–10 s, sin cortes.
-- [ ] Presupuesto mobile: ≤3 emisores y ≤100 partículas por escena, medido en peor dispositivo.
-- [ ] Camino, salidas y letreros legibles dentro del efecto (fotos).
-- [ ] Escena funciona sin efectos (comparativa on/off archivada).
+- [ ] 1 effect per place with a narrative sentence; no competition within 30 studs.
+- [ ] Radii 20–40 defined; not perceivable outside the radius (test).
+- [ ] Subtle parameters (rate/lifetime/opacity) documented as starting points.
+- [ ] Visible residue (Decal/prop) per continuous effect.
+- [ ] Day/night/weather transitions with 5–10 s fade, no cuts.
+- [ ] Mobile budget: ≤3 emitters and ≤100 particles per scene, measured on the worst device.
+- [ ] Path, exits, and signs readable inside the effect (photos).
+- [ ] Scene works without effects (on/off comparison archived).
 
-## Herramientas
+## Tools
 
-- ParticleEmitter como portador principal (tasas bajas, vidas medias).
-- PointLight (1–2 focos), Beam (1–2 hilos/haces) y Trail (1 foco) con moderación.
-- Decal/Texture para restos (hojas en suelo, charcos, polvo asentado).
-- Coordinación con Atmosphere/niebla (`roblox-lighting-atmosphere`) y haz de luz (`roblox-lighting-day-night`).
+- ParticleEmitter as the main carrier (low rates, medium lifetimes).
+- PointLight (1–2 spots), Beam (1–2 threads/shafts), and Trail (1 focus) in moderation.
+- Decal/Texture for residue (leaves on the ground, puddles, settled dust).
+- Coordination with Atmosphere/fog (`roblox-lighting-atmosphere`) and light shaft (`roblox-lighting-day-night`).
 
-## Limitaciones
+## Limitations
 
-- No cubre VFX de gameplay (impactos, habilidades, magias) ni emisores técnicos avanzados (ver `roblox-vfx`).
-- Tasas, radios y conteos son puntos de partida, no verdad: manda la medición mobile.
-- Si dudas de un límite del motor, escribe "(verificar en create.roblox.com/docs)".
-- Distingue referencia visual (vídeo de luciérnagas reales) de kit importable: el kit solo existe si está guardado como Model.
+- Does not cover gameplay VFX (impacts, abilities, magic) or advanced technical emitters (see `roblox-vfx`).
+- Rates, radii, and counts are starting points, not truth: the mobile measurement rules.
+- If in doubt about an engine limit, write "(check create.roblox.com/docs)".
+- Distinguish visual reference (video of real fireflies) from an importable kit: the kit only exists if saved as a Model.

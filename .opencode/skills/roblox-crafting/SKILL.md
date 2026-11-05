@@ -1,91 +1,91 @@
 ---
 name: roblox-crafting
-description: Recetas, estaciones, colas y crafteo atómico validado en servidor. Úsala cuando necesites forja, cocina, workbench o crafteo con materiales y tiempos.
+description: Recipes, stations, queues, and server-validated atomic crafting. Use it when you need forges, cooking, workbenches, or crafting with materials and timers.
 ---
 
-# Crafteo (Crafting)
+# Crafting
 
-## Objetivo
-Implementar crafteo robusto: recetas descubribles, estaciones con colas, consumo y entrega atómicos, y protección total contra duplicación.
+## Objective
+Implement robust crafting: discoverable recipes, stations with queues, atomic consume-and-deliver, and full protection against duplication.
 
-## Alcance y límites
-Cubre recetas, estaciones, colas, batch-craft, descubrimientos y fallos críticos.
-Diferenciación declarada: `roblox-game-systems` (instalada) es recetario fino; esta skill es la versión profunda con atomicidad, concurrencia y estaciones. NO cubre obtención de materias (lo cubre `roblox-resource-gathering`), ni precios/inflación de objetos crafteados (lo cubre `roblox-economy-balancing`), ni misiones de crafteo (lo cubre `roblox-quest-progression-systems`). `roblox-genre-patterns` no detalla sistemas.
+## Scope and limits
+Covers recipes, stations, queues, batch-craft, discoveries, and critical failures.
+Stated differentiation: the installed `roblox-game-systems` is a fine-grained recipe book; this skill is the deep version with atomicity, concurrency, and stations. Does NOT cover gathering raw materials (covered by `roblox-resource-gathering`), nor pricing/inflation of crafted items (covered by `roblox-economy-balancing`), nor crafting quests (covered by `roblox-quest-progression-systems`). `roblox-genre-patterns` doesn't go deep into systems.
 
-## Casos de uso
-- Forja de espadas con tiers y crítico de calidad.
-- Cocina con recetas que dan buffs temporales.
-- Workbench de tycoon que produce en cola offline parcial.
-- Encantamientos con riesgo de fallo y protección.
-- Crafteo móvil con estaciones portátiles de un uso.
+## Use cases
+- Sword forge with tiers and quality crits.
+- Cooking with recipes that grant temporary buffs.
+- Tycoon workbench that produces in a partial offline queue.
+- Enchanting with failure risk and protection.
+- Mobile crafting with single-use portable stations.
 
-## Bucle de juego o sistema (diseño)
-1. Descubrir receta (loot, quest, experimentación).
-2. Reunir materiales y acudir a estación correcta.
-3. Encolar crafteo (tiempo real o instantáneo con coste).
-4. Esperar/reclamar (decisión: acelerar con Robux/moneda).
-5. Usar/vender/equipar resultado.
-Balance de ejemplo: receta tier 2 = 8 hierro + 4 madera, 60 s, éxito 100%, calidad épica 12%; coste de aceleración = 1.5× valor vendor/60 s; sink objetivo 20% de materiales/día; si el backlog medio supera 5 ítems por jugador, subir tiempos o estaciones.
+## Game or system loop (design)
+1. Discover recipe (loot, quest, experimentation).
+2. Gather materials and go to the right station.
+3. Queue crafting (real-time or instant with cost).
+4. Wait/claim (decision: speed up with Robux/currency).
+5. Use/sell/equip result.
+Balance example: tier 2 recipe = 8 iron + 4 wood, 60 s, 100% success, 12% epic quality; speed-up cost = 1.5× vendor value/60 s; target sink 20% of materials/day; if average backlog exceeds 5 items per player, raise times or stations.
 
-## Proceso paso a paso
-1. Define `RecipeDefs` en `ModuleScript`: `id`, `estacion`, `materiales {id=cant}`, `tiempoS`, `resultado`, `tasaCritica`, `nivelRequerido`, `descubiertaPorDefecto`.
-2. Estaciones como `Model` con tag `CraftStation` y `Attributes` (`StationType`, `QueueMax`, `OcupadaPor`).
-3. Cliente envía `RemoteFunction CraftRequest(recetaId, estacionId)`; jamás envía materiales ni resultado.
-4. Servidor ejecuta transacción atómica: bloquea inventario → verifica materiales + nivel + estación libre → descuenta → encola → programa finalización.
-5. Cola por estación (ej. máx 3, FIFO) con timestamps servidor; soporta `ClaimResult` separado de `StartCraft`.
-6. Resultado con RNG servidor: normal/épico/legendario; entrega a inventario servidor y notifica.
-7. Descubrimiento: combina "experimentación" validada (el servidor comprueba combinación, no el cliente).
-8. UI: lista filtrable, botón crafteable/no con motivo, barra de progreso por cola, notificación de listo.
+## Step-by-step process
+1. Define `RecipeDefs` in a `ModuleScript`: `id`, `station`, `materials {id=count}`, `timeS`, `result`, `critRate`, `requiredLevel`, `discoveredByDefault`.
+2. Stations as `Model` with `CraftStation` Tag and `Attributes` (`StationType`, `QueueMax`, `OccupiedBy`).
+3. Client sends `RemoteFunction CraftRequest(recipeId, stationId)`; never sends materials or result.
+4. Server runs an atomic transaction: lock inventory → verify materials + level + free station → deduct → queue → schedule completion.
+5. Queue per station (e.g. max 3, FIFO) with server timestamps; supports `ClaimResult` separate from `StartCraft`.
+6. Result with server RNG: normal/epic/legendary; delivered to server inventory and notified.
+7. Discovery: combine "experimentation" with validation (the server checks the combination, not the client).
+8. UI: filterable list, craftable button with reason when not, progress bar per queue, ready notification.
 
-## Conocimientos técnicos
-### Qué valida el servidor
-- Receta existe y está descubierta para ese jugador.
-- Materiales suficientes en inventario servidor y estación correcta a ≤12 studs.
-- Nivel/herramienta requeridos y cola con hueco.
-- `Claim` solo si `os.clock() ≥ terminaEn` y reclamante = dueño de la cola.
-### Persistencia
-- Guarda inventario, recetas descubiertas y colas activas (`recetaId`, `terminaEnUnix`, `estacionId`) con `DataStoreService`.
-- Al cargar, recalcula colas: si `terminaEn` ya pasó durante offline, entrega a "buzón" con límite 10; resto se marca listo para reclamar.
-- Transacciones con `UpdateAsync` para inventario cuando haya comercio paralelo (verificar en create.roblox.com/docs).
-### Errores/desconexiones
-- Desconexión mid-craft: materiales ya descontados no se devuelven; resultado queda reclamable 7 días.
-- Cierre de servidor: `BindToClose` persiste colas; al reabrir nueva instancia recalcula sin duplicar.
-- Doble clic: idempotencia con `jobId` por solicitud; segundo `Claim` del mismo job devuelve ya-entregado.
+## Technical knowledge
+### What the server validates
+- Recipe exists and is discovered for that player.
+- Enough materials in the server inventory and correct station within ≤12 studs.
+- Required level/tool and queue with free slot.
+- `Claim` only if `os.clock() >= endsAt` and claimant = queue owner.
+### Persistence
+- Save inventory, discovered recipes, and active queues (`recipeId`, `endsAtUnix`, `stationId`) with `DataStoreService`.
+- On load, recalculate queues: if `endsAt` already passed while offline, deliver to "mailbox" with limit 10; rest is marked ready to claim.
+- Transactions with `UpdateAsync` for inventory when there is parallel trading (verify at create.roblox.com/docs).
+### Errors/disconnections
+- Mid-craft disconnect: already-deducted materials are not refunded; result stays claimable for 7 days.
+- Server shutdown: `BindToClose` persists queues; when a new instance reopens it recalculates without duplicating.
+- Double-click: idempotency with `jobId` per request; second `Claim` of the same job returns already-delivered.
 ### Anti-exploit
-- Nunca aceptes `resultadoId` del cliente; recalcula desde receta.
-- Rate-limit `CraftRequest` 5/s; más = ignorar.
-- Valida que la estación no fue movida por exploiter: compara posición con plantilla ±4 studs.
-- Anti-dupe: bloquea inventario por jugador durante transacción (mutex simple por `UserId`).
+- Never accept `resultId` from the client; recalculate from the recipe.
+- Rate-limit `CraftRequest` 5/s; more = ignore.
+- Validate the station wasn't moved by an exploiter: compare position with template ±4 studs.
+- Anti-dupe: lock player inventory during the transaction (simple per-`UserId` mutex).
 
-## Buenas prácticas
-- Separa `CraftDefs` (datos) de `CraftServer` (lógica) y `CraftUI` (vista).
-- Tiempos cortos (<60 s) gratis, largos acelerables; nunca pay-to-craft obligatorio.
-- Muestra probabilidad exacta de crítico; evita "sensación de timo".
-- Permite encolar desde móvil con botones ≥48 px y confirmación de materiales caros.
-- Log de crafteos épicos para economía y detección de abuso.
+## Best practices
+- Separate `CraftDefs` (data) from `CraftServer` (logic) and `CraftUI` (view).
+- Short times (<60 s) free, long ones speedable; never mandatory pay-to-craft.
+- Show exact crit probability; avoid a "rigged" feeling.
+- Allow queueing from mobile with ≥48 px buttons and confirmation for expensive materials.
+- Log epic crafts for economy and abuse detection.
 
-## Errores frecuentes
-1. Descontar y entregar en dos remotos separados → dupe por doble claim; unificar en transacción.
-2. Temporizador con `wait(tiempo)` por trabajo → deriva y fugas; usar timestamps y scheduler.
-3. Estación global sin dueño → dos jugadores reclaman lo mismo; asignar dueño + timeout 120 s.
-4. Receta secreta validada en cliente → filtrada en exploit; validar combinación en servidor.
-5. No versionar recetas → cambio de balance rompe inventarios; versiona `recipes_v2` y migra.
+## Common mistakes
+1. Deducting and delivering in two separate remotes → dupe via double claim; unify into a transaction.
+2. Timer with `wait(workTime)` per job → drift and leaks; use timestamps and a scheduler.
+3. Global station with no owner → two players claim the same; assign owner + 120 s timeout.
+4. Secret recipe validated on the client → leaked via exploit; validate the combination on the server.
+5. Not versioning recipes → balance change breaks inventories; version `recipes_v2` and migrate.
 
-## Criterios de calidad y terminado
-- [ ] 50 crafteos concurrentes en una estación sin duplicar ni perder materiales.
-- [ ] Doble `Claim` del mismo job entrega 1 solo resultado.
-- [ ] Desconexión a mitad de cola conserva materiales descontados y resultado reclamable.
-- [ ] Tasa épica medida 10–14% en 500 muestras para receta 12% nominal.
-- [ ] UI indica motivo exacto cuando no se puede craftear en 6 casos probados.
-- [ ] Carga de DataStore corrupto cae a inventario vacío + log, sin romper sesión.
+## Quality and done criteria
+- [ ] 50 concurrent crafts on one station without duplicating or losing materials.
+- [ ] Double `Claim` of the same job delivers 1 result only.
+- [ ] Disconnect mid-queue keeps deducted materials and result claimable.
+- [ ] Measured epic rate 10–14% over 500 samples for a nominal 12% recipe.
+- [ ] UI shows the exact reason when crafting is blocked in 6 tested cases.
+- [ ] Corrupt DataStore load falls back to empty inventory + log, without breaking the session.
 
-## Herramientas
-Servicios/clases: `RemoteEvent`, `RemoteFunction`, `DataStoreService`, `Players`, `CollectionService`, `Attributes`, `ProximityPrompt`, `MarketplaceService` (solo si aceleración con Robux). Verificar miembros en create.roblox.com/docs si hay duda.
+## Tools
+Services/classes: `RemoteEvent`, `RemoteFunction`, `DataStoreService`, `Players`, `CollectionService`, `Attributes`, `ProximityPrompt`, `MarketplaceService` (only if Robux speed-up). Verify members at create.roblox.com/docs if in doubt.
 
-## Limitaciones
-- No diseña economía global ni sinks; componer con `roblox-economy-balancing`.
-- No genera misiones de crafteo; componer con `roblox-quest-progression-systems`.
-- No cubre intercambio entre jugadores; componer con `roblox-social-systems`.
+## Limitations
+- Does not design the global economy or sinks; compose with `roblox-economy-balancing`.
+- Does not generate crafting quests; compose with `roblox-quest-progression-systems`.
+- Does not cover player-to-player trading; compose with `roblox-social-systems`.
 
 ```luau
 -- Ilustrativo: consumo atómico simplificado.

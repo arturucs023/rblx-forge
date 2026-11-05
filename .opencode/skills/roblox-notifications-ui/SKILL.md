@@ -1,49 +1,49 @@
 ---
-name: Notificaciones y Popups Roblox
-description: Cola de avisos, toasts y modales sin spam. Úsala cuando crees notificaciones, confirmaciones, errores globales o banners que no interrumpan el juego.
+name: Roblox Notifications and Popups
+description: Queue of notices, toasts, and modals without spam. Use it when creating notifications, confirmations, global errors, or banners that do not interrupt the game.
 ---
 
-# Notificaciones y Popups Roblox
+# Roblox Notifications and Popups
 
-## Objetivo
+## Objective
 
-Informar sin interrumpir: cada mensaje llega por el canal correcto (toast, banner o modal), con la prioridad correcta, en colas que no se pisan y con una política anti-spam que protege la partida. Lo crítico interrumpe; lo demás espera o se agrupa.
+Inform without interrupting: each message arrives through the right channel (toast, banner, or modal), with the right priority, in queues that do not overlap, and with an anti-spam policy that protects the match. The critical interrupts; the rest waits or groups.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre: sistema de colas por prioridad, toasts, banners, modales, centro de avisos opcional, política anti-spam y accesibilidad de mensajes.
+Covers: priority queue system, toasts, banners, modals, optional notice center, anti-spam policy, and message accessibility.
 
-NO hace:
+Does NOT do:
 
-- Mecánica genérica responsiva: lo cubren `roblox-ui` y `roblox-user-interfaces`.
-- Diseño UX previo: lo cubre `roblox-game-ux`; esta skill implementa.
-- HUD persistente: lo cubre `roblox-hud` (las notificaciones lo usan, no lo sustituyen).
-- Pausa o ajustes: `roblox-pause-menu`, `roblox-settings-ui`.
-- Chat entre jugadores: `roblox-text-chat` (aquí solo avisos del sistema).
+- Generic responsive mechanics: covered by `roblox-ui` and `roblox-user-interfaces`.
+- Prior UX design: covered by `roblox-game-ux`; this skill implements.
+- Persistent HUD: covered by `roblox-hud` (notifications use it, they do not replace it).
+- Pause or settings: `roblox-pause-menu`, `roblox-settings-ui`.
+- Player-to-player chat: `roblox-text-chat` (here only system notices).
 
-## Casos de uso
+## Use cases
 
-- Toast "¡+200 oro!" que se apila y desaparece en 3 s.
-- Banner "Evento en 2:00 en el Volcán" que no bloquea el juego.
-- Modal "¿Vender espada legendaria?" con Confirmar/Cancelar.
-- Error global "Sin conexión. Reintentando…" persistente hasta recuperar.
-- 5 pickups seguidos que se agrupan en "¡+5 objetos!" en vez de 5 toasts.
+- "+200 gold!" toast that stacks and disappears in 3 s.
+- "Event in 2:00 at the Volcano" banner that does not block the game.
+- "Sell legendary sword?" modal with Confirm/Cancel.
+- Global error "No connection. Retrying…" persistent until recovery.
+- 5 pickups in a row grouped into "+5 items!" instead of 5 toasts.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Clasifica cada mensaje.** Crítico (error, pérdida, confirmación destructiva) → modal. Importante (evento, misión completada) → banner/toast persistente. Informativo (pickup, guardado) → toast fugaz. Si todo es modal, todo se ignora.
-2. **Define la matriz de canales.** Toast abajo-derecha (PC) / arriba-centro (móvil), banner arriba-centro compacto, modal centrado con overlay. Un mensaje = un canal; documenta las excepciones.
-3. **Construye el contenedor.** `ScreenGui` en `PlayerGui` → `Frame` toast-stack (`UIListLayout` vertical, anclado esquina, a `Scale`) + `Frame` banner-slot (1 visible) + `Frame` modal-slot (1 visible con overlay). `DisplayOrder` por encima del HUD, por debajo del menú del sistema.
-4. **Implementa la cola con prioridad.** Cola FIFO con 3 niveles; máximo 3 toasts visibles, resto en espera; duración 2.5-4 s por severidad; los críticos saltan a modal y pausan la cola. Agrupa repetidos en ventana de 2 s ("¡+200 oro! x3").
-5. **Diseña cada tipo.** Toast = `Frame` + `ImageLabel` icono + `TextLabel` 1-2 líneas + barra de vida opcional; banner = versión ancha con acción ("Ver evento"); modal = título + cuerpo 2-3 líneas + botones Confirmar/Cancelar + cerrar X. Todos con `UICorner`, `UIPadding`, `UIStroke` por severidad.
-6. **Anti-spam obligatorio.** Cooldown por tipo, agrupación de repetidos, límite por minuto, modo "No molestar" en combate/jefe (solo críticos) y botón Silenciar avisos no críticos en ajustes. Registra descartes para ajustar.
-7. **Accesibilidad.** Duración mínima 4 s si tiene acción, botón de 44+ px, contraste AA, sin depender solo del color (icono + texto), y versión persistente en centro de avisos para lo importante que expiró.
-8. **Anima con moderación.** Entrada desliz + fundido 0.2 s vía `TweenService`, salida fundido; modal con escala 0.96→1. Sin sonidos fuertes por defecto; un tick suave opcional configurable.
-9. **Verifica bajo fuego.** Dispara 20 avisos en 5 s, simula error de red, abre modal sobre toast, rota el móvil. Nada debe tapar el HUD crítico ni bloquear el juego salvo el modal intencionado.
+1. **Classify each message.** Critical (error, loss, destructive confirmation) → modal. Important (event, completed quest) → persistent banner/toast. Informative (pickup, save) → fleeting toast. If everything is a modal, everything gets ignored.
+2. **Define the channel matrix.** Toast bottom-right (PC) / top-center (mobile), compact top-center banner, modal centered with overlay. One message = one channel; document the exceptions.
+3. **Build the container.** `ScreenGui` in `PlayerGui` → toast-stack `Frame` (`UIListLayout` vertical, anchored corner, at `Scale`) + banner-slot `Frame` (1 visible) + modal-slot `Frame` (1 visible with overlay). `DisplayOrder` above the HUD, below the system menu.
+4. **Implement the queue with priority.** FIFO queue with 3 levels; max 3 visible toasts, rest waiting; 2.5-4 s duration by severity; critical ones jump to modal and pause the queue. Group repeats within a 2 s window ("+200 gold! x3").
+5. **Design each type.** Toast = `Frame` + `ImageLabel` icon + 1-2 line `TextLabel` + optional lifetime bar; banner = wide version with action ("View event"); modal = title + 2-3 line body + Confirm/Cancel buttons + X close. All with `UICorner`, `UIPadding`, `UIStroke` by severity.
+6. **Mandatory anti-spam.** Cooldown per type, grouping of repeats, per-minute limit, "Do not disturb" mode in combat/boss (only critical) plus a Mute non-critical notices button in settings. Log discards for tuning.
+7. **Accessibility.** Minimum 4 s duration if it has an action, 44+ px button, AA contrast, never color-only (icon + text), and a persistent version in the notice center for important expired items.
+8. **Moderate animation.** 0.2 s slide-in + fade via `TweenService`, fade-out; modal with 0.96→1 scale. No loud sounds by default; an optional soft tick configurable.
+9. **Verify under fire.** Fire 20 notices in 5 s, simulate a network error, open a modal over a toast, rotate the phone. Nothing may cover the critical HUD or block the game except the intentional modal.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Stack de toasts (clases estables):
+- Toast stack (stable classes):
 
   ```luau
   -- Ejemplo ilustrativo: encolar un toast
@@ -62,58 +62,58 @@ NO hace:
   end
   ```
 
-- `UIListLayout` con `SortOrder` por llegada y `Padding`; `CanvasGroup` para fundir toasts completos; `UISizeConstraint` para no invadir media pantalla en móvil.
-- Cola en un `ModuleScript` local: `push({nivel, texto, duración, acción})`; el render solo pinta. Límite de visibles + purga por tiempo con `TweenService` y limpieza de instancias.
-- Modales: un `Frame` overlay a pantalla completa que captura clics + tarjeta centrada; foco por defecto en la acción segura (Cancelar) salvo que el diseño exija lo contrario documentado.
-- `TextChatService` no se usa para avisos del sistema salvo que el juego lo exija; los avisos del sistema viven en esta UI, no en el chat.
-- Persistencia: el centro de avisos (si existe) guarda los últimos N importantes en memoria de sesión; nada sensible ni permanente sin servidor.
+- `UIListLayout` with arrival `SortOrder` and `Padding`; `CanvasGroup` to fade whole toasts; `UISizeConstraint` so half the screen is not invaded on mobile.
+- Queue in a local `ModuleScript`: `push({level, text, duration, action})`; rendering only paints. Visible limit + time-based purge with `TweenService` and instance cleanup.
+- Modals: one full-screen `Frame` overlay that captures clicks + centered card; default focus on the safe action (Cancel) unless the design requires otherwise documented.
+- `TextChatService` is not used for system notices unless the game requires it; system notices live in this UI, not in chat.
+- Persistence: the notice center (if any) keeps the last N important items in session memory; nothing sensitive or permanent without a server.
 
-### Identidad visual de esta skill (original, no copiar)
+### Visual identity of this skill (original, do not copy)
 
-- Dirección "mensajería sobria": toasts grafito (#1C2233 a 92%) con icono de severidad (info cian #38E1FF, éxito verde #3DDC84, aviso ámbar #FFC53D, error rojo #FF5A5A); banners con franja superior de color; modales en tarjeta clara (#F4F6FB) con texto oscuro.
-- Tipografía: toast 14 semibold 1-2 líneas, banner 15 con acción subrayada, modal título 20 + cuerpo 14. Sin mayúsculas sostenidas.
-- Composición: toasts 320-360 px equivalentes apilados con gap 8, banner centrado de 560 máx., modal 420-480 centrado. `UICorner` 10-12, `UIStroke` 1 px por severidad.
-- Espaciado: `UIPadding` 12-14, iconos 24, botones modales 50/50 con gap 10.
-- Estados: info/éxito/aviso/error con icono + color + texto (triple canal), loading solo en modal con acción async (botón deshabilitado + spinner), expirado con fundido, agrupado con contador "x3".
-- Animación: solo desliz + fundido 0.2 s; modal escala breve. Prohibido parpadear o rebotar toasts.
+- "Sober messaging" direction: graphite toasts (#1C2233 at 92%) with severity icon (info cyan #38E1FF, success green #3DDC84, warning amber #FFC53D, error red #FF5A5A); banners with a top color strip; modals as a light card (#F4F6FB) with dark text.
+- Typography: toast 14 semibold 1-2 lines, banner 15 with underlined action, modal title 20 + body 14. No sustained uppercase.
+- Composition: 320-360 equivalent-px toasts stacked with 8 gap, max-560 centered banner, 420-480 centered modal. `UICorner` 10-12, 1 px `UIStroke` by severity.
+- Spacing: `UIPadding` 12-14, 24 icons, 50/50 modal buttons with 10 gap.
+- States: info/success/warning/error with icon + color + text (triple channel), loading only in modal with async action (disabled button + spinner), expired with fade, grouped with "x3" counter.
+- Animation: only 0.2 s slide + fade; brief modal scale. No blinking or bouncing toasts.
 
-## Buenas prácticas
+## Best practices
 
-- 1 modal a la vez; si llega otro crítico, se encola, no se superpone.
-- Todo toast con acción vive ≥4 s o se guarda en el centro de avisos.
-- Textos accionables: "Sin conexión. Reintentando… (Reintentar)" no "Error 500".
-- Coherencia total de iconos y colores de severidad en todo el juego.
-- Respeta "No molestar": en jefe/combate solo críticos + banner mínimo.
-- Mide: si un aviso se descarta el 95% sin clic, baja su prioridad o elimínalo.
+- 1 modal at a time; if another critical arrives, it queues, never overlaps.
+- Every toast with an action lives ≥4 s or is stored in the notice center.
+- Actionable texts: "No connection. Retrying… (Retry)" not "Error 500".
+- Total icon and color consistency for severity across the game.
+- Respect "do not disturb": in boss/combat only critical + minimal banner.
+- Measure: if a notice is dismissed 95% of the time without a click, lower its priority or remove it.
 
-## Errores frecuentes
+## Common mistakes
 
-- 10 toasts que tapan el HUD y los botones táctiles en el peor momento.
-- Modal por cada pickup que bloquea el juego y se gana el odio del jugador.
-- Avisos solo por color que daltónicos no distinguen.
-- Cola sin límite que acumula 50 toasts y congela el scroll.
-- Doble sistema (HUD + notificaciones) que duplica el mismo mensaje.
-- Sonido fuerte por cada toast que obliga a silenciar todo el juego.
+- 10 toasts covering the HUD and touch buttons at the worst moment.
+- A modal per pickup that blocks the game and earns the player's hatred.
+- Color-only notices that color-blind players cannot tell apart.
+- Unbounded queue accumulating 50 toasts and freezing scroll.
+- Double system (HUD + notifications) duplicating the same message.
+- Loud sound per toast forcing the player to mute the whole game.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] 20 avisos en 5 s se agrupan y no tapan lo crítico ni bloquean el juego.
-- [ ] 1 solo modal visible, con foco seguro y cierre claro (X + Cancelar + Esc).
-- [ ] Severidades distinguibles por icono + texto + color, con contraste AA.
-- [ ] Legible en PC, tablet y móvil sin tapar controles táctiles.
-- [ ] Política anti-spam documentada (límites, cooldowns, no-molestar) y verificada.
-- [ ] Sin errores en consola ni instancias huérfanas tras 10 minutos de avisos.
+- [ ] 20 notices in 5 s group up and neither cover the critical nor block the game.
+- [ ] Only 1 visible modal, with safe focus and clear close (X + Cancel + Esc).
+- [ ] Severities distinguishable by icon + text + color, with AA contrast.
+- [ ] Legible on PC, tablet, and mobile without covering touch controls.
+- [ ] Documented anti-spam policy (limits, cooldowns, do-not-disturb) and verified.
+- [ ] No console errors or orphan instances after 10 minutes of notices.
 
-## Herramientas
+## Tools
 
-- Studio: prueba de estrés de avisos, simulador móvil, `Output` para fugas.
-- MCP Studio (si disponible): capturas de stack/banner/modal sobre gameplay real.
-- Rojo: textos y umbrales (duraciones, límites) como datos editables.
-- Selene: lint del controlador de cola y de la limpieza de toasts.
+- Studio: notice stress test, mobile simulator, `Output` for leaks.
+- MCP Studio (if available): captures of stack/banner/modal over real gameplay.
+- Rojo: texts and thresholds (durations, limits) as editable data.
+- Selene: lint the queue controller and toast cleanup.
 
-## Limitaciones
+## Limitations
 
-- No sustituye el log técnico ni la telemetría de errores; es UI para el jugador.
-- No gestiona chat entre jugadores ni moderación de texto (verificar en create.roblox.com/docs).
-- El centro de avisos aquí es de sesión; el historial persistente requiere servidor.
-- Demasiados críticos indican un problema de diseño del juego, no de esta UI.
+- Does not replace the technical log or error telemetry; it is UI for the player.
+- Does not handle player-to-player chat or text moderation (check create.roblox.com/docs).
+- The notice center here is per-session; persistent history requires a server.
+- Too many criticals signal a game-design problem, not a UI problem.

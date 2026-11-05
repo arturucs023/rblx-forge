@@ -1,59 +1,59 @@
 ---
 name: roblox-rigging
-description: Rigs R6/R15/custom con Motor6D, jerarquías y validación. Úsala cuando tu modelo no se anima, se deforma raro o necesitas un rig propio.
+description: R6/R15/custom rigs with Motor6D, hierarchies, and validation. Use it when your model does not animate, deforms oddly, or you need a custom rig.
 ---
 
 # Rigging R6 / R15 / Custom
 
-## Objetivo
+## Objective
 
-Construir y validar rigs articulados que se animen sin deformaciones: jerarquía correcta de `Motor6D`, pivotes y offsets coherentes, escalado que no rompe articulaciones y un checklist que detecta rigs rotos antes de animar.
+Build and validate articulated rigs that animate without deformation: correct `Motor6D` hierarchy, coherent pivots and offsets, scaling that does not break joints, and a checklist that catches broken rigs before animating.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre estructura del rig: huesos/partes, `Motor6D`, `Bone`/`SkinnedMesh` básico, escalado y validación.
+Covers rig structure: bones/parts, `Motor6D`, `Bone`/`SkinnedMesh` basics, scaling, and validation.
 
-**Qué NO hace:**
+What it does NOT do:
 
-- NO cubre ciclo de vida respawn-safe ni gestión de `Humanoid` en juego: lo cubre `roblox-characters`.
-- NO cubre dirección visual (silueta, paleta): lo cubre `roblox-character-design`.
-- NO cubre clips ni blending (cubre `roblox-animation`; por dominio: `roblox-locomotion-animation`, `roblox-combat-animation`, `roblox-expressive-animation`).
-- NO cubre NPCs con IA: lo cubre `roblox-npcs` (aquí solo el rig que esos NPCs usarían).
-- NO cubre cámaras: lo cubre `camera-systems`.
+- It does NOT cover respawn-safe lifecycle or `Humanoid` management in-game: covered by `roblox-characters`.
+- It does NOT cover visual direction (silhouette, palette): covered by `roblox-character-design`.
+- It does NOT cover clips or blending (covered by `roblox-animation`; by domain: `roblox-locomotion-animation`, `roblox-combat-animation`, `roblox-expressive-animation`).
+- It does NOT cover NPCs with AI: covered by `roblox-npcs` (here only the rig those NPCs would use).
+- It does NOT cover cameras: covered by `camera-systems`.
 
-## Casos de uso
+## Use cases
 
-1. Convertir un modelo estático en personaje animable.
-2. Crear un rig custom (araña de 6 patas, gólem sin cuello, arma con partes móviles).
-3. Diagnosticar brazo que rota desde el hombro equivocado o cabeza que se estira.
-4. Escalar un jefe 2x sin que se separen las articulaciones.
-5. Preparar `SkinnedMesh` con `Bone` para hombros/codos suaves.
-6. Migrar animaciones entre R6 y R15 decidiendo qué rehacer.
+1. Turn a static model into an animatable character.
+2. Create a custom rig (6-legged spider, neckless golem, weapon with moving parts).
+3. Diagnose an arm rotating from the wrong shoulder or a stretching head.
+4. Scale a 2x boss without joints separating.
+5. Prepare `SkinnedMesh` with `Bone` for smooth shoulders/elbows.
+6. Migrate animations between R6 and R15 deciding what to redo.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Elige plantilla: R6, R15 o custom.** R6 = 6 partes rígidas, barato y robusto. R15 = 15 partes, mejor deformación de extremidades. Custom solo si el cuerpo no es humanoide (más de 2 brazos, sin cabeza). Anota la decisión.
-2. **Verifica la raíz.** Debe existir `HumanoidRootPart` como base de movimiento y un `Humanoid` que lo gobierne. Todo lo visible cuelga de esa raíz, directa o indirectamente.
-3. **Construye la jerarquía de arriba abajo.** Torso → cabeza / brazo sup. → brazo inf. → mano. Muslo → pierna → pie. Cada unión es exactamente un `Motor6D` con `Part0` = padre y `Part1` = hijo. Sin `Motor6D` duplicados en la misma unión.
-4. **Fija `C0`/`C1` en pose neutra.** Coloca el modelo en pose T o A, alinea pivotes y registra los valores de `C0`/`C1`. Toda animación parte de estos offsets; si los cambias después, todas las animaciones se desplazan.
-5. **Nombra de forma canónica.** Usa los nombres estándar de R6/R15 cuando sea humanoide (cabeza, torso, brazos, piernas). Los rigs custom usan sufijos claros (`PataDelantera_L1`, `PataDelantera_L2`). Nada de `Parte1`, `Parte2`.
-6. **Conecta `Animator`.** El `Animator` vive dentro del `Humanoid` y los `AnimationTrack` actúan sobre los `Motor6D` por nombre. Si falta `Animator`, nada se mueve aunque el rig sea perfecto.
-7. **Si usas `SkinnedMesh`, valida `Bone`.** Cada `Bone` debe tener padre correcto y la malla debe referenciar esos huesos. Un vértice con peso 100% a un hueso equivocado produce estiramientos "chicle".
-8. **Prueba de escala.** Escala el modelo al tamaño mínimo y máximo de diseño y reproduce idle. Si las uniones se separan, el escalado no preservó `C0`/`C1`: corrige el pipeline de escalado, no los valores a mano uno por uno.
-9. **Pasa el checklist de validación** (ver criterios). No entregues el rig hasta que las 8 pruebas pasen.
-10. **Congela y documenta.** Guarda pose neutra, valores `C0`/`C1` base y mapa de nombres para que animadores y código hablen el mismo idioma.
+1. **Choose a template: R6, R15, or custom.** R6 = 6 rigid parts, cheap and robust. R15 = 15 parts, better limb deformation. Custom only if the body is not humanoid (more than 2 arms, no neck). Record the decision.
+2. **Verify the root.** There must be a `HumanoidRootPart` as the movement base and a `Humanoid` governing it. Everything visible hangs off that root, directly or indirectly.
+3. **Build the hierarchy top-down.** Torso → head / upper arm → lower arm → hand. Thigh → leg → foot. Each joint is exactly one `Motor6D` with `Part0` = parent and `Part1` = child. No duplicate `Motor6D` on the same joint.
+4. **Set `C0`/`C1` in neutral pose.** Place the model in T or A pose, align pivots, and record the `C0`/`C1` values. Every animation starts from these offsets; if you change them later, all animations shift.
+5. **Name canonically.** Use standard R6/R15 names when humanoid (head, torso, arms, legs). Custom rigs use clear suffixes (`FrontLeg_L1`, `FrontLeg_L2`). No `Part1`, `Part2`.
+6. **Connect the `Animator`.** The `Animator` lives inside the `Humanoid` and `AnimationTrack`s act on `Motor6D`s by name. Without `Animator`, nothing moves even if the rig is perfect.
+7. **If using `SkinnedMesh`, validate `Bone`.** Each `Bone` must have the right parent and the mesh must reference those bones. A vertex weighted 100% to the wrong bone produces "taffy" stretching.
+8. **Scale test.** Scale the model to the design minimum and maximum and play idle. If joints separate, scaling did not preserve `C0`/`C1`: fix the scaling pipeline, not values one by one by hand.
+9. **Pass the validation checklist** (see criteria). Do not deliver the rig until all 8 checks pass.
+10. **Freeze and document.** Save neutral pose, base `C0`/`C1` values, and name map so animators and code speak the same language.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- **`Motor6D` 101:** une dos partes con un offset (`C0` en el padre, `C1` en el hijo). La animación modifica la rotación/posición relativa. Si `Part0`/`Part1` están cruzados, el miembro rota al revés.
-- **R6 vs R15:** R6 tiene brazos/piernas de una sola pieza (animación más tosca pero barata); R15 divide en superior/inferior/mano/pie (codos y rodillas creíbles). No mezcles nombres de ambos en un mismo rig.
-- **`HumanoidRootPart`:** no se anima directamente con `Motor6D`; es el pivote de desplazamiento. Si el rig "flota" al animar, suele ser el `Humanoid` compensando un pivote descentrado.
-- **`Animator` + `Animation` + `AnimationTrack`:** el `Animation` es el clip; al reproducirlo en el `Animator` obtienes un `AnimationTrack` controlable (peso, velocidad, fade). El track busca articulaciones por nombre: un nombre mal escrito = miembro inmóvil sin error visible.
-- **`Bone` y `SkinnedMesh`:** permiten doblado suave pero son más frágiles al escalado y al renombrado. Un hueso renombrado tras pesar la malla rompe la deformación.
-- **Escalado:** escala posiciones y offsets proporcionalmente. Escalar solo las partes sin tocar `C0`/`C1` separa el rig.
-- **`Accessory` y rigs:** los accesorios suelen soldarse a la cabeza o torso; si el punto de soldadura depende de un hueso renombrado, el sombrero sale volando.
+- **`Motor6D` 101:** joins two parts with an offset (`C0` on the parent, `C1` on the child). Animation modifies relative rotation/position. If `Part0`/`Part1` are swapped, the limb rotates backwards.
+- **R6 vs R15:** R6 has single-piece arms/legs (rougher but cheap animation); R15 splits into upper/lower/hand/foot (believable elbows and knees). Do not mix names from both in one rig.
+- **`HumanoidRootPart`:** not animated directly with `Motor6D`; it is the displacement pivot. If the rig "floats" when animating, the `Humanoid` is usually compensating for an off-center pivot.
+- **`Animator` + `Animation` + `AnimationTrack`:** the `Animation` is the clip; playing it on the `Animator` yields a controllable `AnimationTrack` (weight, speed, fade). The track looks up joints by name: a misspelled name = motionless limb with no visible error.
+- **`Bone` and `SkinnedMesh`:** allow smooth bending but are more fragile to scaling and renaming. A bone renamed after weighting the mesh breaks deformation.
+- **Scaling:** scale positions and offsets proportionally. Scaling only parts without touching `C0`/`C1` separates the rig.
+- **`Accessory` and rigs:** accessories usually weld to head or torso; if the weld point depends on a renamed bone, the hat flies off.
 
-Ejemplo ilustrativo (auditoría de rig, no código final):
+Illustrative example (rig audit, not final code):
 
 ```luau
 -- Ilustrativo: verifica que cada Motor6D tenga Part0/Part1 y nombres esperados.
@@ -65,45 +65,45 @@ for _, d in ipairs(rigModelo:GetDescendants()) do
 end
 ```
 
-## Buenas prácticas
+## Best practices
 
-- Un `Motor6D` por articulación, ni cero ni dos.
-- Pose neutra versionada: cualquier cambio de `C0`/`C1` base se comunica a animación y código.
-- Nombres canónicos; el cliente propone un rig custom, el servidor valida que los nombres/huesos coincidan con la lista permitida antes de aceptar animaciones o escalas de ese jugador.
-- Prefiere R15 estándar salvo razón medida (rendimiento o estilo); lo custom multiplica el trabajo de animación.
-- Valida el rig con un `AnimationTrack` de prueba (brazos arriba) antes de producir 20 clips.
-- Documenta qué partes son visuales y cuáles colisionan: el rig visual no debe definir la física.
+- One `Motor6D` per joint, neither zero nor two.
+- Versioned neutral pose: any base `C0`/`C1` change is communicated to animation and code.
+- Canonical names; the client proposes a custom rig, the server validates that names/bones match the allowlist before accepting that player's animations or scales.
+- Prefer standard R15 unless there is a measured reason (performance or style); custom multiplies animation work.
+- Validate the rig with a test `AnimationTrack` (arms up) before producing 20 clips.
+- Document which parts are visual and which collide: the visual rig must not define physics.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Dos `Motor6D` en el mismo cuello:** compiten y la cabeza vibra. Deja uno.
-2. **`Part0`/`Part1` invertidos:** el codo dobla hacia atrás. Revisa padre → hijo.
-3. **`Animator` fuera del `Humanoid` o duplicado:** los tracks no se reproducen o se duplican. Un solo `Animator` dentro del `Humanoid`.
-4. **Nombres no estándar:** el clip de R15 no mueve nada porque tu brazo se llama `BrazoMolon`. Renombra al estándar o re-mapea.
-5. **Escalar a mano parte por parte:** separa `C0`/`C1`. Usa el flujo de escalado del `Humanoid`/`HumanoidDescription` o un script que escale offsets.
-6. **Pesos de `Bone` al 100% en un hueso vecino:** el hombro se estira como chicle al levantar el brazo. Revisa pesos en la malla.
-7. **`Accessory` soldado al hueso equivocado:** sombrero que sigue a la mano. Re-solda al punto documentado.
+1. **Two `Motor6D` on the same neck:** they fight and the head shakes. Keep one.
+2. **Swapped `Part0`/`Part1`:** the elbow bends backwards. Check parent → child.
+3. **`Animator` outside the `Humanoid` or duplicated:** tracks do not play or double-play. A single `Animator` inside the `Humanoid`.
+4. **Non-standard names:** the R15 clip moves nothing because your arm is called `CoolArm`. Rename to the standard or re-map.
+5. **Hand-scaling part by part:** separates `C0`/`C1`. Use the `Humanoid`/`HumanoidDescription` scaling flow or a script that scales offsets.
+6. **`Bone` weights at 100% on a neighbor bone:** the shoulder stretches like taffy when raising the arm. Review mesh weights.
+7. **`Accessory` welded to the wrong bone:** hat follows the hand. Re-weld to the documented point.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Jerarquía padre→hijo completa sin `Motor6D` huérfanos ni duplicados.
-- [ ] Pose neutra con `C0`/`C1` registrados y reproducibles.
-- [ ] Clip de prueba mueve cada articulación principal sin error silencioso.
-- [ ] Escala min/max sin separaciones ni estiramientos.
-- [ ] `Animator` único dentro de `Humanoid`; tracks de prueba con peso y fade correctos.
-- [ ] Si hay `SkinnedMesh`: sin vértices perdidos al doblar codos/rodillas al máximo.
-- [ ] Documento de nombres entregado a animación y código.
+- [ ] Complete parent→child hierarchy with no orphaned or duplicate `Motor6D`.
+- [ ] Neutral pose with recorded, reproducible `C0`/`C1`.
+- [ ] Test clip moves each main joint without silent failure.
+- [ ] Min/max scale with no separations or stretching.
+- [ ] Single `Animator` inside `Humanoid`; test tracks with correct weight and fade.
+- [ ] If `SkinnedMesh`: no lost vertices when bending elbows/knees fully.
+- [ ] Name document delivered to animation and code.
 
-## Herramientas
+## Tools
 
-- Vista de jerarquía del editor + plugin de rig de la plataforma para crear `Motor6D`.
-- Script de auditoría (ejemplo de arriba) que lista `Motor6D` sin extremos.
-- Clip de prueba estándar (brazos arriba, sentadilla, giro de cabeza).
-- Comparador R6/R15 para decidir migraciones.
+- Editor hierarchy view + platform rig plugin to create `Motor6D`.
+- Audit script (example above) listing `Motor6D` without ends.
+- Standard test clip (arms up, squat, head turn).
+- R6/R15 comparator to decide migrations.
 
-## Limitaciones
+## Limitations
 
-- No cubre animación facial avanzada ni `IKControl` en tiempo real más allá de lo estructural (el IK se trata en locomoción/combate).
-- No optimiza mallas ni presupuestos de huesos para móvil.
-- No sustituye al ciclo de vida de `roblox-characters` (respawn, streaming).
-- Cualquier API fuera de la lista estable: "(verificar en create.roblox.com/docs)".
+- Does not cover advanced facial animation or real-time `IKControl` beyond structure (IK is handled in locomotion/combat).
+- Does not optimize meshes or bone budgets for mobile.
+- Does not replace the `roblox-characters` lifecycle (respawn, streaming).
+- Any API outside the stable list: "(verify in create.roblox.com/docs)".

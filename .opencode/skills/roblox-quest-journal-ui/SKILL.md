@@ -1,49 +1,49 @@
 ---
-name: Diario de Misiones Roblox
-description: Lista de misiones, detalle, tracking y recompensas. Úsala cuando crees quest log, seguimiento de objetivos, barras de progreso o entrega de recompensas.
+name: Roblox Quest Journal
+description: Quest list, detail, tracking, and rewards. Use it when you create a quest log, objective tracking, progress bars, or reward claims.
 ---
 
-# Diario de Misiones Roblox
+# Roblox Quest Journal
 
-## Objetivo
+## Objective
 
-Convertir la lista de misiones en un plan claro: qué hago ahora, cuánto me falta y qué gano. Cubre el diario completo (lista + detalle + recompensas) y su reflejo mínimo en el HUD, con progreso siempre visible y honesto.
+Turn the quest list into a clear plan: what to do now, how much is left, and what you earn. Covers the full journal (list + detail + rewards) and its minimal reflection in the HUD, with progress always visible and honest.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre: lista de misiones (activas/disponibles/completadas), panel de detalle con pasos y recompensas, tracking en HUD, barras de progreso y estados de entrega.
+Covers: quest list (active/available/completed), detail panel with steps and rewards, HUD tracking, progress bars, and claim states.
 
-NO hace:
+Does NOT do:
 
-- Mecánica genérica responsiva: lo cubren `roblox-ui` y `roblox-user-interfaces`.
-- Diseño UX previo de quests: lo cubre `roblox-game-ux`; esta skill implementa.
-- Micro-chip de objetivo en HUD aislado: lo cubre `roblox-hud` (aquí se conecta con él).
-- Tienda: lo cubre `roblox-shop-ui`.
-- Diálogos con NPC: lo cubre `roblox-dialogue-ui` (aquí solo cómo la misión entra/sale del diario).
+- Generic responsive mechanics: covered by `roblox-ui` and `roblox-user-interfaces`.
+- Prior quest UX design: covered by `roblox-game-ux`; this skill implements.
+- Isolated objective micro-chip in HUD: covered by `roblox-hud` (connected here).
+- Shop: covered by `roblox-shop-ui`.
+- NPC dialogue: covered by `roblox-dialogue-ui` (here only how a quest enters/leaves the journal).
 
-## Casos de uso
+## Use cases
 
-- Diario con Activas (3), Disponibles (2) y Completadas con scroll.
-- Detalle "Recoge 8 cristales · 5/8" con barra y recompensa "200 oro + espada".
-- Tracking en HUD "Cristales 5/8" con botón "Dejar de seguir".
-- Entrega con celebración y "Recompensa reclamada".
-- Misión diaria con temporizador "Se renueva en 04:12:33".
+- Journal with Active (3), Available (2), and Completed with scroll.
+- Detail "Collect 8 crystals · 5/8" with bar and "200 gold + sword" reward.
+- HUD tracking "Crystals 5/8" with an "Untrack" button.
+- Claim with celebration and "Reward claimed".
+- Daily quest with "Renews in 04:12:33" timer.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define el ciclo de cada misión.** Disponible → Activa → Pasos → Entrega → Recompensa. Cada misión tiene 1-4 pasos visibles y 1 recompensa explícita. Si no cabe en 1 pantalla de detalle, divídela.
-2. **Maqueta dos columnas.** Izquierda: lista con pestañas Activas/Disponibles/Completadas (`ScrollingFrame` + `UIListLayout`). Derecha: detalle (título, descripción 2 líneas, pasos con checks, barra, recompensas, botones Seguir/Abandonar/Entregar). Móvil: lista a pantalla completa, detalle como hoja con botón Atrás.
-3. **Construye la lista.** Cada fila = `Frame` + `ImageLabel` icono + `TextLabel` título + `TextLabel` progreso ("5/8") + mini-barra a `Scale` + insignia de tipo (Principal/Secundaria/Diaria). La misión trackeada lleva marca visible.
-4. **Detalle con pasos.** Pasos como lista de checks (`TextLabel` + "✓/·"), barra de progreso principal, recompensas con iconos y cantidades, y lore en 1-2 líneas máximo. Botones contextuales: Aceptar / Seguir / Dejar de seguir / Abandonar (con confirmación) / Entregar.
-5. **Tracking en HUD.** Solo 1 misión trackeada a la vez (o 2 máximo documentadas): chip con título + progreso + distancia opcional. Cambio de trackeada con 1 clic desde el diario. El chip nunca muestra spoilers de pasos futuros.
-6. **Progreso y entrega.** Barras a `Scale` con número ("5/8", "73%"), animadas con `TweenService` al avanzar. Entrega disponible con botón destacado + celebración (check + recompensas listadas). Recompensa pendiente de reclamar con punto visible hasta reclamarla.
-7. **Temporizadas y diarias.** Temporizador legible ("Se renueva en 04:12") y estado expirado con mensaje claro. Nunca borres progreso sin avisar con 1 línea de consecuencia.
-8. **Persistencia visible.** Aceptar/avanzar/entregar pide al servidor (verificar en create.roblox.com/docs); la UI muestra "Guardando…" si aplica y revierte ante fallo. Reentrar conserva aceptadas y progreso validado.
-9. **Verifica el ciclo entero.** Acepta, trackea, avanza 3 pasos, abandona una, entrega otra, reentra. En PC y móvil, sin truncados ni solapes, con 20+ misiones en lista.
+1. **Define each quest's lifecycle.** Available → Active → Steps → Turn-in → Reward. Each quest has 1-4 visible steps and 1 explicit reward. If it does not fit on 1 detail screen, split it.
+2. **Mock up two columns.** Left: list with Active/Available/Completed tabs (`ScrollingFrame` + `UIListLayout`). Right: detail (title, 2-line description, steps with checks, bar, rewards, Follow/Abandon/Turn-in buttons). Mobile: full-screen list, detail as a sheet with a Back button.
+3. **Build the list.** Each row = `Frame` + `ImageLabel` icon + `TextLabel` title + `TextLabel` progress ("5/8") + mini-bar at `Scale` + type badge (Main/Side/Daily). The tracked quest has a visible mark.
+4. **Detail with steps.** Steps as check lists (`TextLabel` + "✓/·"), main progress bar, rewards with icons and counts, and lore in 1-2 lines max. Contextual buttons: Accept / Follow / Unfollow / Abandon (with confirmation) / Turn in.
+5. **HUD tracking.** Only 1 tracked quest at a time (or 2 documented max): chip with title + progress + optional distance. Switching the tracked quest in 1 click from the journal. The chip never shows spoilers of future steps.
+6. **Progress and turn-in.** Bars at `Scale` with numbers ("5/8", "73%"), animated with `TweenService` as they advance. Turn-in available with a highlighted button + celebration (check + listed rewards). Unclaimed reward with a dot until claimed.
+7. **Timed and daily quests.** Readable timer ("Renews in 04:12") and expired state with a clear message. Never delete progress without warning with a 1-line consequence note.
+8. **Visible persistence.** Accept/advance/turn-in asks the server (verify in create.roblox.com/docs); the UI shows "Saving…" where applicable and rolls back on failure. Rejoining keeps accepted quests and validated progress.
+9. **Verify the full cycle.** Accept, track, advance 3 steps, abandon one, turn in another, rejoin. On PC and mobile, without truncations or overlaps, with 20+ quests in the list.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Fila + barra (clases estables):
+- Row + bar (stable classes):
 
   ```luau
   -- Ejemplo ilustrativo: actualizar progreso de misión
@@ -57,58 +57,58 @@ NO hace:
   end
   ```
 
-- `ScrollingFrame` con `UIListLayout` para lista y pasos; `UIPadding`, `UICorner` 8-10, `UIStroke` por tipo (principal ámbar, secundaria gris, diaria cian).
-- Tracking: la selección vive en un atributo/estado local y el HUD la lee; cambiarla es instantáneo y local (el progreso real sigue viniendo del servidor).
-- `TweenService` para avance de barras y celebración de entrega (check 0.4 s + fundido de recompensas).
-- Abandonar exige confirmación si hay progreso; Aceptar/Entregar con debounce para evitar doble petición.
-- Textos con `UITextSizeConstraint`; descripciones con `TextWrapped` y límite de 2-3 líneas con "…" (verificar en create.roblox.com/docs para truncado exacto).
+- `ScrollingFrame` with `UIListLayout` for list and steps; `UIPadding`, `UICorner` 8-10, `UIStroke` by type (main amber, side gray, daily cyan).
+- Tracking: the selection lives in a local attribute/state and the HUD reads it; switching is instant and local (real progress still comes from the server).
+- `TweenService` for bar advances and turn-in celebration (0.4 s check + reward fade).
+- Abandoning requires confirmation if there is progress; Accept/Turn-in with debounce to avoid double requests.
+- Text with `UITextSizeConstraint`; descriptions with `TextWrapped` and a 2-3 line limit with "…" (verify in create.roblox.com/docs for exact truncation).
 
-### Identidad visual de esta skill (original, no copiar)
+### Visual identity of this skill (original, do not copy)
 
-- Dirección "cuaderno de expedición": fondo pergamino oscuro (#1B2036) con tarjetas papel (#F5EFD8) para el detalle o esquema oscuro coherente; acento brújula ámbar (#FFB84D) + verde completado (#3DDC84).
-- Tipografía: título misión 18 semibold, pasos 14 regular con check, recompensas 14 negrita con icono, lore 13 itálica breve. Números de progreso tabulares.
-- Composición: lista 35% / detalle 65% en PC; barras de 8-10 px con fondo tenue y relleno ámbar; recompensas en fila de chips con icono. `UIPadding` 14, gap 10.
-- Espaciado: pasos con 8 px entre sí, secciones separadas 16. Botones de 48+ px en móvil.
-- Estados: activa (borde ámbar), trackeada (marca + borde cian), completada (check verde + atenuada), disponible (normal), bloqueada por nivel (gris + requisito), expirada (roja tenue + mensaje).
-- Animación: barra que barre al avanzar, check que aparece con escala 0.6→1, entrega con pulso único. Sin fanfarrias de 3 segundos que bloqueen.
+- "Expedition notebook" direction: dark parchment background (#1B2036) with paper cards (#F5EFD8) for detail or a coherent dark scheme; compass amber accent (#FFB84D) + completed green (#3DDC84).
+- Typography: quest title 18 semibold, steps 14 regular with check, rewards 14 bold with icon, lore 13 brief italic. Tabular progress numbers.
+- Layout: list 35% / detail 65% on PC; 8-10 px bars with faint background and amber fill; rewards in icon chip rows. `UIPadding` 14, gap 10.
+- Spacing: steps 8 px apart, sections 16 apart. 48+ px buttons on mobile.
+- States: active (amber border), tracked (mark + cyan border), completed (green check + dimmed), available (normal), level-locked (gray + requirement), expired (faint red + message).
+- Animation: bar that sweeps on advance, check that appears with 0.6→1 scale, single-pulse turn-in. No 3-second fanfares that block.
 
-## Buenas prácticas
+## Best practices
 
-- 1 misión trackeada por defecto (la principal activa); cambiar en 1 clic.
-- Progreso siempre con número, no solo barra ("5/8" obligatoria).
-- Recompensas visibles antes de aceptar; sin letra pequeña.
-- Abandonar explica qué se pierde en 1 línea; Entregar celebra en 1 pantalla, no en 3.
-- Coherencia con HUD e inventario: mismos iconos de objetos y monedas.
-- Diarias/semanales agrupadas y con temporizador, no mezcladas sin etiqueta.
+- 1 tracked quest by default (the active main one); switch in 1 click.
+- Progress always with a number, not just a bar ("5/8" required).
+- Rewards visible before accepting; no fine print.
+- Abandoning explains what is lost in 1 line; turn-in celebrates on 1 screen, not 3.
+- Consistency with HUD and inventory: same item and currency icons.
+- Daily/weekly quests grouped with a timer, not mixed unlabeled.
 
-## Errores frecuentes
+## Common mistakes
 
-- Diario con 40 misiones sin pestañas ni tracking que nadie usa.
-- Barras sin número que no dicen cuánto falta realmente.
-- Spoilers del paso 5 visibles en el HUD desde el paso 1.
-- Entregar sin confirmación del servidor y perder la recompensa al reentrar.
-- Abandonar sin confirmación y borrar 2 horas de progreso.
-- Detalle solo con `Offset` que corta la recompensa en móvil.
+- Journal with 40 quests, no tabs, no tracking, that nobody uses.
+- Bars with no number that never say how much is really left.
+- Step-5 spoilers visible in the HUD since step 1.
+- Turning in without server confirmation and losing the reward on rejoin.
+- Abandoning without confirmation and deleting 2 hours of progress.
+- Detail with only `Offset` that cuts off the reward on mobile.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Ciclo aceptar→trackear→avanzar→entregar probado con datos reales, incluido reentrar.
-- [ ] Progreso numérico + barra en lista, detalle y HUD, coherentes entre sí.
-- [ ] Trackeo único claro, cambiable en 1 clic, sin spoilers.
-- [ ] Legible con 20+ misiones en PC, tablet y móvil.
-- [ ] Sin duplicados ni pérdidas bajo doble clic o latencia alta.
-- [ ] Celebración de entrega breve y recompensas listadas explícitamente.
+- [ ] Accept→track→advance→turn-in cycle tested with real data, including rejoin.
+- [ ] Numeric progress + bar in list, detail, and HUD, consistent with each other.
+- [ ] Clear single tracking, switchable in 1 click, no spoilers.
+- [ ] Readable with 20+ quests on PC, tablet, and mobile.
+- [ ] No duplicates or losses under double-click or high latency.
+- [ ] Brief turn-in celebration with explicitly listed rewards.
 
-## Herramientas
+## Tools
 
-- Studio: Play con servidor para aceptar/entregar, simulador móvil para hoja de detalle.
-- MCP Studio (si disponible): capturas lista+detalle+HUD en 3 resoluciones.
-- Rojo: misiones (títulos, pasos, recompensas) como datos editables.
-- Selene: lint de handlers de aceptar/trackear/entregar y debounces.
+- Studio: Play with server for accept/turn-in, mobile simulator for detail sheet.
+- MCP Studio (if available): list+detail+HUD captures at 3 resolutions.
+- Rojo: quests (titles, steps, rewards) as editable data.
+- Selene: lint of accept/track/turn-in handlers and debounces.
 
-## Limitaciones
+## Limitations
 
-- La lógica de quests y recompensas vive en el servidor (verificar en create.roblox.com/docs); la UI solo la presenta.
-- No incluye diálogos con NPC (`roblox-dialogue-ui`) ni cinemáticas.
-- Temporizadores diarios/semanales dependen del reloj del servidor, no del cliente.
-- Con cientos de misiones se exige paginación/búsqueda; el backend debe soportarla.
+- Quest and reward logic lives on the server (verify in create.roblox.com/docs); the UI only presents it.
+- Does not include NPC dialogue (`roblox-dialogue-ui`) or cinematics.
+- Daily/weekly timers depend on the server clock, not the client.
+- With hundreds of quests pagination/search is required; the backend must support it.

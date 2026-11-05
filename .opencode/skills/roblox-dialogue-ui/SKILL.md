@@ -1,49 +1,49 @@
 ---
-name: Diálogos Roblox Nativos
-description: NPC con ProximityPrompt, respuestas, typewriter y chat. Úsala cuando crees conversaciones, elecciones, tiendas de NPC o narrativa integrada con TextChatService.
+name: Native Roblox Dialogue
+description: NPCs with ProximityPrompt, responses, typewriter, and chat. Use it when creating conversations, choices, NPC shops, or narrative integrated with TextChatService.
 ---
 
-# Diálogos Roblox Nativos
+# Native Roblox Dialogue
 
-## Objetivo
+## Objective
 
-Hacer hablar a los NPC con herramientas nativas de Roblox: acercarse, pulsar la tecla, leer con efecto máquina de escribir, elegir respuesta y verlo integrado con el chat. Sin sistemas inventados: `ProximityPrompt`, objetos `Dialogue`/`DialogueChoice` o UI propia equivalente, y `TextChatService` como canal.
+Make NPCs talk with native Roblox tools: approach, press the key, read with typewriter effect, pick a response, and see it integrated with chat. No invented systems: `ProximityPrompt`, `Dialogue`/`DialogueChoice` objects or equivalent custom UI, and `TextChatService` as the channel.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre: prompt de interacción, caja de diálogo con typewriter, elecciones/respuestas, historial breve, integración con `TextChatService`, y conexión con misiones/tiendas.
+Covers: interaction prompt, dialogue box with typewriter, choices/responses, brief history, integration with `TextChatService`, and connection to quests/shops.
 
-NO hace:
+Does NOT do:
 
-- Mecánica genérica responsiva: lo cubren `roblox-ui` y `roblox-user-interfaces`.
-- Diseño UX previo o guion narrativo: lo cubre `roblox-game-ux` (aquí se implementa el guion dado).
-- Diario de misiones: lo cubre `roblox-quest-journal-ui` (el diálogo puede otorgar una misión, no gestionarla).
-- Tienda completa: lo cubre `roblox-shop-ui` (el NPC puede abrirla, no sustituirla).
-- Notificaciones globales: lo cubre `roblox-notifications-ui`.
+- Generic responsive mechanics: covered by `roblox-ui` and `roblox-user-interfaces`.
+- Prior UX design or script writing: covered by `roblox-game-ux` (here the given script is implemented).
+- Quest journal: covered by `roblox-quest-journal-ui` (dialogue may grant a quest, not manage it).
+- Full shop: covered by `roblox-shop-ui` (the NPC may open it, not replace it).
+- Global notifications: covered by `roblox-notifications-ui`.
 
-## Casos de uso
+## Use cases
 
-- Aldeano con "Hablar (E)" que abre 3 líneas con typewriter y botón Continuar.
-- Mercader con elecciones "Comprar / Vender / Adiós" que abren la tienda o cierran.
-- Misión entregada al elegir "Tengo los cristales" con validación visible.
-- Conversación que también aparece en el chat como burbuja o mensaje del sistema.
-- NPC ocupado ("Hablando con Ana…") que pone cola en vez de solaparse.
+- Villager with "Talk (E)" that opens 3 typewriter lines with a Continue button.
+- Merchant with "Buy / Sell / Goodbye" choices that open the shop or close.
+- Quest handed over when picking "I have the crystals" with visible validation.
+- Conversation also shown in chat as a bubble or system message.
+- Busy NPC ("Talking to Ana…") that queues instead of overlapping.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Escribe el guion mínimo.** Nodos: saludo → 1-3 líneas → 2-4 elecciones → cierres. Cada línea ≤140 caracteres, cada elección ≤48. Si necesita scroll, córtala.
-2. **Coloca el prompt.** `ProximityPrompt` en el NPC con `ActionText` "Hablar", `ObjectText` nombre del NPC, `KeyboardKeyCode` E, `HoldDuration` 0 (o corto si es acción sensible), `MaxActivationDistance` 8-12. Solo visible con el NPC en rango y libre.
-3. **Construye la caja de diálogo.** `ScreenGui` → `Frame` inferior centrado (70% ancho PC, 94% móvil) + `TextLabel` nombre NPC + `TextLabel` cuerpo con typewriter + fila de `TextButton`s de elección + Continuar/Omitir/Adiós. `ImageLabel` retrato opcional a la izquierda.
-4. **Implementa el typewriter.** Revela caracteres en 15-25 ms con omisión al pulsar (primer clic completa, segundo avanza). Respeta "reducir movimiento" (si está activo, muestra directo; ver `roblox-settings-ui`). Nunca bloquees el avance si el efecto falla.
-5. **Elecciones como botones.** Cada `DialogueChoice` o entrada de tu tabla = un `TextButton` con consecuencia visible ("Comprar → abre tienda"). Deshabilita las no disponibles con motivo ("Te faltan 3 cristales"), no las ocultes sin más.
-6. **Integra TextChatService.** Muestra la línea del NPC en burbuja sobre su cabeza y/o como mensaje del canal, según el juego; el texto visible por todos pasa por filtrado (verificar en create.roblox.com/docs). La UI de diálogo y el chat cuentan la misma historia, no dos distintas.
-7. **Gestiona estado y concurrencia.** Un jugador por conversación activa (o turnos visibles); al alejarse > distancia o moverse, cierra con fundido y guarda el nodo. Dos jugadores no pisan la misma caja: segundo ve "Ocupado".
-8. **Conecta con sistemas.** "Aceptar misión" llama al flujo del diario, "Comprar" abre la tienda, "Entrenar" abre el selector. Cada conexión deja rastro ("Misión añadida al diario" como toast del sistema).
-9. **Verifica en contexto.** Habla caminando, habla en móvil, spamea E, alĂŠjate a mitad, dos jugadores a la vez. Subtítulos legibles sobre fondos variables y con tamaño de texto Grande activado.
+1. **Write the minimal script.** Nodes: greeting → 1–3 lines → 2–4 choices → endings. Each line ≤140 characters, each choice ≤48. If it needs scrolling, cut it.
+2. **Place the prompt.** `ProximityPrompt` on the NPC with `ActionText` "Talk", `ObjectText` NPC name, `KeyboardKeyCode` E, `HoldDuration` 0 (or short if sensitive), `MaxActivationDistance` 8-12. Only visible with the NPC in range and free.
+3. **Build the dialogue box.** `ScreenGui` → bottom-centered `Frame` (70% width on PC, 94% on mobile) + NPC name `TextLabel` + body `TextLabel` with typewriter + row of choice `TextButton`s + Continue/Skip/Goodbye. Optional portrait `ImageLabel` on the left.
+4. **Implement the typewriter.** Reveal characters every 15–25 ms with skip on press (first click completes, second advances). Respect "reduce motion" (if enabled, show directly; see `roblox-settings-ui`). Never block progress if the effect fails.
+5. **Choices as buttons.** Each `DialogueChoice` or entry in your table = a `TextButton` with visible consequence ("Buy → opens shop"). Disable unavailable ones with a reason ("You need 3 more crystals"), don't just hide them.
+6. **Integrate TextChatService.** Show the NPC line in a bubble above its head and/or as a channel message, depending on the game; text visible to everyone goes through filtering (verify at create.roblox.com/docs). Dialogue UI and chat tell the same story, not two different ones.
+7. **Handle state and concurrency.** One conversation per player at a time (or visible turns); on walking away beyond distance, close with a fade and save the node. Two players don't step on the same box: the second sees "Busy".
+8. **Connect to systems.** "Accept quest" calls the journal flow, "Buy" opens the shop, "Train" opens the selector. Each connection leaves a trace ("Quest added to journal" as a system toast).
+9. **Verify in context.** Talk while walking, talk on mobile, spam E, walk away mid-dialogue, two players at once. Subtitles readable over varying backgrounds and with Large text size enabled.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Prompt + caja (clases estables):
+- Prompt + box (stable classes):
 
   ```luau
   -- Ejemplo ilustrativo: prompt de hablar en un NPC
@@ -56,58 +56,58 @@ NO hace:
   prompt.Parent = npc:WaitForChild("Head")
   ```
 
-- `ProximityPrompt.Triggered` abre la `ScreenGui` de diálogo; la UI vive en `PlayerGui` y se cierra con Adiós, distancia o `UserInputService` (E/Esc según proyecto).
-- `Dialogue`/`DialogueChoice`/`DialogueChoiceSet` como objetos del NPC o tabla equivalente en datos (verificar en create.roblox.com/docs para el modelo exacto del proyecto); la UI pinta el nodo actual y sus respuestas.
-- `TextChatService` para burbujas/mensajes: configura el canal y el filtrado según el proyecto (verificar en create.roblox.com/docs). Nunca muestres texto de jugador sin filtrar.
-- `TweenService` para entrada (subida 8 px + fundido 0.2 s) y fundido de burbujas; `UITextSizeConstraint` + `TextScaled` controlado para cuerpos largos.
-- Cámara: mantén control del jugador salvo cinemática documentada; si acercas la cámara, restaura al cerrar.
+- `ProximityPrompt.Triggered` opens the dialogue `ScreenGui`; the UI lives in `PlayerGui` and closes on Goodbye, distance, or `UserInputService` (E/Esc per project).
+- `Dialogue`/`DialogueChoice`/`DialogueChoiceSet` as objects on the NPC or an equivalent data table (verify at create.roblox.com/docs for the exact model of the project); the UI paints the current node and its responses.
+- `TextChatService` for bubbles/messages: configure the channel and filtering per project (verify at create.roblox.com/docs). Never show unfiltered player text.
+- `TweenService` for entry (8 px slide up + 0.2 s fade) and bubble fades; `UITextSizeConstraint` + controlled `TextScaled` for long bodies.
+- Camera: keep player control unless a documented cinematic; if you move the camera closer, restore it on close.
 
-### Identidad visual de esta skill (original, no copiar)
+### Visual identity of this skill (original, do not copy)
 
-- Dirección "viñeta de cuento": caja inferior color tinta (#141A2E a 94%) con franja de acento cobre (#E8A15C), nombre del NPC en versalitas ámbar, retrato circular con `UIStroke`.
-- Tipografía: cuerpo 16-18 regular con interlineado 1.4, nombre 13 mayúsculas con tracking, elecciones 15 semibold en botones. Typewriter con cursor "_" parpadeante lento.
-- Composición: retrato 64 + texto flexible + Continuar a la derecha; elecciones en columna de 2-4 botones de 48+ px. `UIPadding` 14-18, `UICorner` 12.
-- Espaciado: caja separada 3% del borde inferior, sin tapar botones táctiles (coordina con `roblox-mobile-touch-ui`).
-- Estados: escribiendo (cursor + "Omitir"), completo (Continuar destacado), elección hover +brillo / pressed 0.97 / no-disponible gris + motivo, ocupado (banda "Hablando con…"), error de distancia (cierre con fundido, no corte).
-- Animación: solo typewriter + entrada/salida. Sin rebotes ni shakes en texto narrativo.
+- "Storybook vignette" direction: bottom box in ink color (#141A2E at 94%) with copper accent stripe (#E8A15C), NPC name in amber small caps, circular portrait with `UIStroke`.
+- Typography: body 16–18 regular with 1.4 line height, name 13 uppercase with tracking, choices 15 semibold in buttons. Typewriter with slow-blinking "_" cursor.
+- Composition: 64 portrait + flexible text + Continue on the right; choices in a column of 2–4 buttons at 48+ px. `UIPadding` 14–18, `UICorner` 12.
+- Spacing: box 3% off the bottom edge, without covering touch buttons (coordinate with `roblox-mobile-touch-ui`).
+- States: typing (cursor + "Skip"), complete (highlighted Continue), choice hover +brightness / pressed 0.97 / unavailable gray + reason, busy ("Talking to…" band), distance error (close with fade, not a cut).
+- Animation: only typewriter + enter/exit. No bounces or shakes in narrative text.
 
-## Buenas prácticas
+## Best practices
 
-- 1 idea por línea, 3 líneas por nodo, 4 elecciones máximo.
-- Toda elección muestra su consecuencia o su motivo de bloqueo.
-- Omitir siempre disponible; Adiós visible desde el primer nodo.
-- Mismo tono y nombres que el diario y la tienda; el NPC no promete lo que el juego no da.
-- Subtítulos con fondo para leerse sobre cielo, nieve o cuevas.
-- Guion original; sin copiar diálogos de obras protegidas.
+- 1 idea per line, 3 lines per node, 4 choices max.
+- Every choice shows its consequence or its blocking reason.
+- Skip always available; Goodbye visible from the first node.
+- Same tone and names as the journal and shop; the NPC doesn't promise what the game doesn't deliver.
+- Subtitles with background so they read over sky, snow, or caves.
+- Original script; don't copy dialogue from protected works.
 
-## Errores frecuentes
+## Common mistakes
 
-- Typewriter sin omitir que obliga a esperar 10 s por línea en móvil.
-- `ProximityPrompt` con distancia 30 que abre diálogos desde el otro pueblo.
-- Texto de jugador reenviado al chat sin filtrar (riesgo de moderación).
-- Caja que tapa joystick y botones táctiles y deja al jugador vendido.
-- Dos jugadores en el mismo diálogo con elecciones cruzadas.
-- Inventar clases o eventos del chat que no existen en vez de verificar la documentación.
+- Typewriter with no skip that forces waiting 10 s per line on mobile.
+- `ProximityPrompt` with distance 30 that opens dialogues from the next village.
+- Player text forwarded to chat without filtering (moderation risk).
+- Box covering the joystick and touch buttons and leaving the player stranded.
+- Two players in the same dialogue with crossed choices.
+- Inventing chat classes or events that don't exist instead of verifying the documentation.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Conversación completa (saludo→elección→cierre) con teclado, táctil y mando.
-- [ ] Omitir, Adiós y cierre por distancia funcionan sin estados rotos.
-- [ ] Elecciones bloqueadas explican el motivo; las conexiones (misión/tienda) dejan rastro.
-- [ ] Legible en 3 resoluciones y con tamaño de texto Grande.
-- [ ] Sin errores en consola bajo spam de E ni con 2 jugadores simultáneos.
-- [ ] Guion original y filtrado de texto verificado según documentación.
+- [ ] Full conversation (greeting→choice→ending) with keyboard, touch, and gamepad.
+- [ ] Skip, Goodbye, and close-on-distance work without broken states.
+- [ ] Blocked choices explain the reason; connections (quest/shop) leave a trace.
+- [ ] Readable at 3 resolutions and with Large text size.
+- [ ] No console errors under E spam or with 2 simultaneous players.
+- [ ] Original script and text filtering verified per documentation.
 
-## Herramientas
+## Tools
 
-- Studio: Play con 2 clientes, simulador móvil, prueba de `ProximityPrompt` en rango real.
-- MCP Studio (si disponible): capturas de caja + burbuja sobre el NPC en 3 resoluciones.
-- Rojo: guiones como datos (nodos, líneas, elecciones) editables por narrativa.
-- Selene: lint del controlador de nodos y del typewriter.
+- Studio: Play with 2 clients, mobile simulator, `ProximityPrompt` test at real range.
+- Studio MCP (if available): captures of box + bubble over the NPC at 3 resolutions.
+- Rojo: scripts as data (nodes, lines, choices) editable by narrative.
+- Selene: lint the node controller and the typewriter.
 
-## Limitaciones
+## Limitations
 
-- El modelo exacto de `Dialogue` y las APIs de `TextChatService` evolucionan (verificar en create.roblox.com/docs); no asumas firmas.
-- El filtrado y la moderación dependen de la plataforma; esta UI no los sustituye.
-- Conversaciones multi-jugador complejas (votaciones, turnos) son otro sistema, no este diálogo 1:1.
-- La accesibilidad total (voz, lectura) requiere ajustes del proyecto (`roblox-settings-ui`).
+- The exact `Dialogue` model and `TextChatService` APIs evolve (verify at create.roblox.com/docs); don't assume signatures.
+- Filtering and moderation depend on the platform; this UI doesn't replace them.
+- Complex multiplayer conversations (votes, turns) are another system, not this 1:1 dialogue.
+- Full accessibility (voice, reading) needs project-level adjustments (`roblox-settings-ui`).

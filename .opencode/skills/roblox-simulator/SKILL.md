@@ -1,90 +1,90 @@
 ---
 name: roblox-simulator
-description: Simuladores click/área con rebirths, pets+shiny y control de inflación. Úsala cuando necesites diseñar progresión, huevos, zonas y monetización de simulator.
+description: Click/area simulators with rebirths, pets+shiny, and inflation control. Use it when you need to design simulator progression, eggs, zones, and monetization.
 ---
 
-# Simuladores (Click / Área)
+# Simulators (Click / Area)
 
-## Objetivo
-Diseñar un simulator completo y rentable: bucle click→moneda→mejora→zona→rebirth, con pets, shinies, offline earnings e inflación bajo control desde el día 1.
+## Objective
+Design a complete, profitable simulator: click→currency→upgrade→zone→rebirth loop, with pets, shinies, offline earnings, and inflation under control from day 1.
 
-## Alcance y límites
-Es la versión profunda de género: bucles, progresión, mecánicas, UX, rendimiento y pitfalls propios.
-Diferenciación declarada: `roblox-genre-patterns` (instalada, 52 lín) es catálogo de 1 línea por género; esta skill es la versión profunda de simulator. `roblox-game-systems` es recetario fino; aquí se compone a escala de juego completo. NO repite dominios: pets detallados se componen con `roblox-pets-systems`, economía/inflación con `roblox-economy-balancing`, quests/logros con `roblox-quest-progression-systems`, social/trading con `roblox-social-systems`, combate si lo hay con `roblox-combat-systems`. Aquí solo se integran.
+## Scope and limits
+It is the deep genre version: loops, progression, mechanics, UX, performance, and its own pitfalls.
+Declared differentiation: `roblox-genre-patterns` (installed, 52 lines) is a 1-line-per-genre catalog; this skill is the deep simulator version. `roblox-game-systems` is a lean recipe book; here it is composed at full-game scale. Does NOT repeat domains: detailed pets compose with `roblox-pets-systems`, economy/inflation with `roblox-economy-balancing`, quests/achievements with `roblox-quest-progression-systems`, social/trading with `roblox-social-systems`, combat if any with `roblox-combat-systems`. They are only integrated here.
 
-## Casos de uso
-- Clicker de monedas con espadas por tiers.
-- Simulator de fuerza/velocidad por áreas.
-- Simulator de mascotas con 6 huevos y 4 zonas.
-- Simulator de minería con rebirths y perks.
-- Simulator de evento limitado con leaderboard.
+## Use cases
+- Coin clicker with tiered swords.
+- Strength/speed simulator by areas.
+- Pet simulator with 6 eggs and 4 zones.
+- Mining simulator with rebirths and perks.
+- Limited event simulator with leaderboard.
 
-## Bucle de juego o sistema (diseño)
-- Bucle 30 s: clickear/zona → +moneda con números grandes → comprar mejora visible.
-- Bucle 10 min: desbloquear huevo/zona, equipar mejor pet, subir ×2–×5.
-- Bucle sesión: rebirth (reset con multiplicador permanente +5–15%) cada 45–90 min.
-- Bucle social: leaderboard, tradeo, showcase de shinies.
-Progresión numérica: coste mejora `base * 1.35^nivel`; moneda/zona `×6–×10` por zona; rebirth requiere `10×` moneda de la zona top; primer rebirth a 60–90 min, décimo a 6–10 h. Inflación: si el top-1% supera ×50 la mediana en 7 días, aplicar catch-up (boost ×3 a nuevos) y sink (aura limitada).
+## Game or system loop (design)
+- 30-s loop: click/zone → +currency with big numbers → buy visible upgrade.
+- 10-min loop: unlock egg/zone, equip better pet, go ×2–×5.
+- Session loop: rebirth (reset with permanent +5–15% multiplier) every 45–90 min.
+- Social loop: leaderboard, trading, shiny showcase.
+Numeric progression: upgrade cost `base * 1.35^level`; currency/zone `×6–×10` per zone; rebirth requires `10×` the top zone's currency; first rebirth at 60–90 min, tenth at 6–10 h. Inflation: if the top 1% exceeds ×50 the median at 7 days, apply catch-up (×3 boost for new players) and sink (limited aura).
 
-## Proceso paso a paso
-1. Define 4–6 zonas con `monedaPorClick`, `costeEntrada`, `huevoLocal`, `multiplicador`; bloquea con nivel o rebirths.
-2. Define 3 vías de poder: herramienta (click), pets (multiplicador, componer con `roblox-pets-systems`), rebirth (permanente).
-3. Tabla de rebirths: `coste`, `mult +10%`, `monedaBonus`, `pets conservados sí/no`; máx útil 25–50 con perks cada 5.
-4. Huevos por zona con pity y shiny (componer probabilidades con `roblox-pets-systems`); publica odds.
-5. Offline earnings: `minutosOffline × tasaZona × 25%`, cap 8 h, reclamo con doble (Ads/Robux opcional).
-6. Leaderboards: total ganado (all-time) + rebirths; `OrderedDataStore` con actualización cada 120 s, no cada click.
-7. Monetización: 2× moneda 30 min, auto-click equilibrado (≤60% de click activo), +1 pet equipado; nunca vender poder permanente roto.
-8. Anti-abandono: daily rewards, índice de pets, evento semanal con aura limitada.
+## Step-by-step process
+1. Define 4–6 zones with `currencyPerClick`, `entryCost`, `localEgg`, `multiplier`; lock by level or rebirths.
+2. Define 3 power paths: tool (click), pets (multiplier, compose with `roblox-pets-systems`), rebirth (permanent).
+3. Rebirth table: `cost`, `+10% mult`, `bonusCurrency`, `pets kept yes/no`; useful max 25–50 with perks every 5.
+4. Eggs per zone with pity and shiny (compose odds with `roblox-pets-systems`); publish odds.
+5. Offline earnings: `offlineMinutes × zoneRate × 25%`, 8 h cap, double claim (Ads/optional Robux).
+6. Leaderboards: all-time total earned + rebirths; `OrderedDataStore` updated every 120 s, not per click.
+7. Monetization: 2× currency 30 min, balanced auto-click (≤60% of active click), +1 equipped pet; never sell broken permanent power.
+8. Anti-churn: daily rewards, pet index, weekly event with limited aura.
 
-## Conocimientos técnicos
-### Qué valida el servidor
-- Clicks: rate por herramienta (ej. 12/s espada base, 20/s endgame); exceso ignorado.
-- Moneda: calculada en servidor (`clickValor × petMult × rebirthMult × gamepass`); cliente nunca envía cantidad.
-- Compras: fondos, zona/huevo existentes, límite de pets/rebirths.
-- Teleport a zona: nivel/rebirths/pago validados antes de `PivotTo`.
-### Persistencia
-- `DataStoreService`: moneda, total all-time, mejoras, pets (componer), rebirths, offline `ultimaSalidaUnix`, índice.
-- Guarda cada 60 s + al salir + tras rebirth/huevo mítico; `UpdateAsync` para moneda si hay trade.
-- Corrupción: fallback a snapshot anterior + log; jamás cero sin backup.
-### Errores/desconexiones
-- Duplicación por doble click en compra: idempotencia con `compraId`.
-- Rejoin a zona bloqueada por cambio de balance: mueve a zona máxima válida, no a spawn roto.
-- Rollback de DataStore: avisa y congela trade 10 min.
+## Technical knowledge
+### What the server validates
+- Clicks: rate per tool (e.g. 12/s base sword, 20/s endgame); excess ignored.
+- Currency: computed on server (`clickValue × petMult × rebirthMult × gamepass`); client never sends quantity.
+- Purchases: funds, existing zone/egg, pet/rebirth limits.
+- Teleport to zone: level/rebirths/payment validated before `PivotTo`.
+### Persistence
+- `DataStoreService`: currency, all-time total, upgrades, pets (compose), rebirths, offline `lastExitUnix`, index.
+- Save every 60 s + on exit + after rebirth/mythic egg; `UpdateAsync` for currency if there is trading.
+- Corruption: fallback to previous snapshot + log; never zero without backup.
+### Errors/disconnections
+- Duplication via double-click on purchase: idempotency with `purchaseId`.
+- Rejoin to a zone locked by a balance change: move to max valid zone, not a broken spawn.
+- DataStore rollback: warn and freeze trading 10 min.
 ### Anti-exploit
-- Anti-autoclick inhumano: >25 clicks/s sostenidos 30 s = CAPTCHA suave (verificación de juego) o throttle, no ban directo.
-- Anti-teleport a zona final: valida requisitos en cada ganancia, no solo al entrar.
-- Logs de ganancia/hora por cohorte para detectar outliers ×10.
-- Trading de pets con impuesto 5% y nivel mínimo para frenar alts (componer con `roblox-social-systems`).
+- Inhuman auto-clicker: >25 sustained clicks/s for 30 s = soft CAPTCHA (in-game verification) or throttle, not direct ban.
+- Anti-teleport to final zone: validate requirements on every gain, not just on entry.
+- Gain/hour logs per cohort to detect ×10 outliers.
+- Pet trading with 5% tax and minimum level to slow alts (compose with `roblox-social-systems`).
 
-## Buenas prácticas
-- Números grandes legibles (1.2M, 3.4B) + sonido de compra satisfactorio.
-- Cada 5 min el jugador debe ver un desbloqueo; si no, la curva está rota.
-- Zonas visualmente distintas con landmark; portales con requisitos claros.
-- Usa `Attributes` para poder/moneda visible y `MemoryStoreService` para contadores efímeros.
-- Performance: sin física por moneda; pools de efectos y LOD de pets.
+## Best practices
+- Readable big numbers (1.2M, 3.4B) + satisfying purchase sound.
+- Every 5 min the player must see an unlock; if not, the curve is broken.
+- Visually distinct zones with landmark; portals with clear requirements.
+- Use `Attributes` for visible power/currency and `MemoryStoreService` for ephemeral counters.
+- Performance: no physics per coin; effect pools and pet LOD.
 
-## Errores frecuentes
-1. Pets sin cap → ×500 y zonas triviales; cap total ×8–×12.
-2. Rebirth sin bonus real → nadie resetea; +10% y recompensa visible.
-3. Offline al 100% → progresión sin jugar; 20–30% con cap.
-4. Leaderboard por frame → throttling; cada 120 s + paginado.
-5. Vender poder permanente sin límite → pay-to-win y churn; vende tiempo/conveniencia.
+## Common mistakes
+1. Pets with no cap → ×500 and trivial zones; cap total ×8–×12.
+2. Rebirth with no real bonus → nobody resets; +10% and visible reward.
+3. 100% offline → progression without playing; 20–30% with cap.
+4. Per-frame leaderboard → throttling; every 120 s + paged.
+5. Selling unlimited permanent power → pay-to-win and churn; sell time/convenience.
 
-## Criterios de calidad y terminado
-- [ ] Jugador nuevo llega a zona 2 en 12–20 min sin ayuda.
-- [ ] Primer rebirth alcanzable en 60–90 min de juego activo.
-- [ ] Top-1% vs. mediana ≤ ×50 a 7 días del lanzamiento.
-- [ ] Autoclicker 30/s no supera +40% la ganancia de click activo top.
-- [ ] Rejoin tras 8 h otorga offline correcto (±5%) con cap.
-- [ ] 40 jugadores por servidor ≥45 FPS en zona llena.
+## Quality and done criteria
+- [ ] New player reaches zone 2 in 12–20 min unaided.
+- [ ] First rebirth reachable in 60–90 min of active play.
+- [ ] Top-1% vs. median ≤ ×50 at 7 days after launch.
+- [ ] 30/s autoclicker gains no more than +40% over top active-click gain.
+- [ ] Rejoin after 8 h grants correct offline (±5%) with cap.
+- [ ] 40 players per server ≥45 FPS in a full zone.
 
-## Herramientas
-Servicios/clases: `RemoteEvent`, `RemoteFunction`, `Players`, `Attributes`, `DataStoreService`, `OrderedDataStore`, `MemoryStoreService`, `MarketplaceService`, `BadgeService`. Componer con `roblox-pets-systems`, `roblox-economy-balancing`, `roblox-quest-progression-systems`. Verificar en create.roblox.com/docs.
+## Tools
+Services/classes: `RemoteEvent`, `RemoteFunction`, `Players`, `Attributes`, `DataStoreService`, `OrderedDataStore`, `MemoryStoreService`, `MarketplaceService`, `BadgeService`. Compose with `roblox-pets-systems`, `roblox-economy-balancing`, `roblox-quest-progression-systems`. Verify in create.roblox.com/docs.
 
-## Limitaciones
-- No sustituye el diseño fino de pets/economía/quests; esta skill los integra, no los repite.
-- Balance exacto exige playtest con cohortes; los números aquí son punto de partida.
-- Trading cross-server y seasons requieren extensión.
+## Limitations
+- Does not replace fine pets/economy/quest design; this skill integrates them, not repeats them.
+- Exact balance requires playtest with cohorts; numbers here are a starting point.
+- Cross-server trading and seasons require extension.
 
 ```luau
 -- Ilustrativo: valor de click calculado en servidor.

@@ -1,92 +1,92 @@
 ---
 name: roblox-vehicle-construction
-description: Construcción de vehículos (chasis, cabinas, ruedas/hélices/cascos, colliders y asientos). Úsala cuando necesites coches, barcos, naves o monturas modeladas de forma jugable y estable.
+description: Vehicle construction (chassis, cabins, wheels/propellers/hulls, colliders, and seats). Use it when you need cars, boats, ships, or mounts modeled in a playable, stable way.
 ---
 
-# Construcción de Vehículos
+# Vehicle Construction
 
-## Objetivo
+## Objective
 
-Modelar vehículos (terrestres, acuáticos o voladores) con chasis estable, cabina legible, elementos de contacto (ruedas, hélices, cascos) creíbles, colliders simplificados y asientos bien colocados, priorizando que no vuelquen, no se atasquen y se lean bien desde la cámara de juego.
+Model vehicles (land, water, or flying) with a stable chassis, legible cabin, believable contact elements (wheels, propellers, hulls), simplified colliders, and well-placed seats, prioritizing that they don't tip over, don't get stuck, and read well from the game camera.
 
-## Alcance y límites
+## Scope and limits
 
-Qué NO hace ni cubre esta skill:
+What this skill does NOT do or cover:
 
-- NO diseña QUÉ vehículo conviene al juego (temática, rol, roster): eso lo diseñan `roblox-world-building` (generalista) y `roblox-exterior-architecture`, `roblox-interior-design`, `roblox-city-settlements`, `roblox-terrain-sculpting`, `roblox-vegetation-landscaping`, `roblox-materials-surfaces`, `roblox-props-decoration` (propias, en curso).
-- NO programa la conducción ni la física de movimiento (esta skill es técnica de modelado/construcción, no de gameplay).
-- NO cubre el sync de ficheros Rojo: eso lo cubre `roblox-rojo`.
-- NO cubre organización global de jerarquías: eso lo cubre `roblox-model-organization`; ni props genéricos (`roblox-props-creation`) ni geometría avanzada (`roblox-meshparts-geometry`) más allá de lo necesario para el vehículo.
+- It does NOT design WHICH vehicle suits the game (theme, role, roster): that is designed by `roblox-world-building` (generalist) and `roblox-exterior-architecture`, `roblox-interior-design`, `roblox-city-settlements`, `roblox-terrain-sculpting`, `roblox-vegetation-landscaping`, `roblox-materials-surfaces`, `roblox-props-decoration` (own, in progress).
+- It does NOT program driving or movement physics (this skill is modeling/construction technique, not gameplay).
+- It does NOT cover Rojo file sync: that's covered by `roblox-rojo`.
+- It does NOT cover global hierarchy organization: that's covered by `roblox-model-organization`; nor generic props (`roblox-props-creation`) or advanced geometry (`roblox-meshparts-geometry`) beyond what's needed for the vehicle.
 
-Diferenciación declarada: `roblox-world-building` (instalada, generalista fina) y las skills propias (`roblox-exterior-architecture` / `roblox-interior-design` / `roblox-city-settlements` / `roblox-terrain-sculpting` / `roblox-vegetation-landscaping` / `roblox-materials-surfaces` / `roblox-props-decoration`) diseñan QUÉ construir; esta skill explica CÓMO construirlo (técnica de vehículos). `roblox-rojo` cubre el sync; esta skill cubre la técnica de modelado.
+Declared differentiation: `roblox-world-building` (installed, thin generalist) and the own skills (`roblox-exterior-architecture` / `roblox-interior-design` / `roblox-city-settlements` / `roblox-terrain-sculpting` / `roblox-vegetation-landscaping` / `roblox-materials-surfaces` / `roblox-props-decoration`) design WHAT to build; this skill explains HOW to build it (vehicle technique). `roblox-rojo` covers sync; this skill covers modeling technique.
 
-## Casos de uso
+## Use cases
 
-- Coche o camión jugable para una ciudad o circuito.
-- Barco o lancha con casco creíble para zonas de agua.
-- Nave o aeronave estilizada con hélices o rotores.
-- Montura o vehículo de evento que debe verse bien y no romperse al subir/bajar.
+- Playable car or truck for a city or circuit.
+- Boat or launch with a believable hull for water zones.
+- Stylized ship or aircraft with propellers or rotors.
+- Event mount or vehicle that must look good and not break when getting on/off.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Define tipo y escala.** Decide terrestre / acuático / aéreo y valida tamaño contra avatar: cabina con altura libre ~2x avatar en accesos y asientos donde el avatar quepa sentado sin clipping grave.
-2. **Bloquea el chasis primero.** Modela el volumen principal con `Part` o `MeshPart` simple, simétrico, con la base a altura coherente (ruedas o casco debajo, no flotando ni hundido).
-3. **Añade el collider jugable.** Crea colliders simples e invisibles (cajas con `Part`) que envuelven chasis y salientes; el modelo visual detallado no debe ser la colisión.
-4. **Construye cabina y accesos.** Modela cabina legible (parabrisas, laterales) y deja vanos de entrada/salida amplios; verifica que el avatar entra y sale sin atascarse.
-5. **Modela ruedas / hélices / cascos.** Ruedas: mismo diámetro por eje, simétricas, sin solapar el chasis. Hélices/rotores: centrados en su eje y con espacio libre de giro. Cascos: proa/popa legibles y simetría lateral.
-6. **Coloca asientos.** Ubica el asiento del conductor centrado respecto a los controles visuales y los de pasajeros con espacio suficiente; comprueba sentado con avatar real.
-7. **Equilibra el conjunto.** Revisa simetría izquierda/derecha, centro visual bajo y ausencia de piezas pesadas en voladizo que sugieran vuelco; ajusta antes de decorar.
-8. **Decora con presupuesto.** Añade detalles (luces, defensas, alerones) con `Part`, `Decal`/`Texture` o `SurfaceGui` simples; cada detalle debe caber en el volumen del vehículo.
-9. **Organiza la jerarquía.** Guarda todo en un `Model` (`Vehiculo_Nombre`) con sub-`Folder` (`Chasis`, `Cabina`, `Ruedas`, `Detalles`, `Colliders`) y `Tags`/`Attributes` (`Vehiculo`, `Tipo="Terrestre"`, `Plazas="2"`).
-10. **Prueba jugable final.** Recorre el vehículo a pie y con avatar sentado: subir, sentarse, bajar, empujar contra paredes y pasar por puertas/puentes del nivel (~2x avatar en pasos).
+1. **Define type and scale.** Decide land / water / air and validate size against the avatar: cabin with ~2x avatar headroom at entries and seats where the avatar fits sitting without major clipping.
+2. **Block the chassis first.** Model the main volume with a simple `Part` or `MeshPart`, symmetric, with a coherent base height (wheels or hull underneath, not floating or sunk).
+3. **Add the playable collider.** Create simple invisible colliders (boxes with `Part`) that wrap the chassis and protrusions; the detailed visual model must not be the collision.
+4. **Build cabin and entries.** Model a legible cabin (windshield, sides) and leave wide entry/exit gaps; verify the avatar enters and exits without getting stuck.
+5. **Model wheels / propellers / hulls.** Wheels: same diameter per axle, symmetric, not overlapping the chassis. Propellers/rotors: centered on their axis with free spin clearance. Hulls: legible bow/stern and lateral symmetry.
+6. **Place seats.** Put the driver seat centered relative to the visual controls and passenger seats with enough room; check seated with a real avatar.
+7. **Balance the whole.** Check left/right symmetry, low visual center, and no heavy overhanging pieces suggesting tip-over; fix before decorating.
+8. **Decorate on budget.** Add details (lights, bumpers, spoilers) with `Part`, `Decal`/`Texture`, or simple `SurfaceGui`; each detail must fit inside the vehicle volume.
+9. **Organize the hierarchy.** Store everything in a `Model` (`Vehicle_Name`) with sub-`Folder`s (`Chassis`, `Cabin`, `Wheels`, `Details`, `Colliders`) and `Tags`/`Attributes` (`Vehicle`, `Type="Land"`, `Seats="2"`).
+10. **Final playable test.** Walk around the vehicle and with a seated avatar: get on, sit, get off, push against walls, and pass through level doors/bridges (~2x avatar in passages).
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Chasis como referencia: todo (cabina, ruedas, colliders) se alinea al chasis; si el chasis está torcido, todo hereda el error.
-- Colliders simples: cajas invisibles que aproximan el volumen; evitan atascos que produciría colisionar con cada detalle visual.
-- Escala avatar: accesos y cabina pensados para avatar de pie/sentado; puertas y vanos ~2x avatar como regla de partida.
-- Simetría: un vehículo asimétrico se lee como roto; verifica con vista frontal/superior en el editor.
-- Ruedas/hélices/cascos: ruedas alineadas por ejes y mismo tamaño; hélices con espacio de giro libre; cascos simétricos para lectura acuática.
-- `SpecialMesh` y `MeshPart`: útiles para formas redondeadas (ruedas, morros) pero con moderación y colisiones por caja (ver `roblox-meshparts-geometry`).
-- Rendimiento: cada vehículo suma instancias; reutiliza ruedas y detalles entre vehículos y evita micro-piezas.
-- `Workspace` / `StreamingEnabled`: los vehículos se mueven por el mundo; evita anclar lógica frágil a posiciones absolutas y verifica visibilidad con streaming activo.
-- `Camera`: valida lectura del vehículo desde la cámara real de juego (tercera persona típica), no solo en vista cercana de editor.
+- Chassis as reference: everything (cabin, wheels, colliders) aligns to the chassis; if the chassis is crooked, everything inherits the error.
+- Simple colliders: invisible boxes approximating the volume; avoid snags that colliding with every visual detail would cause.
+- Avatar scale: entries and cabin sized for a standing/sitting avatar; doors and gaps ~2x avatar as a starting rule.
+- Symmetry: an asymmetric vehicle reads as broken; check with front/top views in the editor.
+- Wheels/propellers/hulls: wheels aligned per axle and same size; propellers with free spin clearance; symmetric hulls for water readability.
+- `SpecialMesh` and `MeshPart`: useful for rounded shapes (wheels, noses) but in moderation and with box collisions (see `roblox-meshparts-geometry`).
+- Performance: each vehicle adds instances; reuse wheels and details across vehicles and avoid micro-parts.
+- `Workspace` / `StreamingEnabled`: vehicles move through the world; avoid anchoring fragile logic to absolute positions and verify visibility with streaming on.
+- `Camera`: validate vehicle readability from the real game camera (typical third person), not just an editor close-up.
 
-## Buenas prácticas
+## Best practices
 
-- Modela simétrico desde el inicio (mitad + espejo mental) en lugar de corregir al final.
-- Separa siempre `Colliders` visuales de decoración en su propia carpeta.
-- Nombra ruedas por posición (`Rueda_Delantera_Izq`) para detectar errores de simetría.
-- Reutiliza ruedas, asientos y luces entre vehículos como mini-kit.
-- Prueba con avatar real sentado, no solo con el modelo vacío.
+- Model symmetric from the start (half + mental mirror) instead of fixing at the end.
+- Always separate visual `Colliders` from decoration in their own folder.
+- Name wheels by position (`Wheel_Front_Left`) to catch symmetry errors.
+- Reuse wheels, seats, and lights across vehicles as a mini-kit.
+- Test with a real seated avatar, not just the empty model.
 
-## Errores frecuentes
+## Common mistakes
 
-- Vehículo que flota o hunde ruedas en el suelo. Causa: chasis sin referencia de altura. Solución: fijar altura de base antes de decorar.
-- Avatar que se atasca al subir/bajar. Causa: vanos estrechos o colliders decorativos. Solución: vanos ~2x avatar y colliders simples.
-- Ruedas de distinto tamaño o descentradas. Causa: modelar cada rueda a ojo. Solución: duplicar una rueda maestra.
-- Hélice que atraviesa el fuselaje al girar. Causa: sin espacio libre. Solución: dejar volumen de giro despejado.
-- Modelo bonito pero con cientos de piezas que lastra el rendimiento. Causa: decorar sin presupuesto. Solución: tope de instancias por vehículo y reutilización.
-- Jerarquía plana con 80 `Part` sin carpetas. Causa: no organizar. Solución: subcarpetas por sistema (criterio de `roblox-model-organization`).
+- Vehicle floating or sinking wheels into the ground. Cause: chassis with no height reference. Fix: lock base height before decorating.
+- Avatar stuck getting on/off. Cause: narrow gaps or decorative colliders. Fix: ~2x avatar gaps and simple colliders.
+- Wheels of different size or off-center. Cause: modeling each wheel by eye. Fix: duplicate one master wheel.
+- Propeller clipping the fuselage when spinning. Cause: no clearance. Fix: leave free spin volume.
+- Pretty model with hundreds of parts hurting performance. Cause: decorating without budget. Fix: instance cap per vehicle and reuse.
+- Flat hierarchy with 80 `Part`s and no folders. Cause: not organizing. Fix: subfolders per system (`roblox-model-organization` criterion).
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Chasis simétrico y a altura correcta (sin flotar ni hundirse).
-- [ ] Colliders simples separados de la decoración y verificados a pie.
-- [ ] Cabina y accesos validados con avatar (~2x avatar en pasos, asiento sin clipping grave).
-- [ ] Ruedas/hélices/cascos simétricos y con espacio funcional.
-- [ ] Jerarquía en `Model` con sub-`Folder` y `Tags`/`Attributes` (`Vehiculo`, tipo, plazas).
-- [ ] Lectura correcta desde la `Camera` de juego y presupuesto de instancias cumplido.
-- [ ] Prueba subir/sentarse/bajar y circular por pasos del nivel superada.
+- [ ] Symmetric chassis at correct height (not floating or sunk).
+- [ ] Simple colliders separate from decoration and verified on foot.
+- [ ] Cabin and entries validated with avatar (~2x avatar in passages, seat without major clipping).
+- [ ] Symmetric wheels/propellers/hulls with functional clearance.
+- [ ] Hierarchy in a `Model` with sub-`Folder`s and `Tags`/`Attributes` (vehicle, type, seats).
+- [ ] Correct readability from the game `Camera` and instance budget met.
+- [ ] Get-on/sit/get-off test and passing through level gaps passed.
 
-## Herramientas
+## Tools
 
-- `Part`, `MeshPart`, `SpecialMesh`, `Model`, `Folder` para chasis, formas y empaquetado.
-- `Decal`, `Texture`, `SurfaceGui` para detalles visuales baratos (luces, matrículas, paneles).
-- `CollectionService` / Tags y `Attributes` para marcar vehículos y plazas.
-- `Workspace` / `StreamingEnabled`, `Lighting`, `Camera` para validar en mundo y ángulos reales.
+- `Part`, `MeshPart`, `SpecialMesh`, `Model`, `Folder` for chassis, shapes, and packaging.
+- `Decal`, `Texture`, `SurfaceGui` for cheap visual details (lights, plates, panels).
+- `CollectionService` / Tags and `Attributes` to tag vehicles and seats.
+- `Workspace` / `StreamingEnabled`, `Lighting`, `Camera` to validate in-world and at real angles.
 
-Ejemplo Luau ilustrativo (organización por script):
+Illustrative Luau example (organization by script):
 
 ```luau
 -- Ilustrativo: etiquetar un vehículo y sus plazas.
@@ -97,8 +97,8 @@ coche:SetAttribute("Tipo", "Terrestre")
 coche:SetAttribute("Plazas", 2)
 ```
 
-## Limitaciones
+## Limitations
 
-- No programa conducción, físicas personalizadas ni balanceo de gameplay.
-- No detalla CSG avanzada ni colisiones precisas por malla (ver `roblox-meshparts-geometry`; si dudas de un comportamiento, verifícalo en create.roblox.com/docs).
-- No configura sync Rojo; solo deja el modelo organizado para sincronizar (ver `roblox-rojo` y `roblox-model-organization`).
+- Does not program driving, custom physics, or gameplay balancing.
+- No advanced CSG detail or precise mesh collisions (see `roblox-meshparts-geometry`; if you doubt a behavior, verify it at create.roblox.com/docs).
+- Does not set up Rojo sync; only leaves the model organized for syncing (see `roblox-rojo` and `roblox-model-organization`).

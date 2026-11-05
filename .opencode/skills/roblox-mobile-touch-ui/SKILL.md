@@ -1,48 +1,48 @@
 ---
-name: Interfaces Táctiles Roblox
-description: Controles touch, thumb zones, safe-area y orientación. Úsala cuando adaptes HUD, botones, joystick o menús a móvil y tablet sin tapar el juego.
+name: Roblox Mobile Touch UI
+description: Touch controls, thumb zones, safe area, and orientation. Use it when adapting HUD, buttons, joystick, or menus to mobile and tablet without covering the game.
 ---
 
-# Interfaces Táctiles Roblox
+# Roblox Mobile Touch UI
 
-## Objetivo
+## Objective
 
-Que el juego se controle igual de bien con pulgares que con teclado: zonas de pulgar respetadas, botones alcanzables y grandes, safe-area sin recortes, y convivencia limpia entre táctil, mando y teclado. El táctil no es "la versión pequeña del PC": es su propio layout.
+The game should control just as well with thumbs as with a keyboard: respected thumb zones, reachable and large buttons, a safe area with no clipping, and clean coexistence between touch, gamepad, and keyboard. Touch is not "the small PC version": it is its own layout.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre: thumb zones, tamaños mínimos táctiles, safe-area y notch, joystick/botones virtuales, orientación vertical/horizontal, y convivencia touch/gamepad/teclado.
+Covers: thumb zones, minimum touch sizes, safe area and notch, virtual joysticks/buttons, portrait/landscape orientation, and touch/gamepad/keyboard coexistence.
 
-NO hace:
+Does NOT do:
 
-- Mecánica genérica responsiva: lo cubren `roblox-ui` y `roblox-user-interfaces` (aquí la especialización táctil).
-- Diseño UX previo: lo cubre `roblox-game-ux`; esta skill implementa.
-- HUD de información como tal: lo cubre `roblox-hud` (aquí dónde ponerlo para no taparlo con los dedos).
-- Menús completos: cada uno tiene su skill; aquí las reglas táctiles que todos obedecen.
+- Generic responsive mechanics: covered by `roblox-ui` and `roblox-user-interfaces` (this is the touch specialization here).
+- Prior UX design: covered by `roblox-game-ux`; this skill implements.
+- Information HUD as such: covered by `roblox-hud` (here, where to place it so fingers do not cover it).
+- Full menus: each has its own skill; here the touch rules they all obey.
 
-## Casos de uso
+## Use cases
 
-- Joystick izquierdo + 3 botones derechos (Saltar, Interactuar, Habilidad) sin tapar el centro.
-- Botón de pausa 56x56 en esquina segura fuera del pulgar.
-- Menú que en PC es 2 columnas y en móvil es 1 columna con pestañas.
-- Banner que en móvil va arriba-centro y nunca sobre los botones.
-- Rotación a horizontal que reubica la barra de objetivo sin cortarla el notch.
+- Left joystick + 3 right buttons (Jump, Interact, Ability) without covering the center.
+- 56x56 pause button in a safe corner outside the thumb.
+- Menu that on PC is 2 columns and on mobile is 1 column with tabs.
+- Banner that on mobile goes top-center and never over the buttons.
+- Rotation to landscape that relocates the objective bar without the notch cutting it.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Mapea las thumb zones.** Dibuja pulgar izquierdo (movimiento, abajo-izquierda), pulgar derecho (acciones, abajo-derecha), zona muerta central (juego, no tocar) y esquinas superiores (info/pausa). Todo control táctil vive en su zona; el centro queda libre.
-2. **Define tamaños mínimos.** Acción primaria 64-72 px equivalentes, secundaria 52-56, iconos 24+ con área de toque 48+. Separación mínima 12 entre botones. Nada de 32 px "que ya se apañan".
-3. **Aplica safe-area.** Margen 4-6% desde cada borde + respeto a notch/barras del sistema; prueba con simulador en iPhone y Android con notch distinto. La UI crítica nunca vive en los 24 px del borde.
-4. **Construye controles virtuales con primitivas estables.** Joystick = `Frame` base + `ImageLabel`/`Frame` stick que sigue al dedo dentro del radio; botones = `TextButton`/`ImageButton` redondos con `UICorner` 1,0. Usa `UserInputService.TouchStarted/TouchMoved/TouchEnded` solo a través de los controles del proyecto.
-5. **Adapta cada pantalla.** Regla: PC 2 columnas → móvil 1 columna + pestañas; grids 4→2; hojas inferiores en vez de modales centrados pequeños; fuentes +2-4 pt equivalentes. Documenta la tabla de equivalencias del proyecto.
-6. **Orientación.** Soporta la orientación oficial del juego; si es horizontal, el modo vertical muestra mensaje + layout mínimo, no un juego roto. Al rotar, re-ancla (no reconstruyas toda la UI) y conserva el estado.
-7. **Convive con mando y teclado.** Detecta el último input y muestra la ayuda correspondiente ("Pulsa E" vs "Toca ⬤" vs "Pulsa ⓧ"); nunca muestres las tres a la vez. En tablet con teclado, el táctil sigue disponible.
-8. **Prueba con pulgares reales.** Juega 10 minutos en dispositivo: ¿alcanzas todo sin estirar? ¿ves al enemigo entre los dedos? ¿el sudor/deslizamiento rompe el joystick? Ajusta radio y sensibilidad antes de dar por hecho.
-9. **Verifica rendimiento táctil.** Controles a 60 fps, sin retardo dedo→acción >80 ms percibido, y sin que el HUD informativo se solape con los controles en ninguna resolución móvil.
+1. **Map the thumb zones.** Sketch left thumb (movement, bottom-left), right thumb (actions, bottom-right), dead center zone (game, do not touch), and top corners (info/pause). Every touch control lives in its zone; the center stays free.
+2. **Define minimum sizes.** Primary action 64-72 equivalent px, secondary 52-56, icons 24+ with a 48+ touch area. Minimum 12 spacing between buttons. No 32 px "they'll manage" buttons.
+3. **Apply the safe area.** 4-6% margin from each edge + respect for system notches/bars; test with simulators on iPhone and Android with different notches. Critical UI never lives within the 24 px edge strip.
+4. **Build virtual controls with stable primitives.** Joystick = `Frame` base + `ImageLabel`/`Frame` stick that follows the finger within the radius; buttons = round `TextButton`/`ImageButton` with `UICorner` 1,0. Use `UserInputService.TouchStarted/TouchMoved/TouchEnded` only through the project's controls.
+5. **Adapt each screen.** Rule: PC 2 columns → mobile 1 column + tabs; grids 4→2; bottom sheets instead of small centered modals; fonts +2-4 equivalent pt. Document the project's equivalence table.
+6. **Orientation.** Support the game's official orientation; if it is landscape, portrait mode shows a message + minimal layout, not a broken game. On rotation, re-anchor (do not rebuild the whole UI) and preserve state.
+7. **Coexist with gamepad and keyboard.** Detect the last input and show the matching help ("Press E" vs "Tap ⬤" vs "Press ⓧ"); never show all three at once. On a tablet with keyboard, touch stays available.
+8. **Test with real thumbs.** Play 10 minutes on a device: can you reach everything without stretching? Can you see the enemy between your fingers? Does sweat/sliding break the joystick? Adjust radius and sensitivity before calling it done.
+9. **Verify touch performance.** Controls at 60 fps, no perceived finger-to-action lag above 80 ms, and no overlap between the informative HUD and the controls at any mobile resolution.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Botón táctil (clases estables):
+- Touch button (stable classes):
 
   ```luau
   -- Ejemplo ilustrativo: botón de acción táctil bien anclado
@@ -56,58 +56,58 @@ NO hace:
   -- UICorner circular + UISizeConstraint mínimo + UIAspectRatioConstraint 1:1.
   ```
 
-- Todo a `Scale` con `AnchorPoint` por esquina; `UIAspectRatioConstraint` 1:1 en botones redondos; `UISizeConstraint` con mínimo físico y máximo para no cubrir tablets.
-- `UserInputService` para saber si hay táctil (`TouchEnabled`, verificar en create.roblox.com/docs) y para gestos; el joystick del proyecto emite movimiento, esta UI solo lo presenta.
-- `GuiService` como lectura para no solapar menús del sistema; la safe-area propia se define por proyecto con 4-6% + pruebas en notch reales.
-- `ScrollingFrame` en móvil con `ScrollBarThickness` fino, inercia natural y áreas de toque que no compiten con el scroll (botones fuera de la zona de arrastre).
-- `UIScale` global opcional para modo "botones grandes" de accesibilidad.
+- Everything to `Scale` with `AnchorPoint` per corner; `UIAspectRatioConstraint` 1:1 on round buttons; `UISizeConstraint` with a physical minimum and maximum so tablets are not covered.
+- `UserInputService` to know whether there is touch (`TouchEnabled`, check create.roblox.com/docs) and for gestures; the project's joystick emits movement, this UI only presents it.
+- `GuiService` as a read source so system menus are not overlapped; the project's own safe area is defined with 4-6% + tests on real notches.
+- `ScrollingFrame` on mobile with a thin `ScrollBarThickness`, natural inertia, and touch areas that do not fight scrolling (buttons outside the drag zone).
+- Optional global `UIScale` for an "extra-large buttons" accessibility mode.
 
-### Identidad visual de esta skill (original, no copiar)
+### Visual identity of this skill (original, do not copy)
 
-- Dirección "control de neón sobrio": botones semitransparentes (#0E1420 a 45%) con borde claro 2 px y glifo blanco grueso; joystick con base anillo + stick sólido; nada que oculte el juego.
-- Tipografía: glifos y etiquetas 14-16 negrita dentro/fuera del botón, ayudas contextuales 13 sobre pastilla. Sin texto largo dentro de botones redondos.
-- Composición: joystick abajo-izquierda (radio 90-110), acciones en arco abajo-derecha (primaria más grande y más baja), pausa arriba-derecha pequeña, objetivo arriba-centro. `UIPadding` generoso.
-- Espaciado: 12-16 entre botones, 4-6% de margen seguro. Primaria 20% mayor que secundarias para jerarquía táctil.
-- Estados: normal 45% opaco, pressed 80% + escala 0.93, disabled 25% + sin borde, cooldown con barrido radial o numérico, feedback con vibración visual (pulso 0.12 s vía `TweenService`).
-- Animación: solo feedback de pulsación y aparición inicial. Prohibidos botones flotantes o que se desplazan solos.
+- "Sober neon control" direction: semi-transparent buttons (#0E1420 at 45%) with a 2 px light border and a thick white glyph; joystick with ring base + solid stick; nothing that hides the game.
+- Typography: 14-16 bold glyphs and labels inside/outside the button, contextual help at 13 on a pill. No long text inside round buttons.
+- Composition: joystick bottom-left (radius 90-110), actions in a bottom-right arc (primary larger and lower), pause top-right small, objective top-center. Generous `UIPadding`.
+- Spacing: 12-16 between buttons, 4-6% safe margin. Primary 20% larger than secondaries for touch hierarchy.
+- States: normal 45% opaque, pressed 80% + 0.93 scale, disabled 25% + no border, cooldown with radial sweep or numeric, feedback with visual vibration (0.12 s pulse via `TweenService`).
+- Animation: only press feedback and initial appearance. No floating or self-moving buttons.
 
-## Buenas prácticas
+## Best practices
 
-- El centro de la pantalla es sagrado: 0 controles táctiles en el tercio central.
-- Cada acción frecuente a ≤1 pulgar de distancia sin estirar; lo raro va a menús.
-- Ayuda contextual por input real, no triple leyenda permanente.
-- Botones con etiqueta o glifo universal + tooltip en pausa; sin iconos ambiguos.
-- Coherencia con PC: misma jerarquía (primaria/secundaria), mismos colores, mismos nombres.
-- Modo zurdo o espejo si el juego lo promete; si no, no lo anuncies.
+- The center of the screen is sacred: 0 touch controls in the middle third.
+- Every frequent action within ≤1 thumb of reach without stretching; the rare stuff goes to menus.
+- Contextual help for the real input, never a triple permanent legend.
+- Buttons with a label or universal glyph + tooltip in pause; no ambiguous icons.
+- Consistency with PC: same hierarchy (primary/secondary), same colors, same names.
+- Left-handed or mirror mode if the game promises it; if not, do not advertise it.
 
-## Errores frecuentes
+## Common mistakes
 
-- Botones de 32 px que fallan el 30% de pulsaciones con prisa.
-- HUD crítico bajo el pulgar derecho que nadie vuelve a leer.
-- Caja de diálogo que tapa el joystick y obliga a soltar el movimiento para avanzar.
-- Layout PC encogido a móvil sin reordenar: todo legible y nada usable.
-- Ignorar el notch y perder la pausa y el objetivo en iPhone.
-- Retardo dedo→acción por animar el botón 0.3 s antes de ejecutar.
+- 32 px buttons that miss 30% of hurried presses.
+- Critical HUD under the right thumb that nobody reads again.
+- Dialog box covering the joystick and forcing the player to let go of movement to proceed.
+- PC layout shrunk to mobile without reordering: everything legible and nothing usable.
+- Ignoring the notch and losing pause and the objective on iPhone.
+- Finger-to-action lag from animating the button for 0.3 s before executing.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] 10 minutos jugables en móvil sin errores de alcance ni oclusión del centro.
-- [ ] Botones ≥48 px equivalentes, primaria ≥64, verificados en 2 tamaños de teléfono + tablet.
-- [ ] Safe-area y notch probados en 2 dispositivos simulados distintos.
-- [ ] Ayuda por input correcto (táctil/mando/teclado) sin triples leyendas.
-- [ ] Sin solape entre controles, HUD crítico y notificaciones.
-- [ ] Rotación soportada sin pérdida de estado ni pantallas rotas.
+- [ ] 10 minutes playable on mobile with no reach errors or center occlusion.
+- [ ] Buttons ≥48 equivalent px, primary ≥64, verified on 2 phone sizes + tablet.
+- [ ] Safe area and notch tested on 2 different simulated devices.
+- [ ] Correct per-input help (touch/gamepad/keyboard) with no triple legends.
+- [ ] No overlap between controls, critical HUD, and notifications.
+- [ ] Rotation supported with no state loss or broken screens.
 
-## Herramientas
+## Tools
 
-- Studio: simulador de dispositivos, emulación táctil, prueba de rotación.
-- MCP Studio (si disponible): capturas con overlay táctil en 3 tamaños, `Output` para inputs perdidos.
-- Dispositivo real siempre que sea posible para radio de joystick y latencia.
-- Selene: lint de handlers táctiles y de la detección de input.
+- Studio: device simulator, touch emulation, rotation test.
+- MCP Studio (if available): captures with touch overlay in 3 sizes, `Output` for lost inputs.
+- Real device whenever possible for joystick radius and latency.
+- Selene: lint touch handlers and input detection.
 
-## Limitaciones
+## Limitations
 
-- El joystick y la cámara táctil base los pone el proyecto/motor; aquí su presentación y layout.
-- Comportamientos por SO (gestos del sistema, notch, barras) varían (verificar en create.roblox.com/docs).
-- La latencia dedo→acción depende también del juego y la red, no solo de la UI.
-- Accesibilidad total (botones gigantes, control por interruptor) puede exigir un modo dedicado.
+- The base touch joystick and camera are provided by the project/engine; here their presentation and layout.
+- Per-OS behaviors (system gestures, notch, bars) vary (check create.roblox.com/docs).
+- Finger-to-action latency also depends on the game and the network, not only on the UI.
+- Full accessibility (giant buttons, switch control) may require a dedicated mode.

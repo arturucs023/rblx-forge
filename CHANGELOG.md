@@ -2,6 +2,13 @@
 
 Formato: `YYYY-MM-DD — fase — cambio (estado: probado/configurado/pendiente)`.
 
+## 2026-11-05 — Skills propias en inglés (IMPLEMENTADO, verificado)
+
+- Las 87 skills propias (`.opencode/skills`) traducidas íntegramente al inglés
+  (frontmatter, prosa y cabeceras unificadas en inglés). Código, IDs, rutas y
+  URLs intactos. Verificado: `verify-skills.js` OK (148, 0 problemas),
+  `npm run test` 81/81, `cargo test` 53/53, `npm run build` OK.
+
 ## 2026-11-02 — Tema DESIGN.md + modo Imágenes Cloudflare (IMPLEMENTADO, verificado sin Studio)
 
 - Tema claro Atlassian según `DESIGN.md` (light, rev 0.0.7): tokens literales

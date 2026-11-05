@@ -1,99 +1,99 @@
 ---
 name: roblox-lighting-atmosphere
-description: Crea atmósfera y clima con niebla, lluvia, god-rays y post-efectos moderados. Úsala cuando necesites Atmosphere, tormentas, transiciones de clima o mood ambiental.
+description: Create atmosphere and weather with fog, rain, god-rays, and moderate post-effects. Use it when you need Atmosphere, storms, weather transitions, or ambient mood.
 ---
 
-# Atmósfera y clima en Roblox
+# Atmosphere and Weather in Roblox
 
-## Objetivo
+## Objective
 
-Dar aire y clima al mapa: profundidad con niebla, dramatismo con tormenta o god-rays y transiciones de clima que no rompen legibilidad ni rendimiento.
+Give the map air and weather: depth with fog, drama with storms or god-rays, and weather transitions that don't break readability or performance.
 
-## Alcance y límites
+## Scope and limits
 
-Hace: Atmosphere y niebla, lluvia/tormenta/nieve ambiental visual, god-rays y rayos de luz, transiciones de clima, post-efectos (Bloom, ColorCorrection, SunRays, DepthOfField) con moderación.
+Does: Atmosphere and fog, visual rain/storm/snow, god-rays and light shafts, weather transitions, post-effects (Bloom, ColorCorrection, SunRays, DepthOfField) in moderation.
 
-NO hace:
+Does NOT do:
 
-- Esquema día/noche base y presupuestos de farolas → `roblox-lighting-day-night`.
-- Efectos de partículas ambientales (polvo, hojas, luciérnagas) → `roblox-ambient-effects`.
-- Terreno y biomas → `roblox-terrain-sculpting`.
-- Vegetación → `roblox-vegetation-landscaping`.
-- Props y señalética → `roblox-props-decoration`.
+- Base day/night scheme and lamppost budgets → `roblox-lighting-day-night`.
+- Ambient particle effects (dust, leaves, fireflies) → `roblox-ambient-effects`.
+- Terrain and biomes → `roblox-terrain-sculpting`.
+- Vegetation → `roblox-vegetation-landscaping`.
+- Props and signage → `roblox-props-decoration`.
 
-Diferenciación declarada: `roblox-world-building` (instalada) es generalista y fina (154 líneas sin auxiliares); esta skill es su versión profunda por especialidad (solo atmósfera/clima). `roblox-visual-design` y `roblox-art-direction` dirigen (aprueban mood); esta skill ejecuta (parametriza clima). `roblox-vfx` cubre emisores técnicos (cómo funciona un emisor); esta skill cubre efectos ambientales (cuándo y cuánto clima poner).
+Declared differentiation: `roblox-world-building` (installed) is a concise generalist (154 lines with no helpers); this skill is its deep specialty version (atmosphere/weather only). `roblox-visual-design` and `roblox-art-direction` direct (approve mood); this skill executes (parameterizes weather). `roblox-vfx` covers emitter technique (how an emitter works); this skill covers ambient effects (when and how much weather to use).
 
-## Casos de uso
+## Use cases
 
-1. Valle con niebla matinal que da profundidad sin ocultar rutas.
-2. Tormenta que anuncia mazmorra final sin dejar el juego a oscuras.
-3. Interior de catedral con god-rays creíbles sobre el altar.
-4. Transición soleado→lluvia que acompaña un evento narrativo.
-5. Mapa que abusa de Bloom y SunRays y necesita dieta de post-efectos.
+1. Valley with morning fog that adds depth without hiding routes.
+2. Storm that announces the final dungeon without leaving the game dark.
+3. Cathedral interior with believable god-rays over the altar.
+4. Sunny→rain transition accompanying a narrative event.
+5. Map abusing Bloom and SunRays that needs a post-effect diet.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Elige 2–3 climas, no 8.** Ej. despejado / niebla / tormenta (puntos de partida). Cada clima = ficha con niebla, luz, post-efectos y audio previsto. Verifica: un tercero distingue los 3 en capturas.
-2. **Niebla primero, post-efectos después.** Densidad punto de partida: fondo se difumina a 200+ studs, ruta legible a 80. Regla: si la ruta principal desaparece, la niebla sobra aunque sea bonita.
-3. **Atmosphere con contraste bajo.** Punto de partida: densidad suave, desplazamiento (offset) pequeño, colores cercanos al cielo. Ajusta de día y comprueba de noche: la niebla nocturna no debe volverse muro blanco.
-4. **Lluvia/tormenta por capas.** Capa 1: oscurecido leve + niebla más densa. Capa 2: sonido y destellos (con audio). Capa 3: lluvia visible solo cerca del jugador (radio punto de partida 60 studs). Nunca lluvia en todo el mapa a la vez.
-5. **God-rays con geometría + luz.** Haz visible = SpotLight o SurfaceLight + volumen claro (polvo en `roblox-ambient-effects`) + SunRaysEffect suave. Verifica: el haz se ve desde el ángulo del jugador, no solo en editor.
-6. **Post-efectos con moderación y orden.** Orden punto de partida: ColorCorrection (base) → Bloom (bajo) → SunRays (solo escenas con sol visible) → DepthOfField (solo cinemáticas/menús). Prohibido: Bloom alto + SunRays alto juntos en gameplay.
-7. **Transiciones de clima en 3 fases.** Aviso (30 s: nubes/niebla suben) → clímax (clima pleno) → retorno (60 s a despejado). Duración total punto de partida 3–5 min. Graba y verifica sin saltos.
-8. **Protege legibilidad.** Durante tormenta: sube SurfaceLight en letreros y salidas un paso. Test ciego: el jugador encuentra salida y lee 2 letreros en plena tormenta.
-9. **Presupuesto mobile.** Niebla densa + Bloom + SunRays juntos hunden gama baja. Define nivel Mobile: niebla media, Bloom mínimo, SunRays off, lluvia solo cercana. Mide FPS en tormenta, no en despejado.
-10. **Congela fichas de clima.** Guarda `CLIMA_Despejado`, `CLIMA_Niebla`, `CLIMA_Tormenta` con valores + 3 capturas cada uno. Todo evento que cambie el clima referencia una ficha, nunca valores sueltos.
+1. **Pick 2–3 weathers, not 8.** E.g. clear / fog / storm (starting points). Each weather = sheet with fog, light, post-effects, and planned audio. Verify: a third party tells the 3 apart in captures.
+2. **Fog first, post-effects after.** Starting density: background fades at 200+ studs, route readable at 80. Rule: if the main route disappears, the fog is too much no matter how pretty.
+3. **Atmosphere with low contrast.** Starting point: soft density, small offset, colors close to sky. Tune by day and check at night: night fog must not become a white wall.
+4. **Rain/storm in layers.** Layer 1: slight darkening + denser fog. Layer 2: sound and flashes (with audio). Layer 3: rain visible only near the player (starting radius 60 studs). Never rain over the whole map at once.
+5. **God-rays with geometry + light.** Visible beam = SpotLight or SurfaceLight + clear volume (dust in `roblox-ambient-effects`) + soft SunRaysEffect. Verify: the beam reads from the player angle, not just in the editor.
+6. **Post-effects with moderation and order.** Starting order: ColorCorrection (base) → Bloom (low) → SunRays (only scenes with visible sun) → DepthOfField (only cinematics/menus). Forbidden: high Bloom + high SunRays together in gameplay.
+7. **3-phase weather transitions.** Warning (30 s: clouds/fog rise) → climax (full weather) → return (60 s to clear). Starting total duration 3–5 min. Record and verify with no jumps.
+8. **Protect readability.** During storms: raise SurfaceLight on signs and exits one step. Blind test: the player finds the exit and reads 2 signs in full storm.
+9. **Mobile budget.** Dense fog + Bloom + SunRays together sink low-end. Define a Mobile level: medium fog, minimal Bloom, SunRays off, rain only nearby. Measure FPS in the storm, not in clear weather.
+10. **Freeze weather sheets.** Save `CLIMA_Clear`, `CLIMA_Fog`, `CLIMA_Storm` with values + 3 captures each. Every event that changes weather references a sheet, never loose values.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Atmosphere: densidad, offset, colores y decaimiento controlan profundidad aérea. Valores pequeños cambian mucho; ajusta de 5 en 5 (punto de partida) y captura.
-- Niebla como herramienta de cierre: oculta bordes del mapa y LOD lejano mejor que muros.
-- BloomEffect: brillo en altas luces; intensidad baja punto de partida (no verdad). Alto = todo quema y mobile sufre.
-- ColorCorrectionEffect: contraste/saturación/tono globales; un paso sutil unifica biomas dispares.
-- SunRaysEffect: resplandor alrededor del sol; solo con sol visible en pantalla; inútil y caro de noche o en interior.
-- DepthOfFieldEffect: desenfoque de distancia; reservado a cinemáticas, menús y fotos. En gameplay móvil, apagado.
-- Beam: útil para haces de luz estáticos (ventana, grieta) con textura suave; 1–2 por escena, no 20.
+- Atmosphere: density, offset, colors, and decay control aerial depth. Small values change a lot; adjust in steps of 5 (starting point) and capture.
+- Fog as a closing tool: hides map edges and distant LOD better than walls.
+- BloomEffect: glow on highlights; low starting intensity (not truth). High = everything blows out and mobile suffers.
+- ColorCorrectionEffect: global contrast/saturation/tint; one subtle pass unifies disparate biomes.
+- SunRaysEffect: glow around the sun; only with the sun on screen; useless and costly at night or indoors.
+- DepthOfFieldEffect: distance blur; reserved for cinematics, menus, and photos. Off in mobile gameplay.
+- Beam: useful for static light shafts (window, crack) with soft texture; 1–2 per scene, not 20.
 
-## Buenas prácticas
+## Best practices
 
-- Un clima memorable = un efecto dominante + resto sutil. Tres efectos dominantes = ruido.
-- La niebla cuenta la hora (mañana) y el lugar (pantano, costa); no la uses igual en todas partes.
-- Tormenta breve e intensa mejor que lluvia eterna y tibia.
-- God-rays pocos y motivados (ventana, grieta, altar); un bosque con 30 haces parece discoteca.
-- Documenta qué clima va con cada distrito/bioma en una tabla.
+- One memorable weather = one dominant effect + subtle rest. Three dominant effects = noise.
+- Fog tells time (morning) and place (swamp, coast); don't use it the same everywhere.
+- A short intense storm beats eternal lukewarm rain.
+- Few motivated god-rays (window, crack, altar); a forest with 30 shafts looks like a disco.
+- Document which weather goes with each district/biome in a table.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Muro de niebla.** Densidad que oculta a 30 studs. Corrección: ruta legible a 80 como mínimo.
-2. **Bloom nuclear.** Todo brilla, nada se lee. Corrección: baja a mínimo y sube solo hitos.
-3. **SunRays de noche.** Resplandor sin sol. Corrección: apaga SunRays en presets nocturnos.
-4. **Lluvia global.** Llueve igual en cueva y desierto. Corrección: lluvia por zona + radio 60 alrededor del jugador.
-5. **DepthOfField en gameplay.** Todo borroso al correr. Corrección: solo cinemáticas/menús.
-6. **Transición instantánea.** Sol a tormenta en 1 s. Corrección: 3 fases en 3–5 min.
-7. **Tormenta injugable.** Oscuridad + ruido = abandono. Corrección: protege salidas y letreros con luz extra.
+1. **Fog wall.** Density hiding at 30 studs. Fix: route readable at 80 minimum.
+2. **Nuclear bloom.** Everything glows, nothing reads. Fix: drop to minimum and raise only landmarks.
+3. **SunRays at night.** Glow with no sun. Fix: turn SunRays off in night presets.
+4. **Global rain.** Raining the same in cave and desert. Fix: zoned rain + 60 radius around the player.
+5. **DepthOfField in gameplay.** Everything blurry while running. Fix: cinematics/menus only.
+6. **Instant transition.** Sun to storm in 1 s. Fix: 3 phases over 3–5 min.
+7. **Unplayable storm.** Darkness + noise = abandonment. Fix: protect exits and signs with extra light.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] 2–3 fichas de clima distinguibles por un tercero en capturas.
-- [ ] Ruta legible a 80 studs en el clima más denso (foto).
-- [ ] Post-efectos: nunca Bloom alto + SunRays alto juntos en gameplay.
-- [ ] God-rays motivados (1–2 por escena) visibles desde ángulo de jugador.
-- [ ] Transición grabada sin saltos, 3 fases documentadas.
-- [ ] Test ciego en tormenta: salida + 2 letreros encontrados.
-- [ ] Nivel Mobile definido y medido en tormenta con FPS aceptable.
-- [ ] Fichas `CLIMA_*` guardadas con valores y capturas.
+- [ ] 2–3 weather sheets distinguishable by a third party in captures.
+- [ ] Route readable at 80 studs in the densest weather (photo).
+- [ ] Post-effects: never high Bloom + high SunRays together in gameplay.
+- [ ] Motivated god-rays (1–2 per scene) visible from the player angle.
+- [ ] Recorded transition with no jumps, 3 phases documented.
+- [ ] Blind storm test: exit + 2 signs found.
+- [ ] Mobile level defined and measured in storm with acceptable FPS.
+- [ ] `CLIMA_*` sheets saved with values and captures.
 
-## Herramientas
+## Tools
 
-- Atmosphere para niebla y profundidad aérea.
-- BloomEffect / ColorCorrectionEffect / SunRaysEffect / DepthOfFieldEffect con moderación y orden fijo.
-- SpotLight / SurfaceLight para haces motivados; Beam para haces estáticos (1–2 por escena).
-- Lighting/ClockTime heredados de `roblox-lighting-day-night`; aquí solo se modulan por clima.
+- Atmosphere for fog and aerial depth.
+- BloomEffect / ColorCorrectionEffect / SunRaysEffect / DepthOfFieldEffect with moderation and fixed order.
+- SpotLight / SurfaceLight for motivated shafts; Beam for static shafts (1–2 per scene).
+- Lighting/ClockTime inherited from `roblox-lighting-day-night`; here only modulated by weather.
 
-## Limitaciones
+## Limitations
 
-- No cubre partículas (lluvia como emisor se coordina con `roblox-ambient-effects` y `roblox-vfx`).
-- No diseña ciclo día/noche base (ver skill enlazada).
-- Valores de densidad e intensidad son puntos de partida, no verdad.
-- Si dudas de una propiedad exacta, escribe "(verificar en create.roblox.com/docs)".
-- Distingue referencia visual (foto de tormenta) de ficha importable: la ficha solo existe guardada y capturada.
+- No particles (rain as an emitter is coordinated with `roblox-ambient-effects` and `roblox-vfx`).
+- No base day/night cycle design (see linked skill).
+- Density and intensity values are starting points, not truth.
+- If unsure about an exact property, write "(see create.roblox.com/docs)".
+- Distinguish visual reference (storm photo) from importable sheet: the sheet only exists saved and captured.

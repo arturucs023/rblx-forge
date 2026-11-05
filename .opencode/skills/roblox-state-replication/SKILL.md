@@ -1,152 +1,101 @@
 ---
 name: roblox-state-replication
-description: Diseña sincronización de estado multijugador con interpolación y anti-desync. Úsala cuando necesites decidir qué se replica, con qué frecuencia y cómo evitar teletransportes y divergencias.
+description: Design multiplayer state sync with interpolation and anti-desync. Use it when you need to decide what replicates, at what rate, and how to avoid teleports and divergence.
 ---
 
-# Sincronización de estado multijugador
+# Multiplayer State Sync
 
-## Objetivo
+## Objective
 
-Definir qué estado se replica, a quién, con qué frecuencia y con qué
-tratamiento en recepción (interpolación, predicción, reconciliación) para que
-el juego se vea fluido y coherente sin saturar la red ni abrir puertas a
-trampas.
+Define which state replicates, to whom, at what rate, and with what receive-side treatment (interpolation, prediction, reconciliation) so the game looks fluid and coherent without saturating the network or opening doors to cheats.
 
-## Alcance y límites
+## Scope and limits
 
-**Diferenciación declarada:** las skills instaladas `roblox-networking`,
-`roblox-teleport`, `roblox-teleport-matchmaking`, `roblox-social-systems` y
-`roblox-security` cubren transporte, teleport, matchmaking, social y
-validación fina. Esta skill NO repite el transporte: cubre diseño de sistemas
-de replicación (qué se replica, interpolación, ownership, anti-desync).
+**Declared differentiation:** the installed skills `roblox-networking`, `roblox-teleport`, `roblox-teleport-matchmaking`, `roblox-social-systems`, and `roblox-security` cover transport, teleport, matchmaking, social, and fine validation. This skill does NOT repeat transport: it covers replication-system design (what replicates, interpolation, ownership, anti-desync).
 
-Esta skill NO hace:
+This skill does NOT do:
 
-- Validación anti-exploit detallada → lo cubre `roblox-security`.
-- Teleport entre lugares o matchmaking → lo cubren `roblox-teleport` y
-  `roblox-teleport-matchmaking`.
-- Sistemas sociales o de equipo → lo cubren `roblox-social-systems` y `Teams`.
-- Recuperación tras desconexión → lo cubre `roblox-disconnect-recovery`.
+- Detailed anti-exploit validation → covered by `roblox-security`.
+- Teleport between places or matchmaking → covered by `roblox-teleport` and `roblox-teleport-matchmaking`.
+- Social or team systems → covered by `roblox-social-systems` and `Teams`.
+- Post-disconnection recovery → covered by `roblox-disconnect-recovery`.
 
-## Casos de uso
+## Use cases
 
-1. Decidir qué del personaje, enemigos y objetos se replica y qué no.
-2. Movimiento fluido de otros jugadores sin teletransportes visibles.
-3. Puertas, puentes y plataformas móviles iguales para todos.
-4. Proyectiles rápidos que no atraviesan paredes en unas pantallas sí y en
-   otras no.
-5. Partida de 20 jugadores que satura la red: recortar con criterio.
-6. Dos clientes que ven la puerta en distinto estado (desync clásico).
+1. Decide what of the character, enemies, and objects replicates and what does not.
+2. Fluid movement of other players without visible teleports.
+3. Doors, bridges, and moving platforms identical for everyone.
+4. Fast projectiles that go through walls on some screens and not others.
+5. 20-player match saturating the network: cut with criteria.
+6. Two clients seeing the door in different states (classic desync).
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Clasifica el estado en tres cubos.** Crítico validado (salud, inventario,
-   puntuación: solo el servidor lo escribe), visual replicado (posición,
-   animación: se replica con tolerancia) y local puro (efectos, cámara: nunca
-   sale del cliente). Lo que no clasifiques acabará replicándose mal.
-2. **Asigna autoridad por entidad.** Jugadores: su propio movimiento con
-   validación de servidor; NPCs y objetivos: servidor; objetos decorativos:
-   nadie (cada cliente los simula). Sin autoridad clara hay dos escritores y
-   un desync.
-3. **Fija frecuencia por tipo.** Movimiento de jugadores 10–20 Hz, enemigos
-   5–10 Hz, estado discreto (puerta abierta/cerrada) solo al cambiar,
-   puntuación solo al cambiar. Replicar todo a 60 Hz es el error fundacional.
-4. **Interpolea posiciones remotas.** Nunca apliques la posición recibida en
-   crudo: interpola hacia ella con retardo de 100–200 ms. Ejemplo ilustrativo
-   (simplificado):
-   ```luau
-   -- Ilustrativo: suavizado de posición remota en el cliente.
-   local alpha = math.clamp(dt * 10, 0, 1)
-   parte.CFrame = parte.CFrame:Lerp(cframeRecibido, alpha)
-   ```
-5. **Define ownership con criterio.** El ownership (físico o lógico) lo tiene
-   quien mejor lo simula, y el servidor puede retomarlo ante abuso. Cambios
-   de ownership frecuentes producen saltos: minimízalos.
-6. **Los eventos discretos van por `RemoteEvent`, no por polling.** Puerta
-   abierta, ronda iniciada, gol marcado: un evento fiable, no "preguntar cada
-   segundo". Los `RemoteFunction` solo para preguntas con respuesta inmediata
-   (p. ej. "¿puedo comprar esto?").
-7. **Diseña anti-desync desde el día 1.** Número de versión o tick por
-   entidad; el cliente descarta paquetes viejos; reconciliación periódica del
-   servidor (snapshot cada 1–2 s para estado crítico). Sin esto, las
-   divergencias crecen en silencio.
-8. **El servidor valida lo importante.** Posiciones imposibles (teleport,
-   velocidad absurda), acciones fuera de rango, secuencias imposibles: el
-   servidor las rechaza y corrige. El detalle de validación es de
-   `roblox-security`; aquí defines QUÉ se valida.
-9. **Optimiza el peor caso.** 20 jugadores × 20 Hz × N entidades: calcula el
-   ancho aproximado y recorta (menos frecuencia, radio de interés, compresión
-   de precisión) antes de que producción te lo pida de rodillas.
-10. **Trata el join tardío.** Quien entra a mitad de partida recibe snapshot
-    completo del estado visible; sin snapshot, ve un mundo a medias durante
-    segundos.
-11. **Prueba con lag artificial.** 200 ms y 5 % de pérdida: el juego debe
-    degradarse (movimiento suave pero retrasado), no romperse (teletransportes,
-    estados imposibles).
-12. **Documenta el contrato de replicación.** Tabla entidad → qué se replica →
-    frecuencia → autoridad → tratamiento en recepción. Sin contrato, cada
-    programador replica a su manera.
+1. **Classify state into three buckets.** Validated critical (health, inventory, score: only the server writes it), replicated visual (position, animation: replicated with tolerance), and pure local (effects, camera: never leaves the client). What you do not classify will end up replicating wrong.
+2. **Assign authority per entity.** Players: their own movement with server validation; NPCs and objectives: server; decorative objects: nobody (each client simulates them). Without clear authority there are two writers and a desync.
+3. **Set rate per type.** Player movement 10–20 Hz, enemies 5–10 Hz, discrete state (door open/closed) only on change, score only on change. Replicating everything at 60 Hz is the foundational mistake.
+4. **Interpolate remote positions.** Never apply the received position raw: interpolate toward it with 100–200 ms delay. Illustrative example (simplified):
+    ```luau
+    -- Ilustrativo: suavizado de posición remota en el cliente.
+    local alpha = math.clamp(dt * 10, 0, 1)
+    parte.CFrame = parte.CFrame:Lerp(cframeRecibido, alpha)
+    ```
+5. **Define ownership with criteria.** Ownership (physical or logical) belongs to whoever simulates it best, and the server may retake it on abuse. Frequent ownership changes produce pops: minimize them.
+6. **Discrete events go via `RemoteEvent`, not polling.** Door opened, round started, goal scored: one reliable event, not "ask every second". `RemoteFunction` only for questions with an immediate answer (e.g. "can I buy this?").
+7. **Design anti-desync from day 1.** Version or tick number per entity; clients discard old packets; periodic server reconciliation (snapshot every 1–2 s for critical state). Without this, divergences grow silently.
+8. **The server validates what matters.** Impossible positions (teleport, absurd speed), out-of-range actions, impossible sequences: the server rejects and corrects them. Validation detail belongs to `roblox-security`; here you define WHAT is validated.
+9. **Optimize the worst case.** 20 players × 20 Hz × N entities: estimate the approximate bandwidth and cut (lower rate, interest radius, precision compression) before production forces you on your knees.
+10. **Handle late join.** Whoever joins mid-match receives a full snapshot of visible state; without a snapshot, they see a half-built world for seconds.
+11. **Test with artificial lag.** 200 ms and 5% loss: the game must degrade (smooth but delayed movement), not break (teleports, impossible states).
+12. **Document the replication contract.** Table entity → what replicates → rate → authority → receive-side treatment. Without a contract, every programmer replicates their own way.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- El servidor valida lo importante: toda escritura de estado crítico pasa por
-  el servidor; el cliente propone, el servidor dispone. Usa `RemoteEvent` para
-  propuestas y eventos, `RemoteFunction` solo para consultas con respuesta.
-- Persistencia: el estado de sesión viva NO se persiste en caliente salvo
-  diseño explícito (ver `roblox-disconnect-recovery`); el progreso duradero
-  (inventario, nivel) se guarda con límites de escritura, no en cada tick.
-- Errores: envuelve en `pcall` la serialización y el envío de snapshots; un
-  snapshot corrupto no debe expulsar al jugador, se reintenta o se pide
-  completo de nuevo.
-- `Players` y `Teams` como base de a quién replicar; `MemoryStoreService` y
-  `MessagingService` para coordinación entre servidores (verificar cuotas y
-  límites exactos en create.roblox.com/docs).
-- `TeleportService` y `TeleportOptions` solo para mover jugadores entre
-  lugares; el detalle es de `roblox-teleport`.
+- The server validates what matters: every critical-state write goes through the server; the client proposes, the server disposes. Use `RemoteEvent` for proposals and events, `RemoteFunction` only for queries with a response.
+- Persistence: live session state is NOT persisted hot unless explicitly designed (see `roblox-disconnect-recovery`); durable progress (inventory, level) is saved with write limits, not on every tick.
+- Errors: wrap snapshot serialization and sending in `pcall`; a corrupt snapshot must not kick the player, it is retried or a full one is requested again.
+- `Players` and `Teams` as the basis for whom to replicate to; `MemoryStoreService` and `MessagingService` for cross-server coordination (verify exact quotas and limits in create.roblox.com/docs).
+- `TeleportService` and `TeleportOptions` only to move players between places; detail belongs to `roblox-teleport`.
 
-## Buenas prácticas
+## Best practices
 
-- Replica cambios, no estados completos, salvo snapshot inicial o
-  reconciliación.
-- Radio de interés: lo lejano se actualiza menos o no se actualiza.
-- Descarta paquetes viejos por tick; nunca apliques historia.
-- Un solo escritor por dato crítico; el resto son lectores.
-- Frecuencias distintas por tipo de dato, revisadas con medición real.
-- Contrato de replicación escrito y versionado.
+- Replicate changes, not full states, except initial snapshot or reconciliation.
+- Interest radius: distant things update less or not at all.
+- Discard old packets by tick; never apply history.
+- One writer per critical datum; the rest are readers.
+- Different rates per data type, reviewed with real measurement.
+- Written, versioned replication contract.
 
-## Errores frecuentes
+## Common mistakes
 
-1. Replicar todo a la misma frecuencia alta → saturación.
-2. Aplicar posiciones en crudo → teletransportes y tembleque.
-3. Dos escritores para el mismo dato → desync permanente.
-4. Sin snapshot de join tardío → mundo a medias al entrar.
-5. Confiar posiciones o acciones del cliente sin validación → trampas.
-6. `RemoteFunction` para todo → bloqueos y timeouts en cascada.
-7. No probar con lag → el primer jugador con mala conexión rompe la partida.
+1. Replicating everything at the same high rate → saturation.
+2. Applying positions raw → teleports and jitter.
+3. Two writers for the same datum → permanent desync.
+4. No late-join snapshot → half-built world on entry.
+5. Trusting client positions or actions without validation → cheats.
+6. `RemoteFunction` for everything → cascading blocks and timeouts.
+7. Not testing with lag → the first player with a bad connection breaks the match.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Estado clasificado (crítico / visual / local) y documentado.
-- [ ] Autoridad asignada por entidad sin escritores dobles.
-- [ ] Frecuencias por tipo definidas y medidas en el peor caso.
-- [ ] Interpolación de remotos sin teletransportes visibles.
-- [ ] Eventos discretos por `RemoteEvent`, snapshot para join tardío.
-- [ ] Validaciones de servidor para posiciones y acciones imposibles.
-- [ ] Prueba con lag artificial superada sin roturas.
+- [ ] State classified (critical / visual / local) and documented.
+- [ ] Authority assigned per entity with no double writers.
+- [ ] Per-type rates defined and measured in the worst case.
+- [ ] Remote interpolation with no visible teleports.
+- [ ] Discrete events via `RemoteEvent`, snapshot for late join.
+- [ ] Server validations for impossible positions and actions.
+- [ ] Artificial-lag test passed without breakage.
 
-## Herramientas
+## Tools
 
-- `RemoteEvent` y `RemoteFunction` como transporte de diseño.
-- `Players`, `Teams` para audiencia y organización.
-- `MemoryStoreService`, `MessagingService` para coordinación entre
-  servidores (cuotas: verificar en create.roblox.com/docs).
-- `TeleportService`, `TeleportOptions` para cambios de lugar
-  (detalle: `roblox-teleport`).
+- `RemoteEvent` and `RemoteFunction` as design transport.
+- `Players`, `Teams` for audience and organization.
+- `MemoryStoreService`, `MessagingService` for cross-server coordination (quotas: verify in create.roblox.com/docs).
+- `TeleportService`, `TeleportOptions` for place changes (detail: `roblox-teleport`).
 
-## Limitaciones
+## Limitations
 
-- No implementa validación anti-exploit fina: deriva a `roblox-security`.
-- No hace teleport, matchmaking ni social: deriva a `roblox-teleport`,
-  `roblox-teleport-matchmaking` y `roblox-social-systems`.
-- No cubre recovery tras caída: deriva a `roblox-disconnect-recovery`.
-- Verifica cuotas y miembros dudosos en create.roblox.com/docs.
+- Does not implement fine anti-exploit validation: defer to `roblox-security`.
+- Does not do teleport, matchmaking, or social: defer to `roblox-teleport`, `roblox-teleport-matchmaking`, and `roblox-social-systems`.
+- Does not cover post-crash recovery: defer to `roblox-disconnect-recovery`.
+- Verify dubious quotas and members in create.roblox.com/docs.

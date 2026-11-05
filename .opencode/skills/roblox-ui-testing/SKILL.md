@@ -1,50 +1,50 @@
 ---
 name: roblox-ui-testing
-description: Pruebas de UI por pantalla (recorridos, estados, resoluciones, legibilidad). Úsala cuando valides menús, HUD o flujos antes de cada release.
+description: UI testing per screen (walkthroughs, states, resolutions, legibility). Use it when validating menus, HUD, or flows before each release.
 ---
 
-# Pruebas de UI en Roblox
+# UI Testing in Roblox
 
-## Objetivo
-Garantizar que cada pantalla funciona y se lee en todos los tamaños: recorridos completos por flujo, estados (cargando/vacío/error), resoluciones móvil-PC, legibilidad y checklist repetible por release.
+## Objective
+Guarantee every screen works and reads well at all sizes: complete walkthroughs per flow, states (loading/empty/error), mobile–PC resolutions, legibility, and a repeatable checklist per release.
 
-## Alcance y límites
-Diferenciación: `roblox-testing` (instalada) es paraguas QA y `roblox-testez` cubre lógica unitaria; esta skill es práctica dedicada de UI (recorridos, estados, resoluciones). `roblox-multiplayer-testing` cubre concurrencia; aquí se cubre lo que ve cada jugador.
+## Scope and limits
+Differentiation: `roblox-testing` (installed) is the QA umbrella and `roblox-testez` covers unit logic; this skill is the dedicated UI practice (walkthroughs, states, resolutions). `roblox-multiplayer-testing` covers concurrency; here we cover what each player sees.
 
-Qué NO hace:
+What it does NOT do:
 
-- NO diseña el arte de UI; verifica que el diseño implementado funciona y se lee.
-- NO testea lógica de servidor (ver `roblox-testez`, `roblox-multiplayer-testing`).
-- NO automatiza capturas externas; define recorridos ejecutables en Studio/dispositivo.
+- Does NOT design UI art; it verifies the implemented design works and reads.
+- Does NOT test server logic (see `roblox-testez`, `roblox-multiplayer-testing`).
+- Does NOT automate external captures; it defines walkthroughs runnable in Studio/on device.
 
-## Casos de uso
-1. Flujo tienda: abrir → comprar → confirmar → recibir → ver reflejo en HUD.
-2. Menú → lobby → partida → resultados sin pantallas muertas.
-3. Estados: inventario vacío, carga lenta, error de datos con degradado.
-4. Móvil pequeño vs PC ancho: sin solapes ni botones inalcanzables.
-5. Checklist de release: 15 min que bloquean salida si fallan.
+## Use cases
+1. Shop flow: open → buy → confirm → receive → see HUD reflection.
+2. Menu → lobby → match → results with no dead screens.
+3. States: empty inventory, slow load, data error with degradation.
+4. Small mobile vs wide PC: no overlaps or unreachable buttons.
+5. Release checklist: 15 min that blocks shipping if it fails.
 
-## Proceso paso a paso
-1. Inventaría pantallas y flujos: lista cada pantalla, desde dónde se llega y a dónde lleva. Sin mapa no hay cobertura.
-2. Escribe recorridos como pasos numerados con resultado esperado por paso (qué aparece, qué cambia). Un recorrido = un flujo de jugador.
-3. Añade matriz de estados por pantalla: cargando, vacío, con datos, error/degradado. Cada celda tiene captura o descripción de lo esperado.
-4. Define resoluciones de prueba: móvil pequeño (ej. 4.7"), tablet, PC 16:9, PC ultra-ancha si aplica. Verifica en al menos móvil + PC siempre.
-5. Ejecuta con zona segura y pulgar: en móvil, todo accionable con pulgar sin tapar info; en PC, navegable con teclado/ratón sin trampas de foco.
-6. Verifica legibilidad: contraste, tamaño mínimo, sin texto cortado ni solapado, localización sin overflow (strings largos de prueba).
-7. Prueba interrupciones: llamada/recibo en móvil, resize en PC, join tardío que cambia la UI, error de datos que debe mostrar degradado (ver `roblox-error-handling`).
-8. Registra defectos con pantalla, resolución, pasos y captura; clasifica Bloqueante (no se puede completar flujo) vs Menor (visual).
-9. Congela checklist de release (10-20 ítems, <20 min) y ejecútala igual en cada salida; cualquier Bloqueante frena el release.
+## Step-by-step process
+1. Inventory screens and flows: list each screen, where it's reached from, and where it leads. No map, no coverage.
+2. Write walkthroughs as numbered steps with an expected result per step (what appears, what changes). One walkthrough = one player flow.
+3. Add a state matrix per screen: loading, empty, with data, error/degraded. Each cell has a capture or a description of what's expected.
+4. Define test resolutions: small phone (e.g. 4.7"), tablet, 16:9 PC, ultra-wide PC if applicable. Always verify on at least mobile + PC.
+5. Run with safe area and thumb: on mobile, everything actionable with the thumb without covering info; on PC, navigable with keyboard/mouse and no focus traps.
+6. Verify legibility: contrast, minimum size, no clipped or overlapped text, localization without overflow (long test strings).
+7. Test interruptions: mobile call/notification, resize on PC, late join changing the UI, data error that must show degradation (see `roblox-error-handling`).
+8. Log defects with screen, resolution, steps, and capture; classify Blocker (flow can't complete) vs Minor (visual).
+9. Freeze a release checklist (10–20 items, <20 min) and run it identically every time; any Blocker stops the release.
 
-## Conocimientos técnicos
-- Recorrido como contrato: cada paso tiene precondición, acción y postcondición observable. Si la postcondición no es observable, el recorrido no sirve.
-- Estados como máquina (ver `roblox-state-machines`): Loading → Ready → Empty/Error. La UI nunca queda en blanco sin explicación.
-- `Attributes` para forzar estados en prueba (ej. `UIState=Loading`) sin tocar código, facilitando capturas de cada celda.
-- Texto: prueba con strings 2x de largo y caracteres anchos; si rompe layout, el layout es el bug.
-- Toque vs clic: áreas mínimas táctiles generosas en móvil; en PC, foco visible y orden de tabulación sensato (verificar controles exactos en create.roblox.com/docs si dudas).
-- Rendimiento de UI: listas largas con reutilización/paginación; mide con MicroProfiler si hay scroll con cientos de celdas.
-- Consistencia con datos: la UI lee de la misma config que la lógica (ej. odds de `roblox-rarity-collectibles`); nada de textos duplicados.
+## Technical knowledge
+- Walkthrough as contract: each step has a precondition, action, and observable postcondition. If the postcondition isn't observable, the walkthrough is useless.
+- States as a machine (see `roblox-state-machines`): Loading → Ready → Empty/Error. The UI never sits blank without explanation.
+- `Attributes` to force states in tests (e.g. `UIState=Loading`) without touching code, making each cell easy to capture.
+- Text: test with 2x-long strings and wide characters; if layout breaks, the layout is the bug.
+- Touch vs click: generous minimum touch areas on mobile; on PC, visible focus and sane tab order (verify exact controls at create.roblox.com/docs if in doubt).
+- UI performance: long lists with reuse/pagination; measure with MicroProfiler if scrolling hundreds of cells.
+- Data consistency: the UI reads from the same config as the logic (e.g. odds from `roblox-rarity-collectibles`); no duplicated text.
 
-Ejemplo ilustrativo (recorrido tienda):
+Illustrative example (shop walkthrough):
 
 ```text
 R-TIENDA-01 Compra de sobre (ilustrativo)
@@ -55,7 +55,7 @@ R-TIENDA-01 Compra de sobre (ilustrativo)
 Falla si: falta confirmación, odds invisibles, HUD no actualiza.
 ```
 
-Ejemplo ilustrativo (matriz de estados):
+Illustrative example (state matrix):
 
 ```text
 Pantalla Inventario (ilustrativo)
@@ -66,7 +66,7 @@ Pantalla Inventario (ilustrativo)
 | Error    | aviso + "Reintentar", modo degradado visible |
 ```
 
-Ejemplo ilustrativo (checklist release):
+Illustrative example (release checklist):
 
 ```text
 UI-RELEASE vX (ilustrativo, <20 min)
@@ -77,37 +77,37 @@ UI-RELEASE vX (ilustrativo, <20 min)
 [ ] Botones críticos alcanzables con pulgar
 ```
 
-## Buenas prácticas
-- Menos pantallas, bien probadas. Cada pantalla nueva añade 4 estados × N resoluciones.
-- Capturas por estado y resolución en el PR de UI; el diff visual es evidencia.
-- Textos reales (no lorem) desde el primer test; la localización rompe layouts tarde.
-- Accesibilidad mínima: contraste, tamaño, daltonismo en rarezas (no solo color).
-- La checklist de release vive en el repo y se versiona con el juego.
+## Best practices
+- Fewer screens, well tested. Each new screen adds 4 states × N resolutions.
+- Captures per state and resolution in the UI PR; visual diff is evidence.
+- Real copy (not lorem) from the first test; localization breaks late layouts.
+- Minimum accessibility: contrast, size, colorblind-safe rarity (not color only).
+- The release checklist lives in the repo and is versioned with the game.
 
-## Errores frecuentes
-1. Probar solo en PC ancho: en móvil los botones se solapan o salen de pantalla. Móvil siempre.
-2. Solo estado "con datos": el vacío y el error se descubren en producción. Matriz completa.
-3. Textos duplicados entre UI y lógica (odds, precios): divergen. Una sola fuente.
-4. Recorridos sin postcondición observable ("mira que funciona"): no falla nunca. Cada paso verifica algo.
-5. Ignorar zona segura/notch: botones bajo el notch inalcanzables.Respeta insets.
-6. Listas sin paginación con cientos de items: scroll a 5 FPS. Pagina o virtualiza.
-7. Checklist distinta en cada release: regresiones que vuelven. Congela y versiona.
+## Common mistakes
+1. Testing only on wide PC: on mobile buttons overlap or go off-screen. Mobile always.
+2. Only the "with data" state: empty and error are discovered in production. Full matrix.
+3. Duplicated text between UI and logic (odds, prices): they diverge. One source.
+4. Walkthroughs with no observable postcondition ("check that it works"): never fails. Every step verifies something.
+5. Ignoring safe area/notch: buttons under the notch unreachable. Respect insets.
+6. Lists without pagination holding hundreds of items: scroll at 5 FPS. Paginate or virtualize.
+7. A different checklist every release: regressions return. Freeze and version it.
 
-## Criterios de calidad y terminado
-- [ ] Mapa de pantallas/flujos completo y recorridos con postcondición por paso.
-- [ ] Matriz Loading/Vacío/Datos/Error verificada por pantalla crítica.
-- [ ] Móvil + PC verificados sin solapes, cortes ni botones inalcanzables.
-- [ ] Strings largos/localización sin overflow; contraste y legibilidad aceptados.
-- [ ] Checklist de release (<20 min) ejecutada en verde con build etiquetado.
-- [ ] Cero Bloqueantes abiertos; Menores triageados con dueño.
+## Quality and done criteria
+- [ ] Complete screen/flow map and walkthroughs with a postcondition per step.
+- [ ] Loading/Empty/Data/Error matrix verified per critical screen.
+- [ ] Mobile + PC verified with no overlaps, clipping, or unreachable buttons.
+- [ ] Long/localization strings without overflow; contrast and legibility accepted.
+- [ ] Release checklist (<20 min) green with a tagged build.
+- [ ] Zero open Blockers; Minors triaged with an owner.
 
-## Herramientas
-- Playtest en Studio + dispositivo real (móvil) para resoluciones.
-- `Attributes` para forzar estados de UI en prueba.
-- `BindableEvent` para simular eventos de sistema hacia UI en el mismo contexto.
-- `roblox-testez` para lógica de estados de UI; `roblox-ci-cd` para bloquear release en rojo.
+## Tools
+- Playtest in Studio + real device (mobile) for resolutions.
+- `Attributes` to force UI states in tests.
+- `BindableEvent` to simulate system events toward UI in the same context.
+- `roblox-testez` for UI-state logic; `roblox-ci-cd` to block release on red.
 
-## Limitaciones
-- No cubre diseño visual ni copy; verifica implementación.
-- No cubre concurrencia multicliente; deriva a `roblox-multiplayer-testing`.
-- Si dudas de APIs de UI o insets, anota `(verificar en create.roblox.com/docs)`.
+## Limitations
+- Does not cover visual design or copy; verifies implementation.
+- Does not cover multi-client concurrency; defer to `roblox-multiplayer-testing`.
+- If you doubt UI or inset APIs, note "(verify at create.roblox.com/docs)".

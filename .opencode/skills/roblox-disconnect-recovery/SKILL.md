@@ -1,55 +1,55 @@
 ---
 name: roblox-disconnect-recovery
-description: Diseña reconexión y recuperación de estado tras caídas. Úsala cuando necesites reconnect a la partida, guardar estado a salvo o rejoin sin perder progreso.
+description: Design reconnection and state recovery after drops. Use it when you need reconnect to the match, safe state saving, or rejoin without losing progress.
 ---
 
-# Desconexiones y recuperación sin dramas
+# Disconnects and recovery without drama
 
-## Objetivo
+## Objective
 
-Que una caída no sea una condena: detectar la desconexión, proteger el estado
-del jugador (guardado a salvo), permitir el rejoin a la misma partida cuando
-tenga sentido y dejar al resto de la partida en un estado coherente mientras
-tanto.
+Make a drop not be a sentence: detect the disconnect, protect player
+state (safe save), allow rejoin to the same match when it makes
+sense, and leave the rest of the match in a coherent state while
+waiting.
 
-## Alcance y límites
+## Scope and limits
 
-**Diferenciación declarada:** las skills instaladas `roblox-networking`,
-`roblox-teleport`, `roblox-teleport-matchmaking`, `roblox-social-systems` y
-`roblox-security` cubren transporte, teleport, matchmaking, social y
-validación fina. Esta skill NO repite el transporte: cubre diseño de sistemas
-de recovery (reconnect, estado a salvo, rejoin a partida).
+**Stated differentiation:** the installed skills `roblox-networking`,
+`roblox-teleport`, `roblox-teleport-matchmaking`, `roblox-social-systems`, and
+`roblox-security` cover transport, teleport, matchmaking, social, and
+fine-grained validation. This skill does NOT repeat transport: it covers recovery system design
+(reconnect, safe state, rejoin to a match).
 
-Esta skill NO hace:
+This skill does NOT do:
 
-- Replicación momento a momento → lo cubre `roblox-state-replication`.
-- Teleport base entre lugares → lo cubre `roblox-teleport`.
-- Servidores privados como producto → lo cubre `roblox-private-servers`.
-- Balance de reingreso en competitivo (penalizaciones, ELO) → lo cubre
+- Moment-to-moment replication → covered by `roblox-state-replication`.
+- Base teleport between places → covered by `roblox-teleport`.
+- Private servers as a product → covered by `roblox-private-servers`.
+- Re-entry balance in competitive (penalties, ELO) → covered by
   `roblox-competitive-systems`.
 
-## Casos de uso
+## Use cases
 
-1. Jugador que pierde wifi 30 s y vuelve a la misma partida.
-2. Caída del cliente en mitad de una mazmorra sin perder el botín ganado.
-3. Rage-quit disfrazado de "desconexión": distinguirlo con honestidad.
-4. Partida cooperativa que queda 3 contra 5 por dos caídos.
-5. Guardado a salvo que no duplique objetos al reentrar.
-6. Móvil que cambia de red y la sesión parpadea.
+1. Player losing wifi for 30 s and returning to the same match.
+2. Client crash in the middle of a dungeon without losing earned loot.
+3. Rage-quit disguised as a "disconnect": telling them apart honestly.
+4. Cooperative match left 3 against 5 by two dropped players.
+5. Safe save that doesn't duplicate items on re-entry.
+6. Mobile switching networks and the session flickering.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Distingue tipos de salida.** Salida limpia, timeout de red y expulsión
-   son casos distintos: el primero libera recursos ya; el segundo abre
-   ventana de gracia; el tercero no merece rejoin. Tratarlos igual rompe los
-   tres.
-2. **Define la ventana de gracia.** Tiempo durante el cual se reserva la plaza
-   y el estado (p. ej. 2–5 min según modo). Sin ventana, no hay rejoin; con
-   ventana infinita, las plazas se pudren.
-3. **Guarda estado a salvo en el servidor.** Ante caída, el servidor
-   persiste lo ganado (progreso, botín, puntuación) con escritura única
-   idempotente: reejecutar el guardado no duplica nada. Ejemplo ilustrativo
-   (simplificado):
+1. **Distinguish exit types.** Clean exit, network timeout, and ban
+   are different cases: the first frees resources now; the second opens
+   a grace window; the third deserves no rejoin. Treating them the same breaks all
+   three.
+2. **Define the grace window.** Time during which the seat
+   and state are reserved (e.g. 2–5 min depending on mode). Without a window, there is no rejoin; with an
+   infinite window, seats rot.
+3. **Save state safely on the server.** On drop, the server
+   persists what was earned (progress, loot, score) with a single
+   idempotent write: re-running the save duplicates nothing. Illustrative example
+   (simplified):
    ```luau
    -- Ilustrativo: guardado idempotente con llave de sesión.
    local llave = "save:" .. userId .. ":" .. sessionId
@@ -58,93 +58,93 @@ Esta skill NO hace:
      guardarProgreso(userId, snapshot) -- con pcall y reintento
    end
    ```
-4. **Reserva la plaza, no el universo.** Durante la gracia, la plaza queda
-   marcada como "reservada para X"; pasado el plazo, se libera y el estado
-   pasa a abandonado. Documenta el plazo visiblemente.
-5. **Implementa el rejoin a la misma partida.** Reentrada con
-   `TeleportService`/`TeleportOptions` al servidor de origen cuando siga
-   vivo; si murió, rejoin al modo equivalente con el progreso a salvo
-   restaurado. Prueba el caso "el servidor ya no existe".
-6. **El servidor valida lo importante.** Toda restauración se verifica en
-   servidor (identidad, llave de sesión, snapshot firmado por el servidor,
-   nunca por el cliente). El cliente pide; el servidor autoriza o deniega.
-7. **Protege al resto de la partida.** Jugador caído: su personaje se
-   congela, se cede a un bot simple o se retira según el modo; jamás queda
-   como saco de puntos gratis ni como pared invisible eterna.
-8. **Evita el dupe del rejoin.** Inventario y moneda se reconcilian por
-   snapshot de servidor con idempotencia; el cliente nunca "trae" objetos de
-   vuelta. Prueba el doble rejoin rápido: es el caso que crea duplicados.
-9. **Informa con honestidad.** "Conexión perdida, reintentando (plaza
-   reservada 3:00)" es bueno; un spinner eterno es malo. Si la partida
-   terminó, dilo y muestra el resultado guardado.
-10. **Trata el parpadeo de red móvil.** Reconexiones de segundos no deben
-    disparar todo el protocolo: umbral (p. ej. 10–15 s) por debajo del cual
-    solo se re-sincroniza estado ligero (`roblox-state-replication`).
-11. **Prueba los cinco escenarios.** Caída limpia, timeout con vuelta a
-    tiempo, timeout con vuelta tarde, servidor muerto, doble rejoin rápido.
-    Los cinco, no solo el feliz.
-12. **Registra y mide.** Tasa de rejoin con éxito, tiempo medio de vuelta,
-    dupes detectados (cero es el único número aceptable). Sin métricas, el
-    recovery se pudre en silencio.
+4. **Reserve the seat, not the universe.** During the grace period, the seat stays
+   marked as "reserved for X"; after the deadline, it is freed and the state
+   becomes abandoned. Document the deadline visibly.
+5. **Implement rejoin to the same match.** Re-entry with
+   `TeleportService`/`TeleportOptions` to the origin server while still
+   alive; if it died, rejoin the equivalent mode with safe progress
+   restored. Test the "server no longer exists" case.
+6. **The server validates what matters.** Every restore is verified on the
+   server (identity, session key, server-signed snapshot,
+   never client-signed). The client asks; the server authorizes or denies.
+7. **Protect the rest of the match.** Dropped player: their character is
+   frozen, handed to a simple bot, or removed depending on the mode; never left
+   as free points or an eternal invisible wall.
+8. **Avoid rejoin dupes.** Inventory and currency are reconciled via
+   server snapshot with idempotency; the client never "brings back" items.
+   Test the fast double rejoin: that's the case that creates duplicates.
+9. **Report honestly.** "Connection lost, retrying (seat
+   reserved 3:00)" is good; an eternal spinner is bad. If the match
+   ended, say so and show the saved result.
+10. **Handle mobile network flicker.** Reconnections of a few seconds must not
+    trigger the whole protocol: threshold (e.g. 10–15 s) below which
+    only light state is re-synced (`roblox-state-replication`).
+11. **Test the five scenarios.** Clean exit, timeout with on-time return,
+    timeout with late return, dead server, fast double rejoin.
+    All five, not just the happy path.
+12. **Log and measure.** Successful rejoin rate, mean time to return,
+    detected dupes (zero is the only acceptable number). Without metrics,
+    recovery silently rots.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- El servidor valida lo importante: identidad, ventana de gracia vigente y
-  snapshot de autoridad propia antes de restaurar nada.
-- Persistencia: guardado a salvo idempotente con llave de sesión; escrituras
-  limitadas y con reintento; `pcall` obligatorio en toda ruta de guardado
-  porque la caída y el fallo de guardado suelen llegar juntos.
-- Errores: si el guardado falla, reintenta con backoff y avisa; si el
-  servidor destino murió, degrada a restaurar progreso en modo equivalente.
-- `TeleportService` y `TeleportOptions` para el rejoin; `Players` para
-  detectar salidas; `MemoryStoreService` / `MessagingService` para plazas
-  reservadas y coordinación entre servidores (cuotas: verificar en
+- The server validates what matters: identity, current grace window, and
+  own-authority snapshot before restoring anything.
+- Persistence: idempotent safe save with session key; limited
+  writes with retry; mandatory `pcall` on every save path
+  because drops and save failures usually arrive together.
+- Errors: if saving fails, retry with backoff and warn; if the
+  destination server died, degrade to restoring progress in equivalent mode.
+- `TeleportService` and `TeleportOptions` for rejoin; `Players` to
+  detect exits; `MemoryStoreService` / `MessagingService` for reserved
+  seats and cross-server coordination (quotas: verify at
   create.roblox.com/docs).
-- Estado ligero de re-sincronización: contrato con
-  `roblox-state-replication` (snapshot al volver).
+- Light re-sync state: contract with
+  `roblox-state-replication` (snapshot on return).
 
-## Buenas prácticas
+## Best practices
 
-- Ventana de gracia explícita y visible, distinta por modo de juego.
-- Idempotencia en todo guardado y restauración: el doble rejoin no duplica.
-- Personaje caído con tratamiento digno (congelar, bot o retirada).
-- Mensajes honestos con cuenta atrás y plan B.
-- Umbral anti-parpadeo antes del protocolo completo.
-- Métricas de recovery desde el día 1.
+- Explicit grace window per game mode, visible to the player.
+- Idempotency in every save and restore: double rejoin duplicates nothing.
+- Dropped character with dignified handling (freeze, bot, or removal).
+- Honest messages with countdown and plan B.
+- Anti-flicker threshold before the full protocol.
+- Recovery metrics from day 1.
 
-## Errores frecuentes
+## Common mistakes
 
-1. Tratar igual salida limpia, timeout y expulsión.
-2. Guardado no idempotente → doble rejoin duplica objetos.
-3. Restaurar estado que trae el cliente → regalo a tramposos.
-4. Plaza reservada eterna → partidas que nunca se llenan.
-5. Personaje caído como saco de puntos o pared eterna.
-6. Sin plan B si el servidor de origen murió → jugador en limbo.
-7. Parpadeo móvil que dispara el protocolo completo cada vez.
+1. Treating clean exit, timeout, and ban the same.
+2. Non-idempotent save → double rejoin duplicates items.
+3. Restoring state brought by the client → gift to cheaters.
+4. Eternally reserved seat → matches that never fill.
+5. Dropped character as free points or an eternal wall.
+6. No plan B if the origin server died → player in limbo.
+7. Mobile flicker triggering the full protocol every time.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Ventana de gracia definida por modo y comunicada al jugador.
-- [ ] Guardado a salvo idempotente probado con doble rejoin rápido.
-- [ ] Rejoin a origen funcionando y plan B si el servidor murió.
-- [ ] Restauración validada en servidor; cliente sin autoridad.
-- [ ] Partida coherente durante la ausencia (bot/congelar/retirar).
-- [ ] Cinco escenarios de prueba superados.
-- [ ] Métricas de rejoin y cero dupes verificados.
+- [ ] Grace window defined per mode and communicated to the player.
+- [ ] Idempotent safe save tested with fast double rejoin.
+- [ ] Rejoin to origin working and plan B if the server died.
+- [ ] Restore validated on server; no client authority.
+- [ ] Match coherent during the absence (bot/freeze/remove).
+- [ ] Five test scenarios passed.
+- [ ] Rejoin metrics and zero dupes verified.
 
-## Herramientas
+## Tools
 
-- `TeleportService`, `TeleportOptions` para rejoin al servidor de origen.
-- `Players` para detección de salidas y reservas de plaza.
-- `MemoryStoreService`, `MessagingService` para coordinación efímera
-  (cuotas: verificar en create.roblox.com/docs).
-- `RemoteEvent` para mensajes de estado de recovery al cliente.
+- `TeleportService`, `TeleportOptions` for rejoin to the origin server.
+- `Players` for exit detection and seat reservation.
+- `MemoryStoreService`, `MessagingService` for ephemeral coordination
+  (quotas: verify at create.roblox.com/docs).
+- `RemoteEvent` for recovery status messages to the client.
 
-## Limitaciones
+## Limitations
 
-- No hace replicación fina: deriva a `roblox-state-replication`.
-- No hace teleport base ni matchmaking: deriva a `roblox-teleport` y
+- Does not do fine-grained replication: see `roblox-state-replication`.
+- Does not do base teleport or matchmaking: see `roblox-teleport` and
   `roblox-teleport-matchmaking`.
-- No balancea penalizaciones competitivas: deriva a
+- Does not balance competitive penalties: see
   `roblox-competitive-systems`.
-- Verifica miembros y cuotas dudosos en create.roblox.com/docs.
+- Verify doubtful members and quotas at create.roblox.com/docs.

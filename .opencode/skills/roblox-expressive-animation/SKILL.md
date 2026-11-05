@@ -1,60 +1,60 @@
 ---
 name: roblox-expressive-animation
-description: Emotes, expresiones faciales y gestos de interacción. Úsala cuando los personajes se sienten robóticos en social, tiendas o cinemáticas.
+description: Emotes, facial expressions, and interaction gestures. Use it when characters feel robotic in social, shops, or cinematics.
 ---
 
-# Animación Expresiva e Interacción Social
+# Expressive Animation and Social Interaction
 
-## Objetivo
+## Objective
 
-Dar vida social al personaje: emotes legibles, expresiones faciales (incluido `FaceControls` donde aplique) y gestos de interacción con objetos (`ProximityPrompt`, `Tool`) con timing que no interfiere con locomoción ni combate.
+Give the character social life: readable emotes, facial expressions (including `FaceControls` where applicable), and interaction gestures with objects (`ProximityPrompt`, `Tool`) with timing that doesn't interfere with locomotion or combat.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre expresividad del jugador: emotes, bailes, saludos, gestos de usar/recoger, expresiones y reglas de capas sociales.
+Covers player expressiveness: emotes, dances, greetings, use/collect gestures, expressions, and social layer rules.
 
-**Qué NO hace:**
+**What it does NOT do:**
 
-- NO cubre ciclo de vida respawn-safe: lo cubre `roblox-characters`.
-- NO cubre rigs ni pesos faciales: lo cubre `roblox-rigging` (aquí se usan rigs ya válidos).
-- NO es el dispatcher general: `roblox-animation` define el marco; aquí dominio expresivo.
-- NO cubre locomoción ni combate: ver `roblox-locomotion-animation` y `roblox-combat-animation` (esta skill convive en capas bajas de prioridad).
-- NO cubre NPCs con diálogos/IA: lo cubre `roblox-npcs`.
-- NO cubre cámaras de cinemática: lo cubre `camera-systems`.
+- Does NOT cover the respawn-safe lifecycle: covered by `roblox-characters`.
+- Does NOT cover rigs or facial weights: covered by `roblox-rigging` (here we use already-valid rigs).
+- Is NOT the general dispatcher: `roblox-animation` defines the framework; expressive domain here.
+- Does NOT cover locomotion or combat: see `roblox-locomotion-animation` and `roblox-combat-animation` (this skill lives on low-priority layers).
+- Does NOT cover NPCs with dialogue/AI: covered by `roblox-npcs`.
+- Does NOT cover cinematic cameras: covered by `camera-systems`.
 
-## Casos de uso
+## Use cases
 
-1. Rueda de emotes (saludar, bailar, sentarse) para lobby social.
-2. Gesto de recoger objeto / abrir cofre sincronizado con `ProximityPrompt`.
-3. Expresiones de victoria/derrota al final de ronda.
-4. Personaje que mira y señala un objetivo para compañeros.
-5. Tienda donde el vendedor hace gesto de ofrecer (jugador con rol).
-6. Foto grupal donde todos bailan sin atravesarse.
+1. Emote wheel (wave, dance, sit) for social lobby.
+2. Collect/open-chest gesture synced with `ProximityPrompt`.
+3. Victory/defeat expressions at round end.
+4. Character pointing at an objective for teammates.
+5. Shop where the vendor makes an offering gesture (player with role).
+6. Group photo where everyone dances without clipping.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Clasifica cada gesto.** Social puro (baile, saludo: puede interrumpir locomoción), interacción (recoger, usar: breve y con objeto), reactivo (sorpresa, victoria: se dispara por evento). Cada clase tiene reglas distintas de prioridad y cancelación.
-2. **Define duración y cancelación.** Sociales: 1–4 s, cancelables al moverse. Interacción: 0.5–1.2 s, no cancelable a mitad salvo movimiento forzado. Reactivos: 0.5–1 s, no interrumpen combate. Escríbelo antes de animar.
-3. **Diseña en capas.** Piernas = locomoción (siguen andando si el jugador se mueve), torso/brazos/cabeza = gesto. Un saludo nunca debe bloquear las piernas salvo que sea baile sentado.
-4. **Exagera la pose clave.** A distancia social (10–20 studs) los gestos sutiles no se leen: saludo con brazo bien alto, sorpresa con torso atrás + brazos abiertos. Una pose fuerte vale más que 2 s de movimiento tibio.
-5. **Sincroniza con el objeto.** Para `ProximityPrompt` o `Tool`: frame de contacto = momento en que el objeto cambia (se recoge, se abre). Si el gesto termina 0.5 s antes del efecto, parece mimo. Ajusta el clip al evento, no al revés.
-6. **Añade cara al final, no al principio.** Primero cuerpo legible, luego expresión (`FaceControls` o cabeza) como refuerzo. La cara sola no sostiene un emote a 15 studs.
-7. **Controla el timing social.** Entrada rápida (0.1–0.15 s de fade), hold legible (al menos 0.4 s en la pose clave), salida suave. Los bailes en loop necesitan inicio/fin que encajen sin salto.
-8. **Prueba en grupo.** Pon 5 personajes haciendo el emote a la vez con latencia: ¿se entiende? ¿se pisan los sonidos? ¿los accesorios (`Accessory`) atraviesan caras vecinas?
-9. **Reglas de abuso.** Define cooldown por emote, qué emotes se bloquean en combate o en partida competitiva y qué gestos requieren validación de servidor (los que dan efectos).
-10. **Entrega el catálogo.** Cada emote con: nombre, duración, capa, cancelable sí/no, cooldown, si requiere objeto y si da efecto de gameplay.
+1. **Classify each gesture.** Pure social (dance, wave: may interrupt locomotion), interaction (collect, use: brief and with object), reactive (surprise, victory: event-driven). Each class has different priority and cancel rules.
+2. **Define duration and cancel.** Socials: 1–4 s, cancellable on move. Interaction: 0.5–1.2 s, not cancellable mid-way except on forced movement. Reactive: 0.5–1 s, never interrupt combat. Write it down before animating.
+3. **Design in layers.** Legs = locomotion (keep walking if the player moves), torso/arms/head = gesture. A wave should never lock the legs unless it's a seated dance.
+4. **Exaggerate the key pose.** At social distance (10–20 studs) subtle gestures don't read: wave with the arm high, surprise with torso back + open arms. One strong pose beats 2 s of timid motion.
+5. **Sync with the object.** For `ProximityPrompt` or `Tool`: contact frame = moment the object changes (picked up, opened). If the gesture ends 0.5 s before the effect, it looks like mime. Fit the clip to the event, not the other way around.
+6. **Add the face last, not first.** Body readable first, then expression (`FaceControls` or head) as reinforcement. The face alone doesn't carry an emote at 15 studs.
+7. **Control social timing.** Fast entry (0.1–0.15 s fade), readable hold (at least 0.4 s on the key pose), soft exit. Looped dances need start/end that match with no jump.
+8. **Test in a group.** Put 5 characters doing the emote at once with latency: is it readable? Do sounds stack? Do `Accessory` items clip through neighboring faces?
+9. **Abuse rules.** Define cooldown per emote, which emotes are blocked in combat or competitive play, and which gestures need server validation (those granting effects).
+10. **Ship the catalog.** Each emote with: name, duration, layer, cancellable yes/no, cooldown, whether it needs an object, and whether it grants a gameplay effect.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- **Capas y prioridades:** lo expresivo vive en prioridad baja/media sobre locomoción de torso, nunca sobre hit-react o ataque (ver combate). Las piernas casi siempre quedan para locomoción.
-- **`AnimationTrack` social:** fade de entrada corto para respuesta inmediata; los loops (baile) deben tener pose inicial = pose final o fundido de loop dedicado.
-- **`FaceControls`:** controles faciales donde el rig los soporte; refuerzan pero no sustituyen la pose corporal. Si el rig no los tiene, la cabeza (`Motor6D` del cuello) asume la expresión con inclinaciones.
-- **`ProximityPrompt` + gesto:** el prompt dispara el evento; el gesto es presentación. El servidor valida la interacción (distancia, cooldown, propiedad del objeto); el gesto nunca otorga el ítem.
-- **`Tool` en gestos:** esconder o bajar el `Tool` durante bailes evita armas atravesando cabezas. Define por emote si el arma se guarda.
-- **`Accessory` y emotes:** sombreros grandes + reverencias = clipping garantizado. Prueba cada emote con el accesorio más grande permitido.
-- **Replicación social:** los emotes deben verse en otros clientes; el servidor valida permiso/cooldown y ordena la reproducción (ver `roblox-animation-systems`).
+- **Layers and priorities:** expressive lives at low/medium priority over torso locomotion, never over hit-react or attack (see combat). Legs almost always stay with locomotion.
+- **Social `AnimationTrack`:** short entry fade for snappy response; loops (dance) must have matching start = end pose or a dedicated loop fade.
+- **`FaceControls`:** facial controls where the rig supports them; they reinforce but don't replace body pose. If the rig lacks them, the head (neck `Motor6D`) carries the expression with tilts.
+- **`ProximityPrompt` + gesture:** the prompt fires the event; the gesture is presentation. The server validates the interaction (distance, cooldown, object ownership); the gesture never grants the item.
+- **`Tool` in gestures:** hiding or lowering the `Tool` during dances avoids weapons clipping through heads. Define per emote whether the weapon is stowed.
+- **`Accessory` and emotes:** big hats + bows = guaranteed clipping. Test each emote with the largest allowed accessory.
+- **Social replication:** emotes must show on other clients; the server validates permission/cooldown and orders playback (see `roblox-animation-systems`).
 
-Ejemplo ilustrativo (capa social que respeta piernas, no código final):
+Illustrative example (social layer that respects legs, not final code):
 
 ```luau
 -- Ilustrativo: saludo solo en torso/brazos, piernas libres para locomoción.
@@ -64,45 +64,45 @@ saludo:Play(0.12)
 -- Al moverse se detiene: el jugador recupera el control sin pop largo.
 ```
 
-## Buenas prácticas
+## Best practices
 
-- El cliente propone el emote, el servidor valida: permiso, cooldown, contexto (¿en combate? ¿muerto?) y si el emote otorga algo, solo el servidor lo concede.
-- Todo emote social debe ser cancelable por movimiento o daño; jamás bloquees control más de 1 s sin motivo de gameplay.
-- Un gesto, una lectura a 15 studs: si necesita explicación, exagéralo.
-- Separa emotes "puros" (sin efecto) de interacciones (con efecto): los segundos siempre pasan por servidor.
-- Respeta locomoción: el expresivo no mueve el `HumanoidRootPart` salvo bailes marcados como "enraizados" y documentados.
-- Incluye al menos una opción de emote sentada/accesible para foto grupal y accesibilidad social.
+- The client proposes the emote, the server validates: permission, cooldown, context (in combat? dead?) and if the emote grants anything, only the server grants it.
+- Every social emote must be cancellable by movement or damage; never lock control for more than 1 s without a gameplay reason.
+- One gesture, one read at 15 studs: if it needs explanation, exaggerate it.
+- Separate "pure" emotes (no effect) from interactions (with effect): the latter always go through the server.
+- Respect locomotion: expressive never moves `HumanoidRootPart` except for dances marked as "rooted" and documented.
+- Include at least one seated/accessible emote option for group photos and social accessibility.
 
-## Errores frecuentes
+## Common mistakes
 
-1. **Emote que bloquea control 3 s en partida competitiva:** frustración y reports. Todo lo social se cancela al moverse.
-2. **Gesto sin contacto:** recoger que termina antes de que el objeto desaparezca. Sincroniza frame de contacto con evento.
-3. **Cara como único canal:** expresión sutil invisible a 15 studs. Cuerpo primero, cara después.
-4. **Baile con loop roto:** salto visible cada 2 s. Iguala pose inicial/final o añade fundido.
-5. **Arma atravesando cabezas:** bailar con `Tool` equipado sin guardarlo. Baja o esconde el arma por emote.
-6. **Spam de emotes con sonido:** 10 jugadores bailando = caos. Cooldown + límite de sonido simultáneo.
-7. **Emote que otorga ventaja:** gesto que esconde la hitbox o permite ver tras paredes. Valida en servidor y prohíbe en combate si hace falta.
+1. **Emote locking control for 3 s in competitive play:** frustration and reports. All social emotes cancel on move.
+2. **Gesture with no contact:** collect ending before the object disappears. Sync contact frame with the event.
+3. **Face as the only channel:** subtle expression invisible at 15 studs. Body first, face after.
+4. **Broken dance loop:** visible jump every 2 s. Match start/end pose or add a fade.
+5. **Weapon through heads:** dancing with an equipped `Tool` not stowed. Lower or hide the weapon per emote.
+6. **Emote spam with sound:** 10 players dancing = chaos. Cooldown + simultaneous-sound limit.
+7. **Emote granting advantage:** gesture hiding the hitbox or letting you see through walls. Validate on the server and ban in combat if needed.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Catálogo entregado con duración, capa, cancelación y cooldown por emote.
-- [ ] Cada emote legible a 15 studs por probador nuevo sin explicación.
-- [ ] Gestos de interacción sincronizados con el evento (contacto = efecto).
-- [ ] Cancelación por movimiento/daño verificada en todos los sociales.
-- [ ] Prueba grupal de 5 jugadores sin clipping grave ni caos de sonido.
-- [ ] Validación de servidor para emotes con efecto; los puros documentados como visuales.
-- [ ] Sin desplazamiento de `HumanoidRootPart` salvo bailes "enraizados" declarados.
+- [ ] Catalog delivered with duration, layer, cancel, and cooldown per emote.
+- [ ] Each emote readable at 15 studs by a new tester with no explanation.
+- [ ] Interaction gestures synced with the event (contact = effect).
+- [ ] Cancel on movement/damage verified for all socials.
+- [ ] 5-player group test with no major clipping or sound chaos.
+- [ ] Server validation for emotes with effects; purely visual ones documented as visual.
+- [ ] No `HumanoidRootPart` displacement except for declared "rooted" dances.
 
-## Herramientas
+## Tools
 
-- Catálogo de emotes (tabla estándar de esta skill).
-- Escena social de prueba: 5 maniquíes, distancia marcada a 15 studs.
-- Lista de `Accessory` más grandes para prueba de clipping.
-- Checklist de sincronía objeto-gesto para cada `ProximityPrompt`.
+- Emote catalog (standard table of this skill).
+- Social test scene: 5 dummies, distance marked at 15 studs.
+- Largest-`Accessory` list for clipping tests.
+- Object-gesture sync checklist for each `ProximityPrompt`.
 
-## Limitaciones
+## Limitations
 
-- No cubre diálogos ramificados ni IA conversacional (ver `roblox-npcs` para NPCs).
-- No cubre cinemáticas con múltiples cámaras (ver `camera-systems`).
-- No sustituye moderación de contenido: los emotes de usuarios requieren filtros adicionales fuera de esta skill.
-- APIs fuera de la lista estable: "(verificar en create.roblox.com/docs)".
+- Does not cover branching dialogue or conversational AI (see `roblox-npcs` for NPCs).
+- Does not cover multi-camera cinematics (see `camera-systems`).
+- Does not replace content moderation: user emotes need additional filters outside this skill.
+- APIs outside the stable list: "(verificar en create.roblox.com/docs)".

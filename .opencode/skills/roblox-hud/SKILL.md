@@ -1,50 +1,50 @@
 ---
-name: HUD en Partida Roblox
-description: HUD de salud, recursos, objetivos y elementos contextuales. Úsala cuando crees la interfaz en partida, barras de vida, objetivos, minimapa o priorización de información sin tapar el juego.
+name: Roblox In-Game HUD
+description: In-game HUD for health, resources, objectives, and contextual elements. Use it when building the live interface, health bars, objectives, minimap, or information prioritization without covering the game.
 ---
 
-# HUD en Partida Roblox
+# In-Game Roblox HUD
 
-## Objetivo
+## Objective
 
-Mostrar solo la información necesaria para jugar bien, en el lugar correcto y sin tapar la acción. Un buen HUD se lee de un vistazo, jerarquiza (supervivencia > recursos > objetivos > adorno) y desaparece o se atenúa cuando no aporta.
+Show only the information needed to play well, in the right place and without covering the action. A good HUD reads at a glance, prioritizes (survival > resources > objectives > decoration), and hides or fades when it adds nothing.
 
-## Alcance y límites
+## Scope and limits
 
-Cubre: salud/vida, recursos (moneda, energía, munición), objetivos y tracking, elementos contextuales (minimapa/HUD de zona, prompts cercanos), prioridad de información y reglas de no-oclusión.
+Covers: health/lives, resources (currency, energy, ammo), objectives and tracking, contextual elements (minimap/zone HUD, nearby prompts), information priority, and non-occlusion rules.
 
-NO hace:
+Does NOT do:
 
-- Mecánica genérica responsiva: lo cubren `roblox-ui` y `roblox-user-interfaces`.
-- Diseño UX previo: lo cubre `roblox-game-ux`; esta skill implementa.
-- Inventario y equipamiento detallado: lo cubre `roblox-inventory-ui`.
-- Diario de misiones completo: lo cubre `roblox-quest-journal-ui`; aquí solo el micro-tracking.
-- Notificaciones y toasts globales: lo cubre `roblox-notifications-ui`.
-- HUD de conducción o mascotas: lo cubren `roblox-vehicle-ui` y `roblox-pets-ui`.
+- Generic responsive mechanics: covered by `roblox-ui` and `roblox-user-interfaces`.
+- Prior UX design: covered by `roblox-game-ux`; this skill implements.
+- Detailed inventory and equipment: covered by `roblox-inventory-ui`.
+- Full quest journal: covered by `roblox-quest-journal-ui`; here only micro-tracking.
+- Global notifications and toasts: covered by `roblox-notifications-ui`.
+- Driving or pet HUDs: covered by `roblox-vehicle-ui` and `roblox-pets-ui`.
 
-## Casos de uso
+## Use cases
 
-- Barra de salud + escudo con daño reciente destacado.
-- Contador de monedas/energía que parpadea al cambiar.
-- Objetivo actual "Captura la zona B · 0:42" siempre visible.
-- Minimapa circular en esquina con puntos de interés.
-- Prompt contextual "Mantén E para abrir" que aparece solo cerca del objeto.
+- Health bar + shield with highlighted recent damage.
+- Coin/energy counter that flashes on change.
+- Current objective "Capture zone B · 0:42" always visible.
+- Circular minimap in a corner with points of interest.
+- Contextual prompt "Hold E to open" that only appears near the object.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Prioriza la información.** Lista todo lo que quieres mostrar y ordénalo: 1) supervivencia, 2) recurso crítico, 3) objetivo, 4) resto. Lo que no entre en 4 bloques va a subpantallas, no al HUD.
-2. **Zonifica la pantalla.** Salud abajo-izquierda o abajo-centro, recursos arriba-derecha o junto a salud, objetivo arriba-centro compacto, minimapa arriba-derecha (o arriba-izquierda en móvil si el pulgar lo tapa). Reserva el centro para el juego.
-3. **Construye la base.** `ScreenGui` en `PlayerGui` → `Frame`s anclados por esquinas con `Scale`: `HealthBar` (`Frame` fondo + `Frame` relleno), `ResourceRow` (`TextLabel` + `ImageLabel` icono), `ObjectiveChip` (`TextLabel` 1 línea), minimapa como `Frame` circular con `UICorner` 1,0.
-4. **Implementa barras con cambio legible.** Relleno a `Scale` según valor, cambio de color por umbral (verde >50%, ámbar 25-50%, rojo <25%), animación corta con `TweenService` al recibir daño/curar. Número opcional pequeño al lado.
-5. **Añade el objetivo persistente.** Un chip de 1-2 líneas máximo con verbo + destino + tiempo/distancia. Al completarse, animación de check de 1 s y reemplazo por el siguiente. El detalle vive en el diario (`roblox-quest-journal-ui`).
-6. **Contextualiza.** Prompts de `ProximityPrompt` y avisos de zona aparecen/desaparecen por distancia o estado; nunca fijos. Usa fundidos de 0.2 s, no apariciones bruscas.
-7. **Minimapa sobrio (si aporta).** Solo si el juego es espacial: marco circular, norte o rotación fija documentada, puntos con 3 formas/colores máximo + leyenda mínima. Si el mapa es lineal, sustitúyelo por brújula o flecha de objetivo.
-8. **Adapta a móvil.** Elementos 20-30% más grandes, anclas que evitan pulgares (abajo-esquinas libres para joystick/botones), `UISizeConstraint` mínimos. El HUD nunca tapa los botones táctiles (ver `roblox-mobile-touch-ui`).
-9. **Prueba en acción real.** Juega 5 minutos por plataforma: ¿lees la salud sin mirar fijo? ¿el objetivo se entiende? ¿algo tapa enemigos o trampas? Ajusta opacidad y escala hasta que la respuesta sea sí.
+1. **Prioritize the information.** List everything you want to show and order it: 1) survival, 2) critical resource, 3) objective, 4) rest. Anything that does not fit in 4 blocks goes to sub-screens, not the HUD.
+2. **Zone the screen.** Health bottom-left or bottom-center, resources top-right or next to health, objective compact top-center, minimap top-right (or top-left on mobile if the thumb covers it). Keep the center for the game.
+3. **Build the base.** `ScreenGui` in `PlayerGui` → corner-anchored `Frame`s with `Scale`: `HealthBar` (background `Frame` + fill `Frame`), `ResourceRow` (`TextLabel` + `ImageLabel` icon), `ObjectiveChip` (1-line `TextLabel`), minimap as a circular `Frame` with `UICorner` 1,0.
+4. **Implement readable bars.** `Scale` fill by value, threshold color change (green >50%, amber 25-50%, red <25%), short `TweenService` animation on damage/heal. Small optional number next to it.
+5. **Add the persistent objective.** A 1-2 line chip maximum with verb + destination + time/distance. On completion, 1 s check animation and replacement with the next one. Detail lives in the journal (`roblox-quest-journal-ui`).
+6. **Contextualize.** `ProximityPrompt` prompts and zone warnings appear/disappear by distance or state; never fixed. Use 0.2 s fades, not abrupt pops.
+7. **Restrained minimap (if it adds value).** Only if the game is spatial: circular frame, documented north or fixed rotation, points with max 3 shapes/colors + minimal legend. If the map is linear, replace it with a compass or objective arrow.
+8. **Adapt to mobile.** 20-30% larger elements, anchors that avoid thumbs (bottom corners free for joystick/buttons), `UISizeConstraint` minimums. The HUD must never cover touch buttons (see `roblox-mobile-touch-ui`).
+9. **Test in real action.** Play 5 minutes per platform: can you read health without staring? Is the objective clear? Does anything cover enemies or traps? Adjust opacity and scale until the answer is yes.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- Patrón de barra (clases estables):
+- Bar pattern (stable classes):
 
   ```luau
   -- Ejemplo ilustrativo: actualizar barra de salud
@@ -57,58 +57,58 @@ NO hace:
   end
   ```
 
-- Todo posicionado con `UDim2.fromScale` + `AnchorPoint`; `UIAspectRatioConstraint` para el minimapa circular; `UITextSizeConstraint` para que los números no rompan.
-- Actualizaciones: la UI pinta valores que le pasa el juego; no calcula daño ni economía. Frecuencia moderada (eventos, no cada frame salvo barras con tween).
-- `TweenService` para daño (flash rojo breve), curación (subida suave) y cambios de recurso (pulso). Duraciones 0.15-0.3 s.
-- `ProximityPrompt` para interacción cercana: configura su texto y distancia en el objeto 3D; el HUD solo refleja el estado, no lo sustituye.
-- `StarterGui`/`PlayerGui`: el HUD vive en `PlayerGui` con `ResetOnSpawn` según respawn del proyecto; tras morir debe reconstruirse sin duplicarse.
+- Everything positioned with `UDim2.fromScale` + `AnchorPoint`; `UIAspectRatioConstraint` for the circular minimap; `UITextSizeConstraint` so numbers don't break.
+- Updates: the UI paints values handed by the game; it never computes damage or economy. Moderate frequency (events, not every frame except tweened bars).
+- `TweenService` for damage (brief red flash), healing (smooth rise), and resource changes (pulse). Durations 0.15-0.3 s.
+- `ProximityPrompt` for nearby interaction: configure its text and distance on the 3D object; the HUD only reflects state, never replaces it.
+- `StarterGui`/`PlayerGui`: the HUD lives in `PlayerGui` with `ResetOnSpawn` per the project's respawn setup; after death it must rebuild without duplicating.
 
-### Identidad visual de esta skill (original, no copiar)
+### Visual identity of this skill (original, do not copy)
 
-- Dirección "táctica ligera": sin paneles pesados; pastillas semitransparentes (#0E1420 a 35-55%) con texto blanco puro y acento verde salud (#3DDC84) / rojo daño (#FF5A5A) / ámbar recurso (#FFC53D).
-- Tipografía: números 18-22 semibold monoespaciados o tabulares si hay; etiquetas 12-13 mayúsculas con tracking amplio. Nada decorativo.
-- Composición: esquinas ocupadas, centro libre; salud como barra horizontal 220-280 px equivalentes; objetivo como chip centrado de 1 línea; minimapa 140-180 circular con `UIStroke` fino.
-- Espaciado: margen seguro 3-4% desde bordes, `UIPadding` 8-10 en chips, `UICorner` 8-10 (pastillas) y circular en minimapa.
-- Estados: normal atenuado, alerta (salud baja) con borde rojo + pulso lento, cambio con flash de 0.2 s, oculto con fundido cuando no aplica (ej. sin objetivo).
-- Animación: solo micro-feedback (daño, pickups, check de objetivo). Prohibidos loops llamativos durante combate.
+- "Light tactical" direction: no heavy panels; translucent pills (#0E1420 at 35-55%) with pure white text and health green accent (#3DDC84) / damage red (#FF5A5A) / amber resource (#FFC53D).
+- Typography: numbers 18-22 semibold monospaced or tabular where available; labels 12-13 uppercase with wide tracking. Nothing decorative.
+- Composition: occupied corners, free center; health as a 220-280 px-equivalent horizontal bar; objective as a centered 1-line chip; minimap 140-180 circular with thin `UIStroke`.
+- Spacing: 3-4% safe margin from edges, `UIPadding` 8-10 in chips, `UICorner` 8-10 (pills) and circular on minimap.
+- States: normal dimmed, alert (low health) with red border + slow pulse, change with 0.2 s flash, hidden with fade when not applicable (e.g. no objective).
+- Animation: only micro-feedback (damage, pickups, objective check). No flashy loops during combat.
 
-## Buenas prácticas
+## Best practices
 
-- Menos es más: si un dato no cambia decisiones en 10 segundos, fuera del HUD.
-- Contraste mínimo AA sobre fondos variables: sombra o pastilla detrás de cada texto.
-- Un solo estilo de barra y un solo estilo de chip en todo el juego.
-- El HUD informa, no decora: sin ilustraciones grandes ni marcos ornamentales.
-- Coherencia con menús: misma familia tipográfica y mismos iconos que el resto.
-- Accesibilidad: no comuniques solo con color (añade icono o texto al estado crítico).
+- Less is more: if a datum doesn't change a decision within 10 seconds, it doesn't belong on the HUD.
+- Minimum AA contrast over variable backgrounds: shadow or pill behind every text.
+- One bar style and one chip style across the whole game.
+- The HUD informs, it doesn't decorate: no large illustrations or ornamental frames.
+- Consistent with menus: same type family and same icons as the rest.
+- Accessibility: never communicate with color alone (add icon or text to critical states).
 
-## Errores frecuentes
+## Common mistakes
 
-- HUD que tapa el centro y esconde enemigos, trampas o salidas.
-- 8 contadores a la vez que nadie mira y todos consumen rendimiento.
-- Barras con `Offset` fijo que se salen en móvil o se hacen minúsculas en 4K.
-- Actualizar textos cada frame y provocar GC spikes o flicker.
-- Minimapa que rota sin avisar y desorienta, o con 10 iconos indistinguibles.
-- Confiar en el HUD para validar: el cliente pinta, el servidor decide.
+- HUD covering the center and hiding enemies, traps, or exits.
+- 8 counters at once that nobody watches and all cost performance.
+- Bars with fixed `Offset` that overflow on mobile or turn tiny in 4K.
+- Updating text every frame and causing GC spikes or flicker.
+- Minimap that rotates without warning and disorients, or with 10 indistinguishable icons.
+- Trusting the HUD for validation: the client paints, the server decides.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] La información crítica se lee en <1 s a distancia normal de juego.
-- [ ] Nada tapa la acción central en las 3 resoluciones de referencia.
-- [ ] Estados normal/alerta/cambio/oculto definidos y probados.
-- [ ] 60 fps estables con el HUD activo en PC y sin caídas atribuibles en móvil.
-- [ ] Tras muerte/respawn el HUD se reconstruye sin duplicados ni valores viejos.
-- [ ] Jugadores daltónicos o con poca visión distinguen el estado crítico sin depender solo del color.
+- [ ] Critical information reads in <1 s at normal play distance.
+- [ ] Nothing covers core action on the 3 reference resolutions.
+- [ ] Normal/alert/change/hidden states defined and tested.
+- [ ] Stable 60 fps with the HUD active on PC and no attributable drops on mobile.
+- [ ] After death/respawn the HUD rebuilds with no duplicates or stale values.
+- [ ] Color-blind or low-vision players can tell the critical state without relying on color alone.
 
-## Herramientas
+## Tools
 
-- Studio: Play real de 5 minutos por plataforma, Profiler para coste de actualización.
-- MCP Studio (si disponible): capturas sobre gameplay con enemies/obstáculos para comprobar oclusión.
-- Rojo: configuración de umbrales y textos como datos editables.
-- Selene: lint de los scripts de actualización de barras y chips.
+- Studio: real 5-minute play per platform, Profiler for update cost.
+- Studio MCP (if available): captures over gameplay with enemies/obstacles to check occlusion.
+- Rojo: threshold and text configuration as editable data.
+- Selene: lint for bar and chip update scripts.
 
-## Limitaciones
+## Limitations
 
-- No incluye menús completos (pausa, ajustes, inventario, diario): cada uno tiene su skill.
-- Minimapa aquí es representación simplificada; un mapa grande interactivo es otra pantalla (verificar en create.roblox.com/docs si usas `ViewportFrame` avanzado).
-- No hace balance de juego: si el jugador necesita 10 datos para decidir, el problema es del diseño, no del HUD.
-- El HUD nunca es autoridad anti-exploit; solo refleja el estado validado por el servidor.
+- No full menus (pause, settings, inventory, journal): each has its own skill.
+- Minimap here is a simplified representation; a large interactive map is another screen (see create.roblox.com/docs if using an advanced `ViewportFrame`).
+- No game balancing: if the player needs 10 data points to decide, the problem is the design, not the HUD.
+- The HUD is never anti-exploit authority; it only reflects server-validated state.

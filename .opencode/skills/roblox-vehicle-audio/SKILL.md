@@ -1,145 +1,146 @@
 ---
 name: roblox-vehicle-audio
-description: Diseña audio de vehículos con motor por RPM, superficies y bocinas. Úsala cuando necesites coches, motos, barcos o naves con sonido creíble dentro y fuera.
+description: Design vehicle audio with RPM-driven engines, surfaces, and horns. Use it when you need cars, bikes, boats, or ships with believable sound inside and out.
 ---
 
-# Audio de vehículos creíble y barato
+# Believable, cheap vehicle audio
 
-## Objetivo
+## Objective
 
-Dar a cada vehículo una firma sonora legible: motor que sigue a las RPM y la
-carga, rodadura que cambia con la superficie, frenos, claxon y diferencia
-interior/exterior, sin multiplicar voces ni romper la mezcla.
+Give each vehicle a legible sound signature: an engine that follows RPM and
+load, rolling that changes with surface, brakes, horn, and interior/exterior
+difference, without multiplying voices or breaking the mix.
 
-## Alcance y límites
+## Scope and limits
 
-**Diferenciación declarada:** la skill instalada `roblox-audio` cubre el motor
-de audio y el grafo moderno (`AudioPlayer`, `AudioEmitter`, `AudioListener`,
-`Wire`, efectos). Esta skill NO repite el motor: cubre diseño por dominio de
-vehículos (motor por RPM/carga, superficies, claxon, interior/exterior). La
-skill instalada `roblox-animation-audio-feedback` cubre el *juice* general;
-esta skill no la repite (la referencia para remates como derrapes con feel).
+**Declared differentiation:** the installed `roblox-audio` skill covers the
+audio engine and the modern graph (`AudioPlayer`, `AudioEmitter`,
+`AudioListener`, `Wire`, effects). This skill does NOT repeat the engine: it
+covers vehicle-domain design (RPM/load engine, surfaces, horn,
+interior/exterior). The installed `roblox-animation-audio-feedback` skill
+covers general *juice*; this skill doesn't repeat it (it references it for
+finishing touches like skids with feel).
 
-Esta skill NO hace:
+This skill does NOT do:
 
-- SFX genéricos de UI o personajes → lo cubre `roblox-sfx-design`.
-- Ambientes de la pista o ciudad → lo cubre `roblox-ambient-soundscapes`.
-- Mezcla global y compresión → lo cubre `roblox-audio-mixing`.
-- Física o red del vehículo (ownership, interpolación) → transporte y
-  replicación finos en `roblox-networking` y `roblox-state-replication`.
+- Generic UI or character SFX → covered by `roblox-sfx-design`.
+- Track or city ambiences → covered by `roblox-ambient-soundscapes`.
+- Global mixing and compression → covered by `roblox-audio-mixing`.
+- Vehicle physics or networking (ownership, interpolation) → fine transport
+  and replication in `roblox-networking` and `roblox-state-replication`.
 
-## Casos de uso
+## Use cases
 
-1. Coche cuyo motor sube con las RPM y gruñe con carga en cuesta.
-2. Moto con firma aguda distinguible del coche a 50 m.
-3. Barco con motor grave + chapoteo proporcional a la velocidad.
-4. Superficies: asfalto, tierra, hierba con rodadura distinta.
-5. Claxon y pitidos de marcha atrás sin destrozar la mezcla.
-6. Vista interior con motor filtrado y exterior con paso Doppler percibido.
+1. Car whose engine rises with RPM and growls under load uphill.
+2. Bike with a sharp signature distinguishable from a car at 50 m.
+3. Boat with a deep engine + splashing proportional to speed.
+4. Surfaces: asphalt, dirt, grass with distinct rolling.
+5. Horn and reverse beeps without wrecking the mix.
+6. Interior view with filtered engine and exterior with perceived Doppler pass.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Elige el modelo de motor.** Opción A (barata): un loop con `PlaybackSpeed`
-   ligado a RPM. Opción B (rica): 2–3 loops (ralentí, medio, alto) con
-   crossfade por rango de RPM. Empieza por A; pasa a B solo si A suena a
-   juguete.
-2. **Mapea RPM→tono y carga→carácter.** El tono sigue a las RPM; añade una
-   capa grave o saturación leve con la carga (acelerador/cuesta). Sin capa de
-   carga, todos los coches suenan a aspiradora.
-3. **Suaviza la señal de RPM.** Interpola las RPM mostradas al audio (p. ej.
-   media móvil de 0.15–0.25 s) para que el tono no tiemble. El audio perdona
-   menos jitter que el velocímetro.
-4. **Añade rodadura por superficie.** Capa de ruido filtrado cuyo volumen
-   sigue a la velocidad y cuyo carácter cambia por superficie (tabla
-   asfalto/tierra/hierba). Ejemplo ilustrativo (simplificado):
-   ```luau
-   -- Ilustrativo: rodadura según velocidad y superficie.
-   local nivel = math.clamp(velocidad / velocidadMax, 0, 1)
-   rodadura.Volume = nivel * volumenPorSuperficie[superficie]
-   rodadura.PlaybackSpeed = 0.8 + nivel * 0.5
-   ```
-5. **Diseña eventos discretos.** Arranque, claxon, frenada, derrape, choque,
-   marcha atrás. One-shots con cooldown; el claxon con límite de duración o
-   repetición para evitar troleo sonoro.
-6. **Separa interior y exterior.** Interior: motor con menos agudos y más
-   cuerpo, rodadura atenuada. Exterior: motor completo + rodadura. Conmuta por
-   cámara (primera/tercera persona) con fundido de 0.5–1 s, no con corte.
-7. **Posiciona cada vehículo en el mundo.** Sonido posicional con distancia de
-   corte agresiva (los vehículos lejanos son los primeros que sobran). En
-   parrillas grandes, solo los N más cercanos suenan completos.
-8. **El servidor valida lo importante.** Estado real del vehículo (velocidad,
-   superficie, claxon activo) con autoridad de servidor o con validación de
-   rangos; el cliente solo sonoriza. Anti-exploit fino: `roblox-security`.
-9. **Limita voces por vehículo.** Tope por vehículo (p. ej. motor + rodadura +
-   1 evento) y tope global de vehículos audibles. Sin topes, 10 coches
-   hunden móvil.
-10. **Prueba maniobras límite.** Acelerón, frenada, derrape, choque en cadena,
-    8 vehículos juntos. Anota saturación, cortes y motores que se quedan
-    "enganchados" sonando tras salir del coche.
-11. **Corta el sonido al abandonar.** Al salir o destruir el vehículo, fundido
-    rápido (0.3 s) y parada garantizada, incluso en casos de error (usa
-    `pcall` y limpieza en destrucción).
-12. **Documenta la firma por vehículo.** Loops, rangos de RPM, superficies,
-    niveles interior/exterior. Dos vehículos con el mismo loop rompen la
-    fantasía.
+1. **Pick the engine model.** Option A (cheap): one loop with `PlaybackSpeed`
+   tied to RPM. Option B (rich): 2–3 loops (idle, mid, high) with
+   crossfade per RPM range. Start with A; move to B only if A sounds like
+   a toy.
+2. **Map RPM→pitch and load→character.** Pitch follows RPM; add a
+   low layer or slight saturation with load (throttle/hill). Without a load
+   layer, every car sounds like a vacuum cleaner.
+3. **Smooth the RPM signal.** Interpolate the RPM shown to audio (e.g.
+   0.15–0.25s moving average) so pitch doesn't wobble. Audio forgives
+   less jitter than the speedometer.
+4. **Add per-surface rolling.** A filtered noise layer whose volume
+   follows speed and whose character changes per surface (asphalt/dirt/grass
+   table). Illustrative simplified example:
+    ```luau
+    -- Ilustrativo: rodadura según velocidad y superficie.
+    local nivel = math.clamp(velocidad / velocidadMax, 0, 1)
+    rodadura.Volume = nivel * volumenPorSuperficie[superficie]
+    rodadura.PlaybackSpeed = 0.8 + nivel * 0.5
+    ```
+5. **Design discrete events.** Start, horn, braking, skid, crash,
+   reverse. One-shots with cooldown; the horn with a duration or
+   repetition limit to prevent sound trolling.
+6. **Separate interior and exterior.** Interior: engine with fewer highs and
+   more body, attenuated rolling. Exterior: full engine + rolling. Switch by
+   camera (first/third person) with a 0.5–1s fade, not a cut.
+7. **Place each vehicle in the world.** Positional sound with an aggressive
+   cutoff distance (distant vehicles are the first you can spare). On
+   large grids, only the N nearest sound complete.
+8. **The server validates what matters.** Real vehicle state (speed,
+   surface, active horn) with server authority or range validation;
+   the client only sonifies. Fine anti-exploit: `roblox-security`.
+9. **Limit voices per vehicle.** Cap per vehicle (e.g. engine + rolling +
+   1 event) and a global cap of audible vehicles. Without caps, 10 cars
+   sink mobile.
+10. **Test limit maneuvers.** Full throttle, braking, skid, chain crash,
+     8 vehicles together. Note saturation, cutouts, and engines left
+     "stuck" sounding after exiting the car.
+11. **Cut sound on exit.** On leaving or destroying the vehicle, fast
+     fade (0.3s) and guaranteed stop, even on error paths (use
+     `pcall` and cleanup on destruction).
+12. **Document the signature per vehicle.** Loops, RPM ranges, surfaces,
+     interior/exterior levels. Two vehicles sharing one loop breaks the
+     fantasy.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- El servidor valida lo importante: velocidad, superficie y eventos con coste
-  (choques con daño) se confirman en servidor; el cliente sonoriza lo
-  replicado. Replicación fina: `roblox-state-replication`, `roblox-networking`.
-- Persistencia: solo preferencias (volumen de vehículos, mute de claxon
-  ajeno si existe); el estado sonoro del vehículo es efímero.
-- Errores: toda parada de sonido de vehículo debe tener ruta de limpieza en
-  destrucción/desconexión; un motor "enganchado" es el bug clásico. Usa
-  `pcall` en fundidos encadenados.
-- `Sound` posicional con atenuación para vehículos; `SoundGroup` propio
-  (`Vehicles`) para mezclar y mutear por familia.
-- Si el proyecto usa `AudioEmitter`/`AudioListener`, el grafo es de
-  `roblox-audio`; el diseño de firmas sigue siendo de esta skill.
+- The server validates what matters: speed, surface, and costly events
+  (crashes with damage) are confirmed on the server; the client sonifies
+  what's replicated. Fine replication: `roblox-state-replication`, `roblox-networking`.
+- Persistence: only preferences (vehicle volume, foreign-horn mute
+  if any); vehicle sound state is ephemeral.
+- Errors: every vehicle sound stop must have a cleanup path on
+  destruction/disconnection; a "stuck" engine is the classic bug. Use
+  `pcall` on chained fades.
+- Positional `Sound` with attenuation for vehicles; its own `SoundGroup`
+  (`Vehicles`) for family mixing and muting.
+- If the project uses `AudioEmitter`/`AudioListener`, the graph belongs to
+  `roblox-audio`; signature design still belongs to this skill.
 
-## Buenas prácticas
+## Best practices
 
-- Un loop de motor de 4–8 s que aguante `PlaybackSpeed` de 0.7 a 1.6 sin
-  artefactos cantosos.
-- Interior/exterior como dos mezclas, no como dos juegos de assets.
-- Claxon con cooldown y duración máxima: el troleo sonoro llega el día 1.
-- Distancias de corte agresivas; el silencio lejano es rendimiento gratis.
-- Nombra por vehículo: `VEH_cocheA_motor_mid_v1`.
+- One 4–8s engine loop that holds `PlaybackSpeed` from 0.7 to 1.6 without
+  obvious artifacts.
+- Interior/exterior as two mixes, not two asset sets.
+- Horn with cooldown and max duration: sound trolling arrives on day 1.
+- Aggressive cutoff distances; distant silence is free performance.
+- Name per vehicle: `VEH_carA_engine_mid_v1`.
 
-## Errores frecuentes
+## Common mistakes
 
-1. Solo `PlaybackSpeed` sin capa de carga → efecto aspiradora.
-2. RPM sin suavizar → tono tembloroso e irreal.
-3. Sin distancia de corte → 15 motores audibles a la vez.
-4. Motor que sigue sonando tras salir o destruir el vehículo.
-5. Claxon sin límites → arma de troleo.
-6. Interior y exterior idénticos → la cámara interior decepciona.
-7. Cliente decide velocidad/sonido con efecto en gameplay → explotable.
+1. `PlaybackSpeed` only with no load layer → vacuum-cleaner effect.
+2. Unsmoothed RPM → shaky, unreal pitch.
+3. No cutoff distance → 15 engines audible at once.
+4. Engine that keeps sounding after exiting or destroying the vehicle.
+5. Horn without limits → griefing weapon.
+6. Identical interior and exterior → the interior camera disappoints.
+7. Client deciding speed/sound with gameplay effect → exploitable.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Motor sigue a RPM y carga sin artefactos en todo el rango.
-- [ ] Rodadura cambia por superficie y velocidad de forma audible.
-- [ ] Interior/exterior conmutan con fundido, sin cortes.
-- [ ] Claxon y eventos con cooldowns y límites probados.
-- [ ] Topes de voces por vehículo y globales implementados.
-- [ ] Ningún motor "enganchado" tras salir, destruir o desconectar.
-- [ ] Firma documentada por vehículo, sin loops compartidos entre distintos.
+- [ ] Engine follows RPM and load without artifacts across the whole range.
+- [ ] Rolling audibly changes with surface and speed.
+- [ ] Interior/exterior switch with a fade, no cuts.
+- [ ] Horn and events with tested cooldowns and limits.
+- [ ] Per-vehicle and global voice caps implemented.
+- [ ] No "stuck" engine after exiting, destroying, or disconnecting.
+- [ ] Signature documented per vehicle, no loops shared between different ones.
 
-## Herramientas
+## Tools
 
-- `Sound`, `SoundGroup` (`Vehicles`), `SoundService` para firmas y familias.
-- `AudioPlayer`, `AudioEmitter`, `AudioListener`, `Wire` si el proyecto usa el
-  grafo moderno (motor: `roblox-audio`).
-- `RemoteEvent` para estado de vehículo validado por el servidor.
-- Detección de superficie (raycast o zona) y de cámara para interior/exterior.
+- `Sound`, `SoundGroup` (`Vehicles`), `SoundService` for signatures and families.
+- `AudioPlayer`, `AudioEmitter`, `AudioListener`, `Wire` if the project uses
+  the modern graph (engine: `roblox-audio`).
+- `RemoteEvent` for server-validated vehicle state.
+- Surface detection (raycast or zone) and camera detection for interior/exterior.
 
-## Limitaciones
+## Limitations
 
-- No hace física, red ni anti-exploit de vehículos: deriva a
-  `roblox-networking`, `roblox-state-replication` y `roblox-security`.
-- No diseña SFX genéricos ni ambientes: deriva a `roblox-sfx-design` y
+- No vehicle physics, networking, or anti-exploit: defer to
+  `roblox-networking`, `roblox-state-replication`, and `roblox-security`.
+- No generic SFX or ambience design: defer to `roblox-sfx-design` and
   `roblox-ambient-soundscapes`.
-- No fija mezcla global: deriva a `roblox-audio-mixing`.
-- Verifica cualquier miembro de API dudoso en create.roblox.com/docs.
+- No global mix: defer to `roblox-audio-mixing`.
+- Verify any dubious API member at create.roblox.com/docs.

@@ -1,91 +1,91 @@
 ---
 name: roblox-model-organization
-description: Organización de modelos y jerarquías (naming, carpetas, tags/atributos, versionado, Rojo). Úsala cuando necesites jerarquías limpias, importar sin duplicar y dejar el proyecto listo para sincronizar.
+description: Organization of models and hierarchies (naming, folders, tags/attributes, versioning, Rojo). Use it when you need clean hierarchies, importing without duplicating, and leaving the project ready to sync.
 ---
 
-# Organización de Modelos y Jerarquías
+# Model and Hierarchy Organization
 
-## Objetivo
+## Objective
 
-Mantener jerarquías limpias y predecibles (naming, `Folder`, `Model`, `Tags`/`Attributes`) para encontrar cualquier pieza en segundos, importar sin duplicar, versionar lo que importa y dejar el proyecto listo para Rojo sin pisar trabajo ajeno.
+Keep hierarchies clean and predictable (naming, `Folder`, `Model`, `Tags`/`Attributes`) so any piece can be found in seconds, imports do not duplicate, what matters is versioned, and the project is left ready for Rojo without overwriting other people's work.
 
-## Alcance y límites
+## Scope and limits
 
-Qué NO hace ni cubre esta skill:
+What this skill does NOT do or cover:
 
-- NO diseña QUÉ construir (temática, estilo, niveles): eso lo diseñan `roblox-world-building` (generalista) y `roblox-exterior-architecture`, `roblox-interior-design`, `roblox-city-settlements`, `roblox-terrain-sculpting`, `roblox-vegetation-landscaping`, `roblox-materials-surfaces`, `roblox-props-decoration` (propias, en curso).
-- NO cubre la técnica de modelado (modular, vehículos, props, geometría): eso lo cubren `roblox-modular-building`, `roblox-vehicle-construction`, `roblox-props-creation` y `roblox-meshparts-geometry`.
-- NO configura el sync Rojo (`project.json`, `$path`, `$className`): eso lo cubre `roblox-rojo`; esta skill solo prepara la jerarquía para sincronizar.
+- It does NOT design WHAT to build (theme, style, levels): that is designed by `roblox-world-building` (generalist) and `roblox-exterior-architecture`, `roblox-interior-design`, `roblox-city-settlements`, `roblox-terrain-sculpting`, `roblox-vegetation-landscaping`, `roblox-materials-surfaces`, `roblox-props-decoration` (own, in progress).
+- It does NOT cover modeling technique (modular, vehicles, props, geometry): that is covered by `roblox-modular-building`, `roblox-vehicle-construction`, `roblox-props-creation` and `roblox-meshparts-geometry`.
+- It does NOT configure Rojo sync (`project.json`, `$path`, `$className`): that is covered by `roblox-rojo`; this skill only prepares the hierarchy for syncing.
 
-Diferenciación declarada: `roblox-world-building` (instalada, generalista fina) y las skills propias (`roblox-exterior-architecture` / `roblox-interior-design` / `roblox-city-settlements` / `roblox-terrain-sculpting` / `roblox-vegetation-landscaping` / `roblox-materials-surfaces` / `roblox-props-decoration`) diseñan QUÉ construir; esta skill explica CÓMO construirlo (técnica de organización). `roblox-rojo` cubre el sync; esta skill cubre la técnica de modelado/orden.
+Declared differentiation: `roblox-world-building` (installed, fine generalist) and the own skills (`roblox-exterior-architecture` / `roblox-interior-design` / `roblox-city-settlements` / `roblox-terrain-sculpting` / `roblox-vegetation-landscaping` / `roblox-materials-surfaces` / `roblox-props-decoration`) design WHAT to build; this skill explains HOW to build it (organization technique). `roblox-rojo` covers sync; this skill covers modeling/ordering technique.
 
-## Casos de uso
+## Use cases
 
-- Proyecto con cientos de instancias donde nadie encuentra nada.
-- Importar un set nuevo sin duplicar materiales, props o kits existentes.
-- Preparar carpetas y nombres antes de activar sync Rojo.
-- Limpiar un lugar heredado lleno de `Part` sueltas y nombres `Part(47)`.
+- Project with hundreds of instances where nobody finds anything.
+- Importing a new set without duplicating existing materials, props, or kits.
+- Preparing folders and names before enabling Rojo sync.
+- Cleaning up an inherited place full of loose `Part`s and `Part(47)` names.
 
-## Proceso paso a paso
+## Step-by-step process
 
-1. **Audita el estado actual.** Lista `Folder` raíz, cuenta `Part` sueltas fuera de `Model` y detecta duplicados por nombre; anota los 5 peores focos de desorden.
-2. **Define la convención de nombres.** Fija formato (`Categoria_Nombre_Variante`: `Muro_4x4_Ventana`, `Prop_Taberna_Silla01`, `Vehiculo_Coche01`) y prohíbe nombres genéricos nuevos.
-3. **Crea la jerarquía raíz.** Organiza por `Folder` estables (`Kit_Modular`, `Sets`, `Vehiculos`, `Props`, `Colliders`, `Decoracion`) y evita más de 3 niveles de anidado.
-4. **Convierte piezas sueltas en `Model`.** Agrupa cada objeto lógico en un `Model` con `Pivot` útil (base centrada en props, esquina/centro coherente en modulares) y escala avatar verificada (~2x avatar en pasos).
-5. **Etiqueta con `CollectionService` y `Attributes`.** Añade Tags por rol (`Modular`, `Prop`, `Vehiculo`, `Collider`) y `Attributes` (`Set`, `Modulo`, `Version`) para búsquedas por script.
-6. **Dedup antes de importar.** Antes de traer nada, busca por nombre y Tag si ya existe; reutiliza o versiona (`Silla02`) en lugar de duplicar (`Silla(1)`).
-7. **Decide qué versionar.** Versiona kits, sets y vehículos (`Kit_v1`); no versiones piezas de trabajo temporal ni duplicados. Documenta la versión en `Attributes`.
-8. **Separa colisiones y decoración.** Mueve colliders a sub-`Folder` `Colliders` por modelo para que sean visibles, auditables y no se confundan con visual.
-9. **Prepara para Rojo.** Agrupa por carpetas que mapearán a `$path`/`$className`, evita renombrados masivos sin avisar y coordina ediciones para no pisar trabajo (la configuración la hace `roblox-rojo`).
-10. **Verifica y congela.** Recorre el lugar a pie, comprueba que todo se encuentra por nombre/Tag, que no hay duplicados y que el conteo de instancias es razonable; congela la convención.
+1. **Audit the current state.** List root `Folder`s, count loose `Part`s outside `Model`, and detect duplicates by name; note the 5 worst clutter hotspots.
+2. **Define the naming convention.** Set the format (`Category_Name_Variant`: `Muro_4x4_Ventana`, `Prop_Taberna_Silla01`, `Vehiculo_Coche01`) and forbid new generic names.
+3. **Create the root hierarchy.** Organize into stable `Folder`s (`Kit_Modular`, `Sets`, `Vehiculos`, `Props`, `Colliders`, `Decoracion`) and avoid more than 3 levels of nesting.
+4. **Convert loose pieces into `Model`.** Group each logical object into a `Model` with a useful `Pivot` (centered base on props, coherent corner/center on modular pieces) and avatar scale verified (~2x avatar in steps).
+5. **Label with `CollectionService` and `Attributes`.** Add Tags by role (`Modular`, `Prop`, `Vehiculo`, `Collider`) and `Attributes` (`Set`, `Modulo`, `Version`) for scripted searches.
+6. **Dedup before importing.** Before bringing anything in, search by name and Tag for whether it already exists; reuse or version (`Silla02`) instead of duplicating (`Silla(1)`).
+7. **Decide what to version.** Version kits, sets, and vehicles (`Kit_v1`); do not version temporary work pieces or duplicates. Document the version in `Attributes`.
+8. **Separate collisions and decoration.** Move colliders into a per-model `Colliders` sub-`Folder` so they are visible, auditable, and not confused with visuals.
+9. **Prepare for Rojo.** Group into folders that will map to `$path`/`$className`, avoid unannounced mass renames, and coordinate edits so nobody overwrites work (configuration is done by `roblox-rojo`).
+10. **Verify and freeze.** Walk the place on foot, check that everything is found by name/Tag, that there are no duplicates, and that the instance count is reasonable; freeze the convention.
 
-## Conocimientos técnicos
+## Technical knowledge
 
-- `Model` vs `Folder`: `Model` para objetos con `Pivot` y posición (piezas colocables); `Folder` para agrupar sin transformar (sets, categorías).
-- Naming con medida y set: incluir módulo o set en el nombre evita sustituciones erróneas y facilita el sync.
-- `CollectionService` / Tags y `Attributes`: la forma robusta de clasificar sin depender de nombres frágiles; permite auditorías por script.
-- `Pivot` coherente por categoría: props en base, modulares según convención del kit; pivots mezclados rompen colocación.
-- Presupuesto de instancias: la organización revela el coste (contar por carpeta/set) y permite podar antes de que el rendimiento caiga.
-- `Workspace` / `StreamingEnabled`: jerarquías planas y por zonas se llevan mejor con streaming que marañas de referencias cruzadas.
-- `Camera`: valida que la limpieza no rompa visibilidad (piezas movidas a carpetas siguen visibles desde ángulos reales).
-- Rojo `project.json` / `$path` / `$className`: la jerarquía debe mapear limpiamente a rutas; carpetas estables = sync estable (detalles de config en `roblox-rojo`; si dudas, verificar en create.roblox.com/docs).
+- `Model` vs `Folder`: `Model` for objects with `Pivot` and position (placeable pieces); `Folder` for grouping without transforms (sets, categories).
+- Naming with measurement and set: including the module or set in the name avoids wrong substitutions and eases sync.
+- `CollectionService` / Tags and `Attributes`: the robust way to classify without depending on fragile names; enables scripted audits.
+- Coherent `Pivot` per category: props at the base, modular pieces per the kit convention; mixed pivots break placement.
+- Instance budget: organization reveals cost (count per folder/set) and lets you prune before performance drops.
+- `Workspace` / `StreamingEnabled`: flat, zoned hierarchies stream better than tangles of cross references.
+- `Camera`: validates that cleanup did not break visibility (pieces moved into folders are still visible from real angles).
+- Rojo `project.json` / `$path` / `$className`: the hierarchy must map cleanly to paths; stable folders = stable sync (config details in `roblox-rojo`; if in doubt, check create.roblox.com/docs).
 
-## Buenas prácticas
+## Best practices
 
-- Renombra al crear, no al final: cada pieza nace con su nombre definitivo.
-- Máximo 3 niveles de anidado; más niveles esconden piezas y rompen búsquedas.
-- Un `Model`, un `Pivot` útil, un rol (Tag): nada de modelos "mixtos".
-- Reutiliza antes de importar; versiona antes de duplicar.
-- Documenta la convención en un `Attributes` o nota en la carpeta raíz para el equipo.
+- Rename on creation, not at the end: every piece is born with its final name.
+- Maximum 3 nesting levels; deeper levels hide pieces and break searches.
+- One `Model`, one useful `Pivot`, one role (Tag): no "mixed" models.
+- Reuse before importing; version before duplicating.
+- Document the convention in an `Attributes` or note in the root folder for the team.
 
-## Errores frecuentes
+## Common mistakes
 
-- Cientos de `Part(12)` imposibles de buscar. Causa: no renombrar al crear. Solución: convención obligatoria y auditoría por script.
-- Duplicados `Silla`, `Silla(1)`, `Silla(2)`. Causa: importar sin buscar. Solución: búsqueda por nombre/Tag previa y reutilización.
-- Colliders mezclados con decoración. Causa: sin subcarpeta. Solución: `Folder` `Colliders` por modelo.
-- Renombrado masivo que rompe el sync Rojo. Causa: renombrar sin coordinar. Solución: cambios de nombre planificados con `roblox-rojo`.
-- Jerarquías de 6 niveles donde nadie encuentra las ruedas del coche. Causa: sobre-organizar. Solución: aplanar a 3 niveles por sistema (`Chasis`, `Ruedas`, `Detalles`).
-- Versionar todo (incluso pruebas) hasta llenar el proyecto. Causa: sin criterio. Solución: versionar solo kits/sets/vehículos en uso.
-- Pisar trabajo ajeno al reorganizar. Causa: mover carpetas compartidas sin avisar. Solución: una persona/rama por reorganización y sync coordinado.
+- Hundreds of `Part(12)` impossible to search. Cause: not renaming on creation. Fix: mandatory convention and scripted audit.
+- Duplicates `Silla`, `Silla(1)`, `Silla(2)`. Cause: importing without searching. Fix: prior name/Tag search and reuse.
+- Colliders mixed with decoration. Cause: no subfolder. Fix: `Colliders` `Folder` per model.
+- Mass rename breaking Rojo sync. Cause: renaming without coordination. Fix: planned name changes with `roblox-rojo`.
+- 6-level hierarchies where nobody finds the car wheels. Cause: over-organizing. Fix: flatten to 3 levels per system (`Chasis`, `Ruedas`, `Detalles`).
+- Versioning everything (even tests) until the project fills up. Cause: no criteria. Fix: version only kits/sets/vehicles in use.
+- Overwriting other people's work while reorganizing. Cause: moving shared folders without warning. Fix: one person/branch per reorganization and coordinated sync.
 
-## Criterios de calidad y terminado
+## Quality and done criteria
 
-- [ ] Cero `Part` funcionales sueltas fuera de `Model`/`Folder` con nombre.
-- [ ] Convención de nombres aplicada (categoría, medida/set, variante) sin genéricos nuevos.
-- [ ] Jerarquía raíz estable con ≤3 niveles y `Pivot` coherente por categoría.
-- [ ] Tags y `Attributes` (rol, set, versión) verificables por script.
-- [ ] Sin duplicados: toda importación reutiliza o versiona explícitamente.
-- [ ] Colliders separados en sub-`Folder` y escala avatar validada en pasos (~2x avatar).
-- [ ] Proyecto listo para Rojo sin renombrados pendientes ni conflictos de edición.
+- [ ] Zero functional loose `Part`s outside a named `Model`/`Folder`.
+- [ ] Naming convention applied (category, measurement/set, variant) with no new generics.
+- [ ] Stable root hierarchy with ≤3 levels and coherent `Pivot` per category.
+- [ ] Tags and `Attributes` (role, set, version) verifiable by script.
+- [ ] No duplicates: every import explicitly reuses or versions.
+- [ ] Colliders separated in a sub-`Folder` and avatar scale validated on foot (~2x avatar).
+- [ ] Project ready for Rojo with no pending renames or editing conflicts.
 
-## Herramientas
+## Tools
 
-- `Model`, `Folder`, `Part`, `MeshPart` como bloques de organización.
-- `CollectionService` / Tags y `Attributes` para clasificación y auditoría.
-- `Workspace` / `StreamingEnabled`, `Camera`, `Lighting` para validar tras reorganizar.
-- Rojo `project.json` / `$path` / `$className` como destino de sync (configura `roblox-rojo`).
+- `Model`, `Folder`, `Part`, `MeshPart` as organization building blocks.
+- `CollectionService` / Tags and `Attributes` for classification and audits.
+- `Workspace` / `StreamingEnabled`, `Camera`, `Lighting` to validate after reorganizing.
+- Rojo `project.json` / `$path` / `$className` as the sync destination (configured by `roblox-rojo`).
 
-Ejemplo Luau ilustrativo (organización por script):
+Illustrative Luau example (organization by script):
 
 ```luau
 -- Ilustrativo: detectar piezas sueltas sin agrupar en la raíz.
@@ -99,8 +99,8 @@ end
 print("Piezas sueltas en raíz:", sueltas)
 ```
 
-## Limitaciones
+## Limitations
 
-- No configura `project.json`, `$path` ni `$className` (eso es `roblox-rojo`); solo prepara jerarquías compatibles.
-- No modela piezas nuevas; solo ordena, nombra y etiqueta lo existente.
-- No introduce binarios ni dependencias nuevas. Ante cualquier duda de clases o servicios, verificar en create.roblox.com/docs.
+- Does not configure `project.json`, `$path` or `$className` (that is `roblox-rojo`); it only prepares sync-compatible hierarchies.
+- Does not model new pieces; it only orders, names, and labels what exists.
+- Does not introduce new binaries or dependencies. For any doubt about classes or services, check create.roblox.com/docs.

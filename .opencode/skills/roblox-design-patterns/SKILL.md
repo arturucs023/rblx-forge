@@ -1,51 +1,51 @@
 ---
 name: roblox-design-patterns
-description: Patrones de diseño Luau (Service/Controller, Observer, Factory, Singleton, Pool). Úsala cuando organices módulos, eventos o creación de objetos en Roblox.
+description: Luau design patterns (Service/Controller, Observer, Factory, Singleton, Pool). Use it when organizing modules, events, or object creation in Roblox.
 ---
 
-# Patrones de Diseño en Roblox Luau
+# Design Patterns in Roblox Luau
 
-## Objetivo
-Estandarizar la organización del código Luau con patrones probados (Service/Controller, Observer/event-bus, Factory, Singleton, Object pool) para que los sistemas sean extensibles, testeables y sin acoplamiento innecesario.
+## Objective
+Standardize Luau code organization with proven patterns (Service/Controller, Observer/event-bus, Factory, Singleton, Object pool) so systems are extensible, testable, and free of unnecessary coupling.
 
-## Alcance y límites
-Diferenciación: `luau-core`, `luau-types`, `luau-performance` y `roblox-core` cubren fundamentos del lenguaje y modelo cliente-servidor; esta skill cubre ingeniería (cuándo aplicar cada patrón y cuándo NO). `roblox-networking` y `roblox-datastores` cubren réplica y persistencia; aquí solo se decide cómo estructurar el código que las usa.
+## Scope and limits
+Differentiation: `luau-core`, `luau-types`, `luau-performance`, and `roblox-core` cover language fundamentals and the client-server model; this skill covers engineering (when to apply each pattern and when NOT to). `roblox-networking` and `roblox-datastores` cover replication and persistence; here we only decide how to structure the code that uses them.
 
-Qué NO hace:
+What it does NOT do:
 
-- NO diseña réplica ni persistencia (eso lo cubren `roblox-networking` y `roblox-datastores`).
-- NO refactoriza código existente (eso lo cubre `roblox-code-maintenance-refactor` instalada); aquí se diseña estructura nueva o se evalúa un patrón puntual.
-- NO sustituye la revisión previa a merge (eso lo cubre `roblox-code-review` de esta serie).
+- Does NOT design replication or persistence (covered by `roblox-networking` and `roblox-datastores`).
+- Does NOT refactor existing code (covered by the installed `roblox-code-maintenance-refactor`); here we design new structure or evaluate a single pattern.
+- Does NOT replace pre-merge review (covered by `roblox-code-review` in this series).
 
-## Casos de uso
-1. Separar lógica de servidor (Service) de presentación/cliente (Controller).
-2. Desacoplar emisores y oyentes con un event-bus basado en `BindableEvent`.
-3. Centralizar creación de entidades (enemigos, items, proyectiles) con Factory.
-4. Compartir un único acceso a un recurso (config, RNG con semilla) con Singleton disciplinado.
-5. Reutilizar instancias costosas (proyectiles, efectos) con Object pool.
+## Use cases
+1. Separate server logic (Service) from client presentation (Controller).
+2. Decouple emitters and listeners with an event bus based on `BindableEvent`.
+3. Centralize entity creation (enemies, items, projectiles) with a Factory.
+4. Share a single access point to a resource (config, seeded RNG) with a disciplined Singleton.
+5. Reuse expensive instances (projectiles, effects) with an Object pool.
 
-## Proceso paso a paso
-1. Lista los sistemas y sus dependencias en una tabla (sistema → depende de → emite hacia). Si hay ciclos, marca el corte.
-2. Asigna un patrón por necesidad concreta, no por defecto:
-   - ¿Lógica con estado global y API pública? → Service (`ModuleScript` + `require`).
-   - ¿N eventos → M oyentes sin acoplar? → Observer/event-bus con `BindableEvent`.
-   - ¿Creación con variantes y validación? → Factory.
-   - ¿Un único punto de verdad? → Singleton (uno por necesidad, documentado).
-   - ¿Crear/destruir es costoso o genera GC? → Object pool.
-3. Define la interfaz pública del módulo primero (funciones, eventos, errores). Escríbela en el encabezado del `ModuleScript`.
-4. Implementa con dependencias inyectadas (pasa servicios/tablas por constructor o `Init`), nunca con globales implícitos.
-5. Añade teardown explícito: toda conexión o instancia creada por el patrón debe tener función de limpieza (`Destroy`/`Cleanup`).
-6. Escribe un test de contrato por patrón (ver `roblox-testez`): crear → usar → destruir sin fugas.
-7. Revisa con la checklist: ¿puedo sustituir una implementación sin tocar a los consumidores? Si no, simplifica.
+## Step-by-step process
+1. List systems and their dependencies in a table (system → depends on → emits to). If there are cycles, mark the cut.
+2. Assign one pattern per concrete need, not by default:
+   - Stateful logic with public API? → Service (`ModuleScript` + `require`).
+   - N events → M listeners without coupling? → Observer/event-bus with `BindableEvent`.
+   - Creation with variants and validation? → Factory.
+   - Single source of truth? → Singleton (one per need, documented).
+   - Creating/destroying expensive or GC-heavy? → Object pool.
+3. Define the module's public interface first (functions, events, errors). Write it in the `ModuleScript` header.
+4. Implement with injected dependencies (pass services/tables via constructor or `Init`), never with implicit globals.
+5. Add explicit teardown: every connection or instance created by the pattern must have a cleanup function (`Destroy`/`Cleanup`).
+6. Write one contract test per pattern (see `roblox-testez`): create → use → destroy without leaks.
+7. Review with the checklist: can I swap an implementation without touching consumers? If not, simplify.
 
-## Conocimientos técnicos
-- Service/Controller: el Service vive en servidor, expone funciones puras de dominio; el Controller (cliente) solo presenta y pide. La comunicación entre ellos va por la capa de red (ver `roblox-networking`), no por `require` cruzado cliente-servidor.
-- Observer con `BindableEvent`/`BindableFunction`: útil dentro del mismo contexto (servidor-servidor o cliente-cliente). No lo uses para cruzar la frontera cliente-servidor.
-- `CollectionService`, `Tags` y `Attributes`: sirven para descubrir entidades a las que aplicar componentes o factories sin acoplar jerarquías.
-- `ModuleScript` + `require`: base de todos los patrones. Cada patrón es un `ModuleScript` con API mínima y estado encapsulado.
-- Singleton con cautela: un Singleton oculta dependencias y dificulta tests. Úsalo solo para recursos genuinamente únicos (config inmutable, semilla central).
+## Technical knowledge
+- Service/Controller: the Service lives on the server, exposes pure domain functions; the client Controller only presents and asks. Communication between them goes through the network layer (see `roblox-networking`), not cross client-server `require`.
+- Observer with `BindableEvent`/`BindableFunction`: useful within the same context (server-server or client-client). Don't use it to cross the client-server boundary.
+- `CollectionService`, `Tags`, and `Attributes`: to discover entities to attach components or factories to without coupling hierarchies.
+- `ModuleScript` + `require`: the base of all patterns. Each pattern is a `ModuleScript` with minimal API and encapsulated state.
+- Singleton with caution: a Singleton hides dependencies and complicates tests. Use it only for genuinely unique resources (immutable config, central seed).
 
-Ejemplo ilustrativo (event-bus mínimo, mismo contexto):
+Illustrative example (minimal event bus, same context):
 
 ```luau
 -- ModuleScript: EventBus (ilustrativo)
@@ -79,7 +79,7 @@ end
 return EventBus
 ```
 
-Ejemplo ilustrativo (Factory con validación):
+Illustrative example (Factory with validation):
 
 ```luau
 -- ModuleScript: EnemyFactory (ilustrativo)
@@ -95,37 +95,37 @@ end
 return EnemyFactory
 ```
 
-## Buenas prácticas
-- Un patrón por problema. Si necesitas explicar el patrón más que el problema, es sobreingeniería.
-- APIs pequeñas: 3-5 funciones públicas por módulo. Lo demás es local.
-- Nombra por rol (`InventoryService`, `EnemyFactory`, `ProjectilePool`), no por patrón (`Manager`, `Handler`, `Util`).
-- Inyecta `CollectionService`, `DataStoreService` o `MemoryStoreService` como parámetros donde sea posible para poder mockearlos en tests.
-- Documenta cuándo NO usar el patrón al lado de su definición.
+## Best practices
+- One pattern per problem. If you need to explain the pattern more than the problem, it's overengineering.
+- Small APIs: 3–5 public functions per module. The rest is local.
+- Name by role (`InventoryService`, `EnemyFactory`, `ProjectilePool`), not by pattern (`Manager`, `Handler`, `Util`).
+- Inject `CollectionService`, `DataStoreService`, or `MemoryStoreService` as parameters where possible so they can be mocked in tests.
+- Document when NOT to use the pattern next to its definition.
 
-## Errores frecuentes
-1. Singleton para todo: convierte estado global en "arquitectura". Síntoma: tests que interfieren entre sí. Corrección: pasa dependencias por parámetro.
-2. Event-bus como red: usar `BindableEvent` para comunicar cliente↔servidor. No funciona entre contextos; usa la capa de red validada.
-3. Factory que construye instancias de `Instance` sin padre ni limpieza: fuga de memoria. Toda Factory de instancias debe devolver también su política de `Destroy`.
-4. Pool sin límite ni reset: el pool crece infinito o entrega objetos "sucios". Define capacidad máxima y función `reset`.
-5. Observer sin desconexión: conexiones acumuladas que disparan callbacks muertos. Guarda cada conexión y desconéctala en `Destroy`.
-6. Service que hace `require` circular con otro Service: el juego no carga. Rompe el ciclo con eventos o un tercer módulo de datos.
+## Common mistakes
+1. Singleton for everything: turns global state into "architecture". Symptom: tests interfering with each other. Fix: pass dependencies as parameters.
+2. Event bus as networking: using `BindableEvent` to communicate client↔server. Doesn't work across contexts; use the validated network layer.
+3. Factory that builds `Instance`s with no parent or cleanup: memory leak. Every instance Factory must also return its `Destroy` policy.
+4. Pool with no limit or reset: the pool grows forever or hands out "dirty" objects. Define max capacity and a `reset` function.
+5. Observer without disconnecting: accumulated connections firing dead callbacks. Store each connection and disconnect it in `Destroy`.
+6. Service with circular `require` to another Service: the game doesn't load. Break the cycle with events or a third data module.
 
-## Criterios de calidad y terminado
-- [ ] Cada sistema tiene patrón asignado y justificado en una línea (problema → patrón → por qué no otro).
-- [ ] Ningún `require` circular; el grafo de dependencias es acíclico y verificable.
-- [ ] Todo módulo con conexiones o instancias expone `Destroy`/`Cleanup` y se llama en tests.
-- [ ] Cada patrón tiene al menos un test de contrato (crear/usar/destruir) que pasa.
-- [ ] No hay globales implícitos (`_G`, `shared`) salvo justificación escrita.
-- [ ] Un lector nuevo entiende dónde poner lógica nueva sin preguntar (verificable en revisión).
+## Quality and done criteria
+- [ ] Each system has an assigned pattern justified in one line (problem → pattern → why not another).
+- [ ] No circular `require`; the dependency graph is acyclic and verifiable.
+- [ ] Every module with connections or instances exposes `Destroy`/`Cleanup` and it is called in tests.
+- [ ] Each pattern has at least one passing contract test (create/use/destroy).
+- [ ] No implicit globals (`_G`, `shared`) except with written justification.
+- [ ] A new reader knows where to put new logic without asking (verifiable in review).
 
-## Herramientas
-- `ModuleScript` + `require` para composición.
-- `BindableEvent` / `BindableFunction` para Observer intra-contexto.
-- `CollectionService` / `Tags` / `Attributes` para descubrimiento desacoplado.
-- `TestService` + TestEZ (ver `roblox-testez`) para tests de contrato.
-- Git + Rojo para versionar la estructura (ver `roblox-git-workflows`).
+## Tools
+- `ModuleScript` + `require` for composition.
+- `BindableEvent` / `BindableFunction` for intra-context Observer.
+- `CollectionService` / `Tags` / `Attributes` for decoupled discovery.
+- `TestService` + TestEZ (see `roblox-testez`) for contract tests.
+- Git + Rojo to version the structure (see `roblox-git-workflows`).
 
-## Limitaciones
-- No cubre réplica, persistencia ni profiling; deriva a `roblox-networking`, `roblox-datastores` y `roblox-performance` / MicroProfiler / ScriptProfiler.
-- Si dudas de una clase o firma, escribe `(verificar en create.roblox.com/docs)` y no la uses en producción sin confirmar.
-- Los ejemplos son ilustrativos y no sustituyen tests del sistema real.
+## Limitations
+- Does not cover replication, persistence, or profiling; see `roblox-networking`, `roblox-datastores`, and `roblox-performance` / MicroProfiler / ScriptProfiler.
+- If you doubt a class or signature, write "(verificar en create.roblox.com/docs)" and don't use it in production without confirming.
+- Examples are illustrative and don't replace tests of the real system.
